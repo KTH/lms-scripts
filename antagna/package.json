@@ -13,6 +13,10 @@
     "colors": "^1.2.3",
     "dotenv": "^5.0.1",
     "inquirer": "^5.2.0",
-    "kth-canvas-api": "^0.15.5"
+    "kth-canvas-api": "^0.15.5",
+    "kth-canvas-utilities": "^1.17.0",
+    "ldapjs": "^1.0.2",
+    "moment": "^2.22.1",
+    "node-zip": "^1.1.1"
   }
 }
