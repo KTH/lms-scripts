@@ -1,0 +1,19 @@
+{
+  "name": "lms-scripts",
+  "version": "0.0.1",
+  "description": "Utility scripts used for the Lms (Canvas) at KTH",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/KTH/lms-scripts.git"
+  },
+  "author": "emilsten@kth.se",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/KTH/lms-scripts/issues"
+  },
+  "homepage": "https://github.com/KTH/lms-scripts#readme"
+}
