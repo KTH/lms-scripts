@@ -1,0 +1,18 @@
+{
+  "name": "collect_sis_imports_errors",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "inquirer": "^5.2.0",
+    "kth-canvas-api": "^0.15.5",
+    "moment": "^2.22.1",
+    "request-promise": "^4.2.2"
+  }
+}
