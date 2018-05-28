@@ -75,7 +75,7 @@ async function searchGroup (filter, ldapClient) {
   })
 }
 
-async function writeUsersForCourse ({course, ldapClient, startTerm, fileName}) {
+async function writeAntagnaForCourse ({course, ldapClient, startTerm, fileName}) {
   const roundId = course.offering_id
   const sisCourseId = `${course.course_code}${course.first_semester}${roundId}` // A11IYAVT181
   const courseInitials = course.course_code.substring(0, 2)
@@ -167,7 +167,7 @@ module.exports = async function () {
   const ldapClientBindAsync = util.promisify(ldapClient.bind).bind(ldapClient)
   await ldapClientBindAsync(process.env.ugUsername, process.env.ugPwd)
 
-  const fileName = `csv/sections-enrolled-${year}${term}-${period}.csv`
+  const fileName = `csv/antagna-enrollment-${year}${term}-${period}.csv`
   await deleteFile(fileName)
   await csvFile.writeLine([
     'section_id',
@@ -178,7 +178,7 @@ module.exports = async function () {
 
   const startTerm = `${year}${term}`
   for (let course of canvasCourses) {
-    await writeUsersForCourse({course, ldapClient, startTerm, fileName})
+    await writeAntagnaForCourse({course, ldapClient, startTerm, fileName})
   }
 
   console.log('😀 Done!')
