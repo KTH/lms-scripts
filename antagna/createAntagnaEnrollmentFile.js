@@ -68,6 +68,10 @@ async function searchGroup (filter, ldapClient) {
           reject(new Error(`Rejected with status: ${entry.status}`))
           return
         }
+        if (members.length > 0 && Array.isArray(members[0])) {
+          resolve(members[0])
+          return
+        }
         resolve(members)
       })
       res.on('error', reject)
@@ -160,6 +164,7 @@ module.exports = async function () {
   })
 
   const canvasCourses = res.filter(courseOffering => courseOffering.state === 'Godkänt' || courseOffering.state === 'Fullsatt')
+    .filter(courseOffering => courseOffering.first_period === `${year}${term}P${period}`)
 
   const ldapClient = ldap.createClient({
     url: process.env.ugUrl
