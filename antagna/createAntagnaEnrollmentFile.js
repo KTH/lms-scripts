@@ -33,7 +33,13 @@ async function getUsersForMembers (members, ldapClient) {
           return
         }
         const users = []
-        res.on('searchEntry', entry => users.push(entry.object))
+        res.on('searchEntry', entry => {
+          if (Array.isArray(entry.object)) {
+            users.push(...entry.object)
+          } else {
+            users.push(entry.object)
+          }
+        })
         res.on('end', entry => {
           if (entry.status !== 0) {
             reject(new Error(`Rejected with status: ${entry.status}`))
@@ -62,14 +68,16 @@ async function searchGroup (filter, ldapClient) {
         return
       }
       const members = []
-      res.on('searchEntry', entry => members.push(entry.object.member)) // We will get one result for the group where querying for
+      res.on('searchEntry', entry => {
+        if (Array.isArray(entry.object.member)) {
+          members.push(...entry.object.member)
+        } else {
+          members.push(entry.object.member)
+        }
+      }) // We will get one result for the group where querying for
       res.on('end', entry => {
         if (entry.status !== 0) {
           reject(new Error(`Rejected with status: ${entry.status}`))
-          return
-        }
-        if (members.length > 0 && Array.isArray(members[0])) {
-          resolve(members[0])
           return
         }
         resolve(members)
