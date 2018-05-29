@@ -1,6 +1,5 @@
 const ldap = require('ldapjs')
-const csvFile = require('./csvFile')
-const {deleteFile} = require('./utils')
+const {deleteFile, writeLine, createCsvFolder} = require('./csvFile')
 const attributes = ['ugKthid', 'name']
 require('dotenv').config()
 
@@ -96,15 +95,11 @@ async function writeAntagnaForCourse ({course, ldapClient, startTerm, fileName})
     ldapClient)
   const enrolled = await getUsersForMembers(members, ldapClient)
   for (let student of enrolled) {
-    await csvFile.writeLine([sisCourseId, student.ugKthid, 'Admitted not registered', 'active'], fileName)
+    await writeLine([sisCourseId, student.ugKthid, 'Admitted not registered', 'active'], fileName)
   }
 }
 
-try {
-  fs.mkdirSync('csv')
-} catch (e) {
-  // ToDo: What do?
-}
+createCsvFolder()
 
 console.log(`
   Detta är ett program för att ta
@@ -182,7 +177,7 @@ module.exports = async function () {
 
   const fileName = `csv/antagna-enrollment-${year}${term}-${period}.csv`
   await deleteFile(fileName)
-  await csvFile.writeLine([
+  await writeLine([
     'section_id',
     'user_id',
     'role',

@@ -8,6 +8,13 @@ function deleteFile (fileName) {
     console.log("couldn't delete file. It probably doesn't exist. This is fine, let's continue")
   }
 }
+function createCsvFolder () {
+  try {
+    fs.mkdirSync('csv')
+  } catch (e) {
+    // ToDo: What do?
+  }
+}
 
 function escapeCsvData (str) {
   str = '' + str
@@ -34,5 +41,5 @@ function createLine (strArr) {
 }
 
 module.exports = {
-  escapeCsvData, writeLine, createLine, deleteFile
+  escapeCsvData, writeLine, createLine, deleteFile, createCsvFolder
 }
