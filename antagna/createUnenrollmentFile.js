@@ -7,7 +7,6 @@ const {deleteFile, writeLine, createCsvFolder} = require('./csvFile')
 const sectionFileName = 'csv/unenroll-observers.csv'
 
 createCsvFolder()
-
 deleteFile(sectionFileName)
 
 module.exports = async function createFile () {
