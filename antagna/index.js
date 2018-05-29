@@ -11,16 +11,11 @@ async function run () {
       name: 'choice',
       choices: [
         {name: 'För att ta bort antagna ur samtliga kurser i Canvas', value: 'createUnenrollmentFile'},
-        {name: 'För att lägga till antagna i perioder i Canvas', value: 'createAntagnaEnrollmentFile'},
-        {name: 'För att skapa upp kurser, sektioner och enrollments i Canvas', value: 'createCoursesSectionsEnrollment'}
+        {name: 'För att lägga till antagna i perioder i Canvas', value: 'createAntagnaEnrollmentFile'}
       ],
       type: 'list'
     })
   switch (choice) {
-    case 'createCoursesSectionsEnrollment':
-      const createCoursesSectionsEnrollment = require('./createCoursesSectionsEnrollmentsFile.js')
-      await createCoursesSectionsEnrollment()
-      break
     case 'createAntagnaEnrollmentFile':
       const createAntagnaEnrollmentFile = require('./createAntagnaEnrollmentFile.js')
       try {
