@@ -1,6 +1,14 @@
 const Promise = require('bluebird')
 const fs = Promise.promisifyAll(require('fs'))
 
+function deleteFile (fileName) {
+  try {
+    fs.unlinkSync(sectionFileName)
+  } catch (e) {
+    console.log("couldn't delete file. It probably doesn't exist. This is fine, let's continue")
+  }
+}
+
 function escapeCsvData (str) {
   str = '' + str
 
@@ -26,5 +34,5 @@ function createLine (strArr) {
 }
 
 module.exports = {
-  escapeCsvData, writeLine, createLine
+  escapeCsvData, writeLine, createLine, deleteFile
 }
