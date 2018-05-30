@@ -3,7 +3,7 @@ const fs = Promise.promisifyAll(require('fs'))
 
 function deleteFile (fileName) {
   try {
-    fs.unlinkSync(sectionFileName)
+    fs.unlinkSync(fileName)
   } catch (e) {
     console.log("couldn't delete file. It probably doesn't exist. This is fine, let's continue")
   }
@@ -12,7 +12,7 @@ function createCsvFolder () {
   try {
     fs.mkdirSync('csv')
   } catch (e) {
-    // ToDo: What do?
+    console.log("couldn't create csv folder")
   }
 }
 

@@ -58,3 +58,6 @@ typings/
 .env
 
 csv/
+
+# funky macos file
+.DS_Store
