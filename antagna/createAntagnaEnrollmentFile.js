@@ -1,6 +1,5 @@
 const ldap = require('ldapjs')
-const csvFile = require('./csvFile')
-const {deleteFile} = require('./utils')
+const {deleteFile, writeLine, createCsvFolder} = require('./csvFile')
 const attributes = ['ugKthid', 'name']
 require('dotenv').config()
 
@@ -33,7 +32,13 @@ async function getUsersForMembers (members, ldapClient) {
           return
         }
         const users = []
-        res.on('searchEntry', entry => users.push(entry.object))
+        res.on('searchEntry', entry => {
+          if (Array.isArray(entry.object)) {
+            users.push(...entry.object)
+          } else {
+            users.push(entry.object)
+          }
+        })
         res.on('end', entry => {
           if (entry.status !== 0) {
             reject(new Error(`Rejected with status: ${entry.status}`))
@@ -62,14 +67,16 @@ async function searchGroup (filter, ldapClient) {
         return
       }
       const members = []
-      res.on('searchEntry', entry => members.push(entry.object.member)) // We will get one result for the group where querying for
+      res.on('searchEntry', entry => {
+        if (Array.isArray(entry.object.member)) {
+          members.push(...entry.object.member)
+        } else {
+          members.push(entry.object.member)
+        }
+      }) // We will get one result for the group where querying for
       res.on('end', entry => {
         if (entry.status !== 0) {
           reject(new Error(`Rejected with status: ${entry.status}`))
-          return
-        }
-        if (members.length > 0 && Array.isArray(members[0])) {
-          resolve(members[0])
           return
         }
         resolve(members)
@@ -88,15 +95,11 @@ async function writeAntagnaForCourse ({course, ldapClient, startTerm, fileName})
     ldapClient)
   const enrolled = await getUsersForMembers(members, ldapClient)
   for (let student of enrolled) {
-    await csvFile.writeLine([sisCourseId, student.ugKthid, 'Admitted not registered', 'active'], fileName)
+    await writeLine([sisCourseId, student.ugKthid, 'Admitted not registered', 'active'], fileName)
   }
 }
 
-try {
-  fs.mkdirSync('csv')
-} catch (e) {
-  // ToDo: What do?
-}
+createCsvFolder()
 
 console.log(`
   Detta är ett program för att ta
@@ -174,7 +177,7 @@ module.exports = async function () {
 
   const fileName = `csv/antagna-enrollment-${year}${term}-${period}.csv`
   await deleteFile(fileName)
-  await csvFile.writeLine([
+  await writeLine([
     'section_id',
     'user_id',
     'role',

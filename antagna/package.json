@@ -2,6 +2,10 @@
   "name": "lms-scripts-antagna",
   "version": "1.0.0",
   "description": "",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/KTH/lms-scripts.git"
+  },
   "main": "index.js",
   "scripts": {
     "start": "node index.js",
@@ -17,7 +21,6 @@
     "kth-canvas-utilities": "^1.17.0",
     "ldapjs": "^1.0.2",
     "moment": "^2.22.1",
-    "node-zip": "^1.1.1",
     "request-promise": "^4.2.2"
   }
 }
