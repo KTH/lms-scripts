@@ -60,6 +60,8 @@ async function listErrors () {
         .filter(warning => !/There were [\d,]+ more warnings/.test(warning))
         .filter(warning => warning !== '')
         .filter(warning => !warning.includes('app.katalog3'))
+      
+      // First post is always a headline and can be ignored
       if (filteredWarn.length > 1) {
         console.log(filteredWarn)
       }
