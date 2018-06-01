@@ -59,7 +59,10 @@ async function listErrors () {
         .filter(warning => !warning.includes('An enrollment referenced a non-existent section'))
         .filter(warning => !/There were [\d,]+ more warnings/.test(warning))
         .filter(warning => warning !== '')
-      if (filteredWarn.length > 0) {
+        .filter(warning => !warning.includes('app.katalog3'))
+      
+      // First post is always a headline and can be ignored
+      if (filteredWarn.length > 1) {
         console.log(filteredWarn)
       }
     }
