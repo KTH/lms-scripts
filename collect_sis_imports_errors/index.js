@@ -2,11 +2,47 @@
 * To run this script, just open a terminal and run it with node.
 * Then just follow the instructions on the screen.
 */
+require('dotenv').config()
 process.env['NODE_ENV'] = 'production'
 const CanvasApi = require('kth-canvas-api')
 const inquirer = require('inquirer')
 const moment = require('moment')
 const request = require('request-promise')
+const ldap = require('ldapjs')
+const util = require('util')
+
+async function getUserInfo (userId, ldapClient) {
+  const searchResult = await new Promise((resolve, reject) => {
+    ldapClient.search('OU=UG,DC=ug,DC=kth,DC=se', {
+      scope: 'sub',
+      filter: `(ugKthid=${userId})`,
+      timeLimit: 10,
+      paging: true,
+      paged: {
+        pageSize: 1000,
+        pagePause: false
+      }
+    }, (err, res) => {
+      if (err) {
+        reject(err)
+        return
+      }
+      const hits = []
+      res.on('searchEntry', entry => {
+        hits.push(entry.object)
+      })
+      res.on('end', entry => {
+        if (entry.status !== 0) {
+          reject(new Error(`Rejected with status: ${entry.status}`))
+          return
+        }
+        resolve(hits)
+      })
+      res.on('error', reject)
+    })
+  })
+  return searchResult
+}
 
 async function listErrors () {
   try {
@@ -47,9 +83,15 @@ async function listErrors () {
     const reportUrls = flattenedSisImports.map(_sisObj => (_sisObj.errors_attachment && _sisObj.errors_attachment.url) || [])
       .reduce((a, b) => a.concat(b), [])
 
+    const ldapClient = ldap.createClient({
+      url: process.env.ugUrl
+    })
+    const ldapClientBindAsync = util.promisify(ldapClient.bind).bind(ldapClient)
+    await ldapClientBindAsync(process.env.ugUsername, process.env.ugPwd)
     console.log('Searching for warnings and errors:')
-
-    for (let url of reportUrls) {
+    console.log(await getUserInfo('u19xof8q', ldapClient))
+    // console.log(await getUserInfo('u1fnduw8', ldapClient))
+    /* for (let url of reportUrls) {
       const warnings = await request({
         uri: url,
         headers: {'Connection': 'keep-alive'}
@@ -59,15 +101,22 @@ async function listErrors () {
         .filter(warning => !warning.includes('An enrollment referenced a non-existent section'))
         .filter(warning => !/There were [\d,]+ more warnings/.test(warning))
         .filter(warning => warning !== '')
-        .filter(warning => !warning.includes('app.katalog3'))
-      
+
       // First post is always a headline and can be ignored
       if (filteredWarn.length > 1) {
-        console.log(filteredWarn)
+        for (let item of filteredWarn) {
+          if (item.includes('User not found')) {
+            console.log(await getUserInfo(ldapClient))
+          }
+        }
+        // console.log(filteredWarn)
       }
-    }
+    } */
+    const ldapClientUnbindAsync = util.promisify(ldapClient.unbind).bind(ldapClient)
+    await ldapClientUnbindAsync()
   } catch (e) {
     console.error(e)
   }
 }
+
 listErrors()
