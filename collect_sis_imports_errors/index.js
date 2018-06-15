@@ -15,7 +15,8 @@ async function getUserInfo (userId, ldapClient) {
   const searchResult = await new Promise((resolve, reject) => {
     ldapClient.search('OU=UG,DC=ug,DC=kth,DC=se', {
       scope: 'sub',
-      filter: `(ugKthid=${userId})`,
+      filter: `(&(ugKthid=${userId}))`,
+      attributes: ['memberOf'],
       timeLimit: 10,
       paging: true,
       paged: {
@@ -42,6 +43,13 @@ async function getUserInfo (userId, ldapClient) {
     })
   })
   return searchResult
+}
+
+async function isUserStipendiat (userId, ldapClient) {
+  const userInfo = await getUserInfo(userId, ldapClient)
+  return userInfo[0].memberOf.find((item) => {
+    return item.includes('CN=pa.stipendiater')
+  }) !== undefined
 }
 
 async function listErrors () {
@@ -89,9 +97,8 @@ async function listErrors () {
     const ldapClientBindAsync = util.promisify(ldapClient.bind).bind(ldapClient)
     await ldapClientBindAsync(process.env.ugUsername, process.env.ugPwd)
     console.log('Searching for warnings and errors:')
-    console.log(await getUserInfo('u19xof8q', ldapClient))
-    // console.log(await getUserInfo('u1fnduw8', ldapClient))
-    /* for (let url of reportUrls) {
+    console.log('sis_import_id,file,message,row')
+    for (let url of reportUrls) {
       const warnings = await request({
         uri: url,
         headers: {'Connection': 'keep-alive'}
@@ -102,16 +109,23 @@ async function listErrors () {
         .filter(warning => !/There were [\d,]+ more warnings/.test(warning))
         .filter(warning => warning !== '')
 
-      // First post is always a headline and can be ignored
-      if (filteredWarn.length > 1) {
+      // First post is always a header and can be ignored
+      filteredWarn.shift()
+      if (filteredWarn.length > 0) {
         for (let item of filteredWarn) {
           if (item.includes('User not found')) {
-            console.log(await getUserInfo(ldapClient))
+            const message = item.split(',')[2]
+            const userId = message.substring(message.length - 8)
+            const stipendiat = await isUserStipendiat(userId, ldapClient)
+            if (!stipendiat) {
+              console.log(item)
+            }
+          } else {
+            console.log(item)
           }
         }
-        // console.log(filteredWarn)
       }
-    } */
+    }
     const ldapClientUnbindAsync = util.promisify(ldapClient.unbind).bind(ldapClient)
     await ldapClientUnbindAsync()
   } catch (e) {

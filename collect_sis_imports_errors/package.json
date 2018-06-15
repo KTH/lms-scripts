@@ -9,6 +9,10 @@
   },
   "author": "",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/KTH/lms-scripts.git"
+  },
   "dependencies": {
     "dotenv": "^6.0.0",
     "inquirer": "^5.2.0",
