@@ -1,0 +1,24 @@
+{
+  "name": "canvas_data_parser",
+  "version": "1.0.0",
+  "description": "A tool to parse data from Canvas Data Portal",
+  "main": "app.js",
+  "scripts": {
+    "start": "node app.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Peter Delmeby",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/KTH/lms-scripts.git"
+  },
+  "dependencies": {
+    "bunyan": "^1.8.12",
+    "dotenv": "^6.0.0",
+    "inquirer": "^6.0.0"
+  },
+  "devDependencies": {
+    "standard": "^11.0.1"
+  }
+}
