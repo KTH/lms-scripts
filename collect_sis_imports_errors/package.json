@@ -9,9 +9,15 @@
   },
   "author": "",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/KTH/lms-scripts.git"
+  },
   "dependencies": {
+    "dotenv": "^6.0.0",
     "inquirer": "^5.2.0",
     "kth-canvas-api": "^0.15.5",
+    "ldapjs": "^1.0.2",
     "moment": "^2.22.1",
     "request-promise": "^4.2.2"
   }
