@@ -9,7 +9,6 @@ const currentYear = moment().year()
 const years = []
 const {VT, HT} = require('kth-canvas-utilities/terms')
 const rp = require('request-promise')
-const fs = require('fs')
 const util = require('util')
 
 async function getUsersForMembers (members, ldapClient) {
