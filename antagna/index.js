@@ -11,7 +11,7 @@ async function run () {
       name: 'choice',
       choices: [
         {name: 'För att ta bort antagna ur samtliga kurser i Canvas', value: 'createUnenrollmentFile'},
-        {name: 'För att lägga till antagna i perioder i Canvas', value: 'createAntagnaEnrollmentFile'},
+        {name: 'För att lägga till antagna i perioder i Canvas', value: 'createAntagnaEnrollmentFile'}
       ],
       type: 'list'
     })
@@ -21,12 +21,16 @@ async function run () {
       try {
         await createAntagnaEnrollmentFile()
       } catch (e) {
-        console.log(e)
+        console.error(e)
       }
       break
     case 'createUnenrollmentFile':
       const createUnenrollmentFile = require('./createUnenrollmentFile.js')
-      await createUnenrollmentFile()
+      try {
+        await createUnenrollmentFile()
+      } catch (e) {
+        console.error(e)
+      }
       break
     default:
       throw new Error('Invalid choice:' + choice)
