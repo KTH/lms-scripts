@@ -16,7 +16,7 @@ async function getUserInfo (userId, ldapClient) {
     ldapClient.search('OU=UG,DC=ug,DC=kth,DC=se', {
       scope: 'sub',
       filter: `(&(ugKthid=${userId}))`,
-      attributes: ['memberOf'],
+      attributes: ['memberOf', 'ugPrimaryAffiliation'],
       timeLimit: 10,
       paging: true,
       paged: {
@@ -45,11 +45,11 @@ async function getUserInfo (userId, ldapClient) {
   return searchResult
 }
 
-async function isUserStipendiat (userId, ldapClient) {
+async function isUserStipendiatOrOther (userId, ldapClient) {
   const userInfo = await getUserInfo(userId, ldapClient)
   return userInfo[0].memberOf.find((item) => {
     return item.includes('CN=pa.stipendiater')
-  }) !== undefined
+  }) !== undefined || userInfo[0].ugPrimaryAffiliation === 'other'
 }
 
 async function listErrors () {
@@ -116,8 +116,8 @@ async function listErrors () {
           if (item.includes('User not found')) {
             const message = item.split(',')[2]
             const userId = message.substring(message.length - 8)
-            const stipendiat = await isUserStipendiat(userId, ldapClient)
-            if (!stipendiat) {
+            const stipendiatOrOther = await isUserStipendiatOrOther(userId, ldapClient)
+            if (!stipendiatOrOther) {
               console.log(item)
             }
           } else {
