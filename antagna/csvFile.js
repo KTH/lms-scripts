@@ -1,18 +1,18 @@
-const Promise = require('bluebird')
-const fs = Promise.promisifyAll(require('fs'))
+const util = require('util')
+const fs = require('fs')
 
 function deleteFile (fileName) {
   try {
     fs.unlinkSync(fileName)
   } catch (e) {
-    console.log("couldn't delete file. It probably doesn't exist. This is fine, let's continue")
+    console.error("couldn't delete file. It probably doesn't exist. This is fine, let's continue")
   }
 }
 function createCsvFolder () {
   try {
     fs.mkdirSync('csv')
   } catch (e) {
-    console.log("couldn't create csv folder")
+    console.error("couldn't create csv folder")
   }
 }
 
@@ -31,9 +31,10 @@ function escapeCsvData (str) {
   return str
 }
 
-function writeLine (strArr, fileName) {
+async function writeLine (strArr, fileName) {
   const line = createLine(strArr)
-  return fs.appendFileAsync(fileName, line)
+  const appendFileAsync = util.promisify(fs.appendFile)
+  return appendFileAsync(fileName, line)
 }
 
 function createLine (strArr) {
