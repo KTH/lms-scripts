@@ -1,4 +1,5 @@
 const getQueue = require('./getQueue')
+const createMessage = require('./createMessage')
 const inquirer = require('inquirer')
 
 async function start () {
@@ -6,17 +7,17 @@ async function start () {
 
   let sendMoreMessages = true
   do {
-    await inquirer.prompt({
-      name: '42',
-      message: 'Hit enter to send a message'
-    })
+    const message = await createMessage()
 
     try {
-      await queue.send({body: 'this is a message'})
+      await queue.send(message)
     } catch (err) {
       console.error('Error sending a message')
       console.error(err)
     }
+
+    console.log(message)
+    console.log('message sent')
 
     const response = await inquirer.prompt({
       message: 'Do you want to send more messages?',
