@@ -9,6 +9,11 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
+    "azure-sb": "^0.10.6",
+    "azure-storage": "^2.10.0",
     "inquirer": "^6.0.0"
+  },
+  "devDependencies": {
+    "standard": "^11.0.1"
   }
 }
