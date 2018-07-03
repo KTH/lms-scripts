@@ -1,3 +1,4 @@
+require('dotenv').config()
 const getQueue = require('./getQueue')
 const createMessage = require('./createMessage')
 const inquirer = require('inquirer')

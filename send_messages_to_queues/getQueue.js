@@ -2,32 +2,34 @@ const azureSb = require('azure-sb')
 const azureStorage = require('azure-storage')
 const inquirer = require('inquirer')
 
-async function createServiceBusService () {
-  const {host} = await inquirer.prompt({
-    message: 'Paste the AZURE_HOST',
-    name: 'host',
-    type: 'string',
-    default: 'lms-queue.servicebus.windows.net'
-  })
+async function createServiceBusService (connectionString) {
+  if (!connectionString) {
+    const {host} = await inquirer.prompt({
+      message: 'Paste the AZURE_HOST',
+      name: 'host',
+      type: 'string',
+      default: 'lms-queue.servicebus.windows.net'
+    })
 
-  const {sharedAccessKeyName} = await inquirer.prompt({
-    message: 'Paste the AZURE_SHARED_ACCESS_KEY_NAME',
-    name: 'sharedAccessKeyName',
-    type: 'string',
-    default: 'RootManageSharedAccessKey'
-  })
+    const {sharedAccessKeyName} = await inquirer.prompt({
+      message: 'Paste the AZURE_SHARED_ACCESS_KEY_NAME',
+      name: 'sharedAccessKeyName',
+      type: 'string',
+      default: 'RootManageSharedAccessKey'
+    })
 
-  const {sharedAccessKey} = await inquirer.prompt({
-    message: 'Paste the AZURE_SHARED_ACCESS_KEY',
-    name: 'sharedAccessKey',
-    type: 'string'
-  })
+    const {sharedAccessKey} = await inquirer.prompt({
+      message: 'Paste the AZURE_SHARED_ACCESS_KEY',
+      name: 'sharedAccessKey',
+      type: 'string'
+    })
 
-  const connectionString = [
-    `Endpoint=sb://${host}`,
-    `SharedAccessKeyName=${sharedAccessKeyName}`,
-    `SharedAccessKey=${sharedAccessKey}`
-  ].join(';')
+    connectionString = [
+      `Endpoint=sb://${host}`,
+      `SharedAccessKeyName=${sharedAccessKeyName}`,
+      `SharedAccessKey=${sharedAccessKey}`
+    ].join(';')
+  }
 
   try {
     return azureSb.createServiceBusService(connectionString)
@@ -85,7 +87,7 @@ async function getStorageQueue () {
 }
 
 async function getServiceBusQueue () {
-  const serviceBusService = await createServiceBusService()
+  const serviceBusService = await createServiceBusService(process.env.AZURE_QUEUE_CONNECTION_STRING)
 
   const {queueName} = await inquirer.prompt({
     message: 'AZURE_QUEUE_NAME',
@@ -131,7 +133,7 @@ async function getServiceBusQueue () {
 }
 
 async function getServiceBusTopic () {
-  const serviceBusService = await createServiceBusService()
+  const serviceBusService = await createServiceBusService(process.env.AZURE_TOPIC_CONNECTION_STRING)
 
   return {
     send (message) {
