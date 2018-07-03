@@ -2,6 +2,43 @@ const azureSb = require('azure-sb')
 const azureStorage = require('azure-storage')
 const inquirer = require('inquirer')
 
+async function createServiceBusService () {
+  const {host} = await inquirer.prompt({
+    message: 'Paste the AZURE_HOST',
+    name: 'host',
+    type: 'string',
+    default: 'lms-queue.servicebus.windows.net'
+  })
+
+  const {sharedAccessKeyName} = await inquirer.prompt({
+    message: 'Paste the AZURE_SHARED_ACCESS_KEY_NAME',
+    name: 'sharedAccessKeyName',
+    type: 'string',
+    default: 'RootManageSharedAccessKey'
+  })
+
+  const {sharedAccessKey} = await inquirer.prompt({
+    message: 'Paste the AZURE_SHARED_ACCESS_KEY',
+    name: 'sharedAccessKey',
+    type: 'string'
+  })
+
+  const connectionString = [
+    `Endpoint=sb://${host}`,
+    `SharedAccessKeyName=${sharedAccessKeyName}`,
+    `SharedAccessKey=${sharedAccessKey}`
+  ].join(';')
+
+  try {
+    return azureSb.createServiceBusService(connectionString)
+  } catch (err) {
+    if (err.name === 'NoMatchError') {
+      console.error('Cannot connect to Azure ServiceBus. Some arguments are missing.')
+      process.exit(1)
+    }
+  }
+}
+
 async function getStorageQueue () {
   const queueService = azureStorage
     .createQueueService('UseDevelopmentStorage=true')
@@ -48,43 +85,7 @@ async function getStorageQueue () {
 }
 
 async function getServiceBusQueue () {
-  const {host} = await inquirer.prompt({
-    message: 'Paste the AZURE_HOST',
-    name: 'host',
-    type: 'string',
-    default: 'lms-queue.servicebus.windows.net'
-  })
-
-  const {sharedAccessKeyName} = await inquirer.prompt({
-    message: 'Paste the AZURE_SHARED_ACCESS_KEY_NAME',
-    name: 'sharedAccessKeyName',
-    type: 'string',
-    default: 'RootManageSharedAccessKey'
-  })
-
-  const {sharedAccessKey} = await inquirer.prompt({
-    message: 'Paste the AZURE_SHARED_ACCESS_KEY',
-    name: 'sharedAccessKey',
-    type: 'string'
-  })
-
-  const connectionString = [
-    `Endpoint=sb://${host}`,
-    `SharedAccessKeyName=${sharedAccessKeyName}`,
-    `SharedAccessKey=${sharedAccessKey}`
-  ].join(';')
-
-
-  let serviceBusService
-
-  try {
-    serviceBusService = azureSb.createServiceBusService(connectionString)
-  } catch (err) {
-    if (err.name === 'NoMatchError') {
-      console.error('Cannot connect to Azure ServiceBus. Some arguments are missing.')
-      process.exit(1)
-    }
-  }
+  const serviceBusService = await createServiceBusService()
 
   const {queueName} = await inquirer.prompt({
     message: 'AZURE_QUEUE_NAME',
@@ -130,49 +131,7 @@ async function getServiceBusQueue () {
 }
 
 async function getServiceBusTopic () {
-  const {host} = await inquirer.prompt({
-    message: 'Paste the AZURE_HOST',
-    name: 'host',
-    type: 'string',
-    default: 'lms-queue.servicebus.windows.net'
-  })
-
-  const {sharedAccessKeyName} = await inquirer.prompt({
-    message: 'Paste the AZURE_SHARED_ACCESS_KEY_NAME',
-    name: 'sharedAccessKeyName',
-    type: 'string',
-    default: 'RootManageSharedAccessKey'
-  })
-
-  const {sharedAccessKey} = await inquirer.prompt({
-    message: 'Paste the AZURE_SHARED_ACCESS_KEY',
-    name: 'sharedAccessKey',
-    type: 'string'
-  })
-
-  const {topicName} = await inquirer.prompt({
-    message: 'Paste the name of the topic',
-    name: 'topicName',
-    type: 'string'
-  })
-
-  const connectionString = [
-    `Endpoint=sb://${host}`,
-    `SharedAccessKeyName=${sharedAccessKeyName}`,
-    `SharedAccessKey=${sharedAccessKey}`
-  ].join(';')
-
-  let serviceBusService
-
-  try {
-    serviceBusService = azureSb.createServiceBusService(connectionString)
-  } catch (err) {
-    if (err.name === 'NoMatchError') {
-      console.error('Cannot connect to Azure ServiceBus. Some arguments are missing.')
-      process.exit(1)
-    }
-    console.log(err)
-  }
+  const serviceBusService = await createServiceBusService()
 
   return {
     send (message) {
