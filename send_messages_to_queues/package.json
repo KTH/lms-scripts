@@ -1,0 +1,22 @@
+{
+  "name": "send_messages_to_queues",
+  "version": "1.0.0",
+  "description": "Send arbitrary JSON messages to Azure queues",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "azure-sb": "^0.10.6",
+    "azure-storage": "^2.10.0",
+    "dotenv": "^6.0.0",
+    "faker": "^4.1.0",
+    "inquirer": "^6.0.0",
+    "randomstring": "^1.1.5"
+  },
+  "devDependencies": {
+    "standard": "^11.0.1"
+  }
+}
