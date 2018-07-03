@@ -89,7 +89,7 @@ async function getStorageQueue () {
 async function getServiceBusQueue () {
   const serviceBusService = await createServiceBusService(process.env.AZURE_QUEUE_CONNECTION_STRING)
 
-  const {queueName} = await inquirer.prompt({
+  const {queueName} = process.env.AZURE_QUEUE_NAME ? {queueName: process.env.AZURE_QUEUE_NAME} :  await inquirer.prompt({
     message: 'AZURE_QUEUE_NAME',
     name: 'queueName',
     type: 'string'
@@ -135,7 +135,7 @@ async function getServiceBusQueue () {
 async function getServiceBusTopic () {
   const serviceBusService = await createServiceBusService(process.env.AZURE_TOPIC_CONNECTION_STRING)
 
-  const {topicName} = await inquirer.prompt({
+  const {topicName} = process.env.AZURE_TOPIC_NAME ? {topicName: process.env.AZURE_TOPIC_NAME} : await inquirer.prompt({
     message: 'AZURE_TOPIC_NAME',
     name: 'topicName',
     type: 'string'
