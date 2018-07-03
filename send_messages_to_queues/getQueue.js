@@ -39,7 +39,7 @@ async function getStorageQueue () {
   return {
     send (message) {
       return new Promise((accept, reject) => {
-        queueService.createMessage(queueName, JSON.stringify(message), (error, results, response) => {
+        queueService.createMessage(queueName, Buffer.from(JSON.stringify(message)).toString("base64"), (error, results, response) => {
           error ? reject(error) : accept(response)
         })
       })
@@ -121,7 +121,7 @@ async function getServiceBusQueue () {
   return {
     send (message) {
       return new Promise((accept, reject) => {
-        serviceBusService.sendQueueMessage(queueName, message, (error) => {
+        serviceBusService.sendQueueMessage(queueName, {body: JSON.stringify(message)}, (error) => {
           error ? reject(error) : accept()
         })
       })
