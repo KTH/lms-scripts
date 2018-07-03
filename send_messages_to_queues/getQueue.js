@@ -135,6 +135,12 @@ async function getServiceBusQueue () {
 async function getServiceBusTopic () {
   const serviceBusService = await createServiceBusService(process.env.AZURE_TOPIC_CONNECTION_STRING)
 
+  const {topicName} = await inquirer.prompt({
+    message: 'AZURE_TOPIC_NAME',
+    name: 'topicName',
+    type: 'string'
+  })
+
   return {
     send (message) {
       return new Promise((accept, reject) => {
