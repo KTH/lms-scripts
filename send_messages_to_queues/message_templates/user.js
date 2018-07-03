@@ -31,10 +31,9 @@ module.exports = async function () {
     }
   ])
 
-
   return Object.assign(answers, {
     'ugClass': 'user',
     'deleted': false,
-    'affiliation': [answers.affiliation],
+    'affiliation': [answers.affiliation]
   })
 }

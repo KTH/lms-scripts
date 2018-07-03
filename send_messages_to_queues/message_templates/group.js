@@ -18,6 +18,6 @@ module.exports = async function () {
 
   return Object.assign(answers, {
     'ugClass': 'group',
-    'member': [answers.member],
+    'member': [answers.member]
   })
 }

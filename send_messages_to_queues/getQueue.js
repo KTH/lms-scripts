@@ -53,10 +53,10 @@ async function getStorageQueue () {
   })
 
   try {
-    await new Promise((accept, reject) => {
+    await new Promise((resolve, reject) => {
       queueService.createQueueIfNotExists(queueName, (error, results, response) => {
         if (!error) {
-          accept(response)
+          resolve(response)
         } else {
           reject(error)
         }
@@ -77,9 +77,9 @@ async function getStorageQueue () {
 
   return {
     send (message) {
-      return new Promise((accept, reject) => {
-        queueService.createMessage(queueName, Buffer.from(JSON.stringify(message)).toString("base64"), (error, results, response) => {
-          error ? reject(error) : accept(response)
+      return new Promise((resolve, reject) => {
+        queueService.createMessage(queueName, Buffer.from(JSON.stringify(message)).toString('base64'), (error, results, response) => {
+          error ? reject(error) : resolve(response)
         })
       })
     }
@@ -89,17 +89,17 @@ async function getStorageQueue () {
 async function getServiceBusQueue () {
   const serviceBusService = await createServiceBusService(process.env.AZURE_QUEUE_CONNECTION_STRING)
 
-  const {queueName} = process.env.AZURE_QUEUE_NAME ? {queueName: process.env.AZURE_QUEUE_NAME} :  await inquirer.prompt({
+  const {queueName} = process.env.AZURE_QUEUE_NAME ? {queueName: process.env.AZURE_QUEUE_NAME} : await inquirer.prompt({
     message: 'AZURE_QUEUE_NAME',
     name: 'queueName',
     type: 'string'
   })
 
   try {
-    await new Promise ((accept, reject) => {
+    await new Promise((resolve, reject) => {
       serviceBusService.getQueue(queueName, (error, results, response) => {
         if (!error) {
-          accept(response)
+          resolve(response)
         } else {
           reject(error)
         }
@@ -123,9 +123,9 @@ async function getServiceBusQueue () {
 
   return {
     send (message) {
-      return new Promise((accept, reject) => {
+      return new Promise((resolve, reject) => {
         serviceBusService.sendQueueMessage(queueName, {body: JSON.stringify(message)}, (error) => {
-          error ? reject(error) : accept()
+          error ? reject(error) : resolve()
         })
       })
     }
@@ -143,16 +143,14 @@ async function getServiceBusTopic () {
 
   return {
     send (message) {
-      return new Promise((accept, reject) => {
+      return new Promise((resolve, reject) => {
         serviceBusService.sendTopicMessage(topicName, {body: JSON.stringify(message)}, error => {
-          error ? reject(error) : accept()
+          error ? reject(error) : resolve()
         })
       })
     }
   }
 }
-
-
 
 module.exports = async function getQueue () {
   const {queueType} = await inquirer.prompt({
@@ -166,7 +164,7 @@ module.exports = async function getQueue () {
     ]
   })
 
-  return await {
+  return {
     storage: getStorageQueue,
     serviceBusQueue: getServiceBusQueue,
     serviceBusTopic: getServiceBusTopic

@@ -1,6 +1,6 @@
 const inquirer = require('inquirer')
 
-module.exports = async function createMessage() {
+module.exports = async function createMessage () {
   const {template} = await inquirer.prompt({
     message: 'Choose a template',
     name: 'template',
@@ -8,7 +8,7 @@ module.exports = async function createMessage() {
     choices: ['user', 'group']
   })
 
-  return await {
+  return {
     user: require('./message_templates/user'),
     group: require('./message_templates/group')
   }[template]()
