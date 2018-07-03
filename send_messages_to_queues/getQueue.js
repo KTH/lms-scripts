@@ -129,6 +129,64 @@ async function getServiceBusQueue () {
   }
 }
 
+async function getServiceBusTopic () {
+  const {host} = await inquirer.prompt({
+    message: 'Paste the AZURE_HOST',
+    name: 'host',
+    type: 'string',
+    default: 'lms-queue.servicebus.windows.net'
+  })
+
+  const {sharedAccessKeyName} = await inquirer.prompt({
+    message: 'Paste the AZURE_SHARED_ACCESS_KEY_NAME',
+    name: 'sharedAccessKeyName',
+    type: 'string',
+    default: 'RootManageSharedAccessKey'
+  })
+
+  const {sharedAccessKey} = await inquirer.prompt({
+    message: 'Paste the AZURE_SHARED_ACCESS_KEY',
+    name: 'sharedAccessKey',
+    type: 'string'
+  })
+
+  const {topicName} = await inquirer.prompt({
+    message: 'Paste the name of the topic',
+    name: 'topicName',
+    type: 'string'
+  })
+
+  const connectionString = [
+    `Endpoint=sb://${host}`,
+    `SharedAccessKeyName=${sharedAccessKeyName}`,
+    `SharedAccessKey=${sharedAccessKey}`
+  ].join(';')
+
+  let serviceBusService
+
+  try {
+    serviceBusService = azureSb.createServiceBusService(connectionString)
+  } catch (err) {
+    if (err.name === 'NoMatchError') {
+      console.error('Cannot connect to Azure ServiceBus. Some arguments are missing.')
+      process.exit(1)
+    }
+    console.log(err)
+  }
+
+  return {
+    send (message) {
+      return new Promise((accept, reject) => {
+        serviceBusService.sendTopicMessage(topicName, {body: JSON.stringify(message)}, error => {
+          error ? reject(error) : accept()
+        })
+      })
+    }
+  }
+}
+
+
+
 module.exports = async function getQueue () {
   const {queueType} = await inquirer.prompt({
     message: 'What type of queue do you want to work?',
@@ -136,12 +194,14 @@ module.exports = async function getQueue () {
     type: 'list',
     choices: [
       {value: 'storage', name: 'Queue in local (Azure Storage Queue Emulator)'},
-      {value: 'serviceBus', name: 'Queue in the cloud (Azure Service Bus Queue)'}
+      {value: 'serviceBusQueue', name: 'Queue in the cloud (Azure Service Bus Queue)'},
+      {value: 'serviceBusTopic', name: 'Topic in the cloud (Azure Service Bus Topic)'}
     ]
   })
 
   return await {
     storage: getStorageQueue,
-    serviceBus: getServiceBusQueue
+    serviceBusQueue: getServiceBusQueue,
+    serviceBusTopic: getServiceBusTopic
   }[queueType]()
 }
