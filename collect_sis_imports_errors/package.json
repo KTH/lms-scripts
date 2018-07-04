@@ -1,17 +1,17 @@
 {
-  "name": "collect_sis_imports_errors",
+  "name": "@kth/collect_sis_imports_errors",
   "version": "1.0.0",
-  "description": "",
+  "description": "Skript i denna katalog sammanställer loggar från sis imports i Canvas, så att man kan se om våra synkningar fungerar som väntat.",
   "main": "index.js",
   "scripts": {
     "start": "node index.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "author": "",
+  "author": "team-e-larande",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/KTH/lms-scripts.git"
+    "url": "git+https://github.com/KTH/lms-scripts.git"
   },
   "dependencies": {
     "dotenv": "^6.0.0",
@@ -20,5 +20,14 @@
     "ldapjs": "^1.0.2",
     "moment": "^2.22.1",
     "request-promise": "^4.2.2"
-  }
+  },
+  "bugs": {
+    "url": "https://github.com/KTH/lms-scripts/issues"
+  },
+  "homepage": "https://github.com/KTH/lms-scripts#readme",
+  "devDependencies": {},
+  "keywords": [
+    "kth",
+    "scripts"
+  ]
 }
