@@ -44,7 +44,7 @@ async function isUserStipendiatOrOther (userId, ldapClient) {
   }) !== undefined || userInfo[0].ugPrimaryAffiliation === 'other'
 }
 
-async function getFilteredErrors (apiUrl, apiKey, from) {
+async function getFilteredErrors (apiUrl, apiKey, from, ugUrl, ugUsername, ugPwd) {
   const canvasApi = new CanvasApi(apiUrl, apiKey)
 
   const allSisImports = await canvasApi.get(`/accounts/1/sis_imports?created_since=${from}&per_page=100`)
@@ -56,10 +56,10 @@ async function getFilteredErrors (apiUrl, apiKey, from) {
     .reduce((a, b) => a.concat(b), [])
 
   const ldapClient = ldap.createClient({
-    url: process.env.ugUrl
+    url: ugUrl
   })
   const ldapClientBindAsync = util.promisify(ldapClient.bind).bind(ldapClient)
-  await ldapClientBindAsync(process.env.ugUsername, process.env.ugPwd)
+  await ldapClientBindAsync(ugUsername, ugPwd)
   let logString = ''
   logString += 'Searching for warnings and errors:\n'
   logString += 'sis_import_id,file,message,row\n'

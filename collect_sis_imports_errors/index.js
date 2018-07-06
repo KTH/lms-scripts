@@ -39,7 +39,12 @@ async function listErrors () {
     const from = moment().subtract(numOfDays, 'days').utc().toDate().toISOString()
 
     const spinner = ora('Fetching logs').start()
-    const result = await sisUtils.getFilteredErrors(apiUrl, apiKey, from)
+    const result = await sisUtils.getFilteredErrors(apiUrl,
+      apiKey,
+      from,
+      process.env.ugUrl,
+      process.env.ugUsername,
+      process.env.ugPwd)
     spinner.stop()
     console.log(result)
   } catch (e) {

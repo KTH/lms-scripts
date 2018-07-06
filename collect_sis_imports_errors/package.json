@@ -1,6 +1,6 @@
 {
   "name": "@kth/collect_sis_imports_errors",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "Skript i denna katalog sammanställer loggar från sis imports i Canvas, så att man kan se om våra synkningar fungerar som väntat.",
   "main": "index.js",
   "scripts": {
