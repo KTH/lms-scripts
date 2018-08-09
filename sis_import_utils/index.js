@@ -74,7 +74,7 @@ async function getFilteredErrors (apiUrl, apiKey, from, ugUrl, ugUsername, ugPwd
       .filter(warning => !/There were [\d,]+ more warnings/.test(warning))
       .filter(warning => warning !== '')
 
-      // First post is always a header and can be ignored
+    // Note: First post is always a header and can be ignored
     filteredWarn.shift()
     if (filteredWarn.length > 0) {
       for (let item of filteredWarn) {
@@ -97,5 +97,5 @@ async function getFilteredErrors (apiUrl, apiKey, from, ugUrl, ugUsername, ugPwd
 }
 
 module.exports = {
-  getFilteredErrors
+  getFilteredErrors: getFilteredErrors
 }

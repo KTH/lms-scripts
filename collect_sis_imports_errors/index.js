@@ -6,7 +6,7 @@ require('dotenv').config()
 process.env['NODE_ENV'] = 'production'
 const inquirer = require('inquirer')
 const moment = require('moment')
-const sisUtils = require('./sis_utils')
+const sisUtils = require('@kth/sis_import_utils')
 const ora = require('ora')
 
 async function listErrors () {
@@ -38,7 +38,7 @@ async function listErrors () {
 
     const from = moment().subtract(numOfDays, 'days').utc().toDate().toISOString()
 
-    const spinner = ora('Fetching logs').start()
+    const spinner = ora('Fetching logs: ').start()
     const result = await sisUtils.getFilteredErrors(apiUrl,
       apiKey,
       from,
