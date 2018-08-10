@@ -1,0 +1,29 @@
+{
+  "name": "@kth/sis_import_utils",
+  "version": "1.0.0",
+  "description": "Utility functions for working with sis imports in the Canvas LMS.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/KTH/lms-scripts.git"
+  },
+  "keywords": [
+    "sis",
+    "canvas"
+  ],
+  "author": "team-e-larande",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/KTH/lms-scripts/issues"
+  },
+  "homepage": "https://github.com/KTH/lms-scripts#readme",
+  "dependencies": {
+    "kth-canvas-api": "^0.15.5",
+    "ldapjs": "^1.0.2",
+    "request-promise": "^4.2.2"
+  },
+  "devDependencies": {}
+}

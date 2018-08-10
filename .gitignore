@@ -61,3 +61,6 @@ csv/
 
 # funky macos file
 .DS_Store
+
+# VS Code files
+.vscode
