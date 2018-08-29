@@ -6,7 +6,7 @@ require('dotenv').config()
 process.env['NODE_ENV'] = 'production'
 const inquirer = require('inquirer')
 const moment = require('moment')
-const sisUtils = require('../sis_import_utils')
+const sisUtils = require('@kth/sis_import_utils')
 const ora = require('ora')
 
 async function listErrors () {
