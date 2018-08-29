@@ -9,19 +9,19 @@ const inquirer = require('inquirer')
 
 async function listUseragents () {
   try {
-    const {apiUrl} = await inquirer.prompt(
+    const { apiUrl } = await inquirer.prompt(
       {
         message: 'Vilken miljö?',
         name: 'apiUrl',
         choices: [
-          {name: 'prod', value: 'https://kth.instructure.com/api/v1'},
-          {name: 'test', value: 'https://kth.test.instructure.com/api/v1'},
-          {name: 'beta', value: 'https://kth.beta.instructure.com/api/v1'}
+          { name: 'prod', value: 'https://kth.instructure.com/api/v1' },
+          { name: 'test', value: 'https://kth.test.instructure.com/api/v1' },
+          { name: 'beta', value: 'https://kth.beta.instructure.com/api/v1' }
         ],
         type: 'list'
       })
 
-    const {apiKey} = await inquirer.prompt({
+    const { apiKey } = await inquirer.prompt({
       message: 'Klistra in api nyckel till Canvas här',
       name: 'apiKey',
       type: 'string',
