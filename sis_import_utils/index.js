@@ -44,10 +44,10 @@ async function isUserStipendiatOrOther (userId, ldapClient) {
   }) !== undefined || userInfo[0].ugPrimaryAffiliation === 'other'
 }
 
-async function getFilteredErrors (apiUrl, apiKey, from, ugUrl, ugUsername, ugPwd) {
+async function getFilteredErrors (apiUrl, apiKey, from, ugUrl, ugUsername, ugPwd, callback) {
   const canvasApi = new CanvasApi(apiUrl, apiKey)
 
-  const allSisImports = await canvasApi.get(`/accounts/1/sis_imports?created_since=${from}&per_page=100`)
+  const allSisImports = await canvasApi.get(`/accounts/1/sis_imports?created_since=${from}&per_page=100`, callback)
 
   const flattenedSisImports = allSisImports
     .reduce((a, b) => a.concat(b.sis_imports), []) // Flatten every page
