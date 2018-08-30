@@ -4,7 +4,7 @@ process.env['NODE_ENV'] = 'production'
 require('colors')
 const {deleteFile, writeLine, createCsvFolder} = require('./csvFile')
 
-const sectionFileName = 'csv/unenroll-observers.csv'
+const sectionFileName = 'csv/unenroll-antagna.csv'
 
 createCsvFolder()
 deleteFile(sectionFileName)
