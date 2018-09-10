@@ -22,7 +22,7 @@
         })
       })
       logger.debug(`got rg courseId result: ${result}`)
-      // Note: Gotta make sure we hit the right column
+      // Note: Gotta make sure we hit the correct column
       const resultsArray = result.split('\n')
       for (let row of resultsArray) {
         const rowArray = row.split('\t')
@@ -41,7 +41,7 @@
     try {
       const result = await new Promise((resolve, reject) => {
         exec(`rg ${groupId} ${baseUrl}/group_dim -z`, {
-          maxBuffer: 200 * 1024
+          maxBuffer: 20000 * 1024
         }, (error, stdout, stderr) => {
           if (error) {
             logger.error(`groupDataIdToName exec error: ${error}`)
@@ -329,17 +329,16 @@
       for (let row of resultsArray) {
         const rowArray = row.split('\t')
         // ToDo: Remove popping, it is silly...
-        rowArray.pop()
         const groupId = rowArray.pop()
         const courseId = rowArray.pop()
         logger.debug(`found groupId: ${groupId} and courseId: ${courseId}`)
-        if (courseId && courseId !== 'false') {
+        if (courseId && courseId !== 'false' && courseId !== '\\N') {
           const courseName = await courseDataIdToName(courseId)
           if (!courseMap.get(courseName)) {
             courseMap.set(courseName, 0)
           }
           courseMap.set(courseName, courseMap.get(courseName) + 1)
-        } else if (groupId && groupId !== 'false') {
+        } else if (groupId && groupId !== 'false' && groupId !== '\\N') {
           const courseName = await groupDataIdToName(groupId)
           if (!courseMap.get(courseName)) {
             courseMap.set(courseName, 0)
@@ -527,7 +526,7 @@
   for (let folder of foldersOfInterest) {
     try {
       const result = await new Promise((resolve, reject) => {
-        exec(`rg play.kth.se ${baseUrl}/${folder} -z`, {
+        exec(`rg "insert string here" ${baseUrl}/${folder} -z`, {
           maxBuffer: 20000 * 1024
         }, (error, stdout, stderr) => {
           if (error) {
@@ -544,6 +543,7 @@
       const resultsArray = result.split('\n')
       await findCourses[folder](resultsArray, courseMap)
     } catch (err) {
+      // Note: Very likely the result of "no hits"
       logger.error(`rg promise error: ${err}`)
     }
   }
