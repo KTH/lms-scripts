@@ -23,6 +23,7 @@
   "dependencies": {
     "kth-canvas-api": "^0.15.5",
     "ldapjs": "^1.0.2",
+    "papaparse": "^4.6.1",
     "request-promise": "^4.2.2"
   },
   "devDependencies": {}
