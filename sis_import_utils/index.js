@@ -39,7 +39,7 @@ async function getUserInfo (userId, ldapClient) {
 
 async function isUserStipendiatOrOther (userId, ldapClient) {
   const userInfo = await getUserInfo(userId, ldapClient)
-  return userInfo[0].memberOf.find((item) => {
+  return userInfo[0] && userInfo[0].memberOf && userInfo[0].memberOf.find((item) => {
     return item.includes('CN=pa.stipendiater')
   }) !== undefined || userInfo[0].ugPrimaryAffiliation === 'other'
 }
