@@ -41,7 +41,7 @@ async function getUserInfo (userId, ldapClient) {
 /** Converts a warning "string" into a object with data */
 async function parseWarning (message = '', data = {}, options = {}) {
   const log = options.log || console
-  let is_known_warning = false
+  let isKnownWarning = false
 
   // Get UserID, sectionID, courseID from "message"
   const sectionId = (message.match(/Section ID: (\w+)/) || [])[1]
@@ -49,8 +49,7 @@ async function parseWarning (message = '', data = {}, options = {}) {
   const courseId = (message.match(/User ID: (\w+)/) || [])[1]
 
   isKnownWarning =
-    !message
-    message.includes('Neither course nor section existed') ||
+    !message ||
     message.includes('Neither course nor section existed') ||
     !/There were [\d,]+ more warnings/.test(message)
 
@@ -83,7 +82,6 @@ async function parseWarning (message = '', data = {}, options = {}) {
     if (ugPA === 'other') {
       isKnownWarning = true
     }
-
   }
 
   return {
