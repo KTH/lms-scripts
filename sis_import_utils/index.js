@@ -50,8 +50,9 @@ async function parseWarning (message = '', data = {}, options = {}) {
 
   isKnownWarning =
     !message ||
+    message.includes('An enrollment referenced a non-existent section') ||
     message.includes('Neither course nor section existed') ||
-    !/There were [\d,]+ more warnings/.test(message)
+    /There were [\d,]+ more warnings/.test(message)
 
   if (!isKnownWarning && message.includes('User not found')) {
     const ugUrl = data.ugUrl || process.env.UG_URL
@@ -116,12 +117,16 @@ async function traverseErrors (from, data, callback, options = {}) {
 
         for (const w of warnings) {
           const pw = await parseWarning(w.message, data, options)
-          parsed.push(pw)
+          parsed.push({
+            warning: pw,
+            row: w.row,
+            id: w.id
+          })
         }
 
         // Filter some of them
         const kth_warnings = parsed
-          .filter(pw => !pw.is_known_warning)
+          .filter(pw => pw.warning && !pw.warning.is_known_warning)
 
         if (parsed.length > 0) {
           callback(Object.assign(sisImport, {
