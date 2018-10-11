@@ -38,99 +38,101 @@ async function getUserInfo (userId, ldapClient) {
   return searchResult
 }
 
-async function isUserStipendiatOrOther (userId, ldapClient) {
-  const userInfo = await getUserInfo(userId, ldapClient)
-  return userInfo[0] && userInfo[0].memberOf && userInfo[0].memberOf.find((item) => {
-    return item.includes('CN=pa.stipendiater')
-  }) !== undefined || userInfo[0].ugPrimaryAffiliation === 'other'
-}
+/** Converts a warning "string" into a object with data */
+async function parseWarning (message = '', data = {}, options = {}) {
+  const log = options.log || console
+  let is_known_warning = false
 
-async function parseWarnings (warnings, ldapClient) {
-  const filtered = warnings
-    .filter(w => w.message !== '')
-    .filter(w => !/There were [\d,]+ more warnings/.test(w.message))
-    .filter(w => !w.message.includes('Neither course nor section existed'))
-    .filter(w => !w.message.includes('An enrollment referenced a non-existent section'))
+  // Get UserID, sectionID, courseID from "message"
+  const sectionId = (message.match(/Section ID: (\w+)/) || [])[1]
+  const userId = (message.match(/User ID: (\w+)/) || [])[1]
+  const courseId = (message.match(/User ID: (\w+)/) || [])[1]
 
-  const result = []
+  isKnownWarning =
+    !message
+    message.includes('Neither course nor section existed') ||
+    message.includes('Neither course nor section existed') ||
+    !/There were [\d,]+ more warnings/.test(message)
 
-  for (const w of filtered) {
-    if (w.message.includes('User not found')) {
-      const userId = w.message.substring(w.message.length - 8)
-      try {
-        const userInfo = await getUserInfo(userId, ldapClient)
-        const mOf = userInfo && userInfo[0] && userInfo[0].memberOf && userInfo[0].memberOf
-        const ugPA = userInfo && userInfo[0] && userInfo[0].ugPrimaryAffiliation
+  if (!isKnownWarning && message.includes('User not found')) {
+    const ugUrl = data.ugUrl || process.env.UG_URL
+    const ugUsername = data.ugUsername || process.env.UG_USERNAME
+    const ugPassword = data.ugPassword || process.env.UG_PASSWORD
 
-        result.push({
-          message: w.message,
-          row: w.row,
-          is_stependiater: mOf && mOf.find && mOf.find(i => i.includes('CN=pa.stipendiater')),
-          is_other: ugPA && ugPA === 'other'
-        })
-      } catch (e) {
-        //console.error(`Error trying to search ${userId} in LDAP`, e)
-        result.push({
-          message: w.message,
-          row: w.row,
-          is_stependiater: false,
-          is_other: false
-        })
-      }
-    } else {
-      result.push({
-        message: w.message,
-        row: w.row,
-        is_stependiater: false,
-        is_other: false
-      })
+    const ldapClient = ldap.createClient({ url: ugUrl })
+    const ldapBind = util.promisify(ldapClient.bind).bind(ldapClient)
+    const ldapUnbind = util.promisify(ldapClient.unbind).bind(ldapClient)
+    let userInfo
+    try {
+      await ldapBind(ugUsername, ugPassword)
+      userInfo = await getUserInfo(userId, ldapClient)
+
+    } catch (err) {
+      log.error(err, 'Error in LDAP')
+    } finally {
+      await ldapUnbind()
     }
+
+    const mOf = userInfo && userInfo[0] && userInfo[0].memberOf && userInfo[0].memberOf
+    const ugPA = userInfo && userInfo[0] && userInfo[0].ugPrimaryAffiliation
+
+    if (mOf && mOf.find && mOf.find(i => i.includes('CN=pa.stipendiater'))) {
+      isKnownWarning = true
+    }
+
+    if (ugPA === 'other') {
+      isKnownWarning = true
+    }
+
   }
-  // "Syncrhnous filter"
-  return result
+
+  return {
+    message,
+    is_known_warning: isKnownWarning,
+    user_id: userId,
+    course_id: courseId,
+    section_id: sectionId
+  }
 }
 
 async function traverseErrors (from, data, callback, options = {}) {
   const log = options.log || console
   const canvasApiUrl = data.canvasApiUrl || process.env.CANVAS_API_URL
   const canvasApiToken = data.canvasApiToken || process.env.CANVAS_API_TOKEN
-  const ugUrl = data.ugUrl || process.env.UG_URL
-  const ugUsername = data.ugUsername || process.env.UG_USERNAME
-  const ugPassword = data.ugPassword || process.env.UG_PASSWORD
 
   const canvasApi = new CanvasApi(canvasApiUrl, canvasApiToken)
   canvasApi.logger = log
 
-  const ldapClient = ldap.createClient({ url: ugUrl })
-  const ldapClientBind = util.promisify(ldapClient.bind).bind(ldapClient)
-  await ldapClientBind(ugUsername, ugPassword)
-
   await canvasApi.get(`/accounts/1/sis_imports?created_since=${from}&per_page=100`, async page => {
-    const errors = [] 
-
     for (const sisImport of page.sis_imports) {
       if (sisImport.errors_attachment && sisImport.errors_attachment.url) {
-        const warnings = await request({
-          uri: sisImport.errors_attachment.url,
-          headers: {'Connection': 'keep-alive'}
-        })
+        const warnings = await (
+          request({
+            uri: sisImport.errors_attachment.url,
+            headers: {'Connection': 'keep-alive'}
+          })
+          .then(result => papaparse.parse(result, {header: true}).data)
+          .then(result => result.filter(w => w.message))
+        )
+        const parsed = []
 
-        const warnings2 = (papaparse.parse(warnings, {header: true}).data)
-          .filter(w => w.message)
+        for (const w of warnings) {
+          const pw = await parseWarning(w.message, data, options)
+          parsed.push(pw)
+        }
 
-        const parsed = await parseWarnings(warnings2, ldapClient)
+        // Filter some of them
+        const kth_warnings = parsed
+          .filter(pw => !pw.is_known_warning)
 
         if (parsed.length > 0) {
           callback(Object.assign(sisImport, {
-            kth_warnings: parsed
+            kth_warnings
           }))
         }
       }
     }
   })
-
-  const ldapUnbind = util.promisify(ldapClient.unbind).bind(ldapClient)
-  await ldapUnbind()
 }
 
 async function getFilteredErrors (apiUrl, apiKey, from, ugUrl, ugUsername, ugPwd, callback, options = {}) {
@@ -155,7 +157,7 @@ async function getFilteredErrors (apiUrl, apiKey, from, ugUrl, ugUsername, ugPwd
 
     for (const error of errors.kth_warnings) {
       result.push(
-        [errors.id, error.message, error.row].join(',')
+        [errors.id, error.warning.message, error.row].join(',')
       )
     }
   }, options)
