@@ -159,8 +159,7 @@ async function getFilteredErrors (apiUrl, apiKey, from, ugUrl, ugUsername, ugPwd
 
   await traverseErrors(from, data, async (canvasErrors) => {
     if (callback) {
-      let errorsObject = {sis_imports: [canvasErrors]}
-      await callback(errorsObject)
+      await callback({sis_imports: [canvasErrors]}) // eslint-disable-line
     }
 
     for (const error of canvasErrors.kthWarnings) {
