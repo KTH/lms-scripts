@@ -2,6 +2,7 @@ const CanvasApi = require('kth-canvas-api')
 const ldap = require('ldapjs')
 const util = require('util')
 const request = require('request-promise')
+const papaparse = require('papaparse')
 
 async function getUserInfo (userId, ldapClient) {
   const searchResult = await new Promise((resolve, reject) => {
@@ -37,65 +38,141 @@ async function getUserInfo (userId, ldapClient) {
   return searchResult
 }
 
-async function isUserStipendiatOrOther (userId, ldapClient) {
-  const userInfo = await getUserInfo(userId, ldapClient)
-  return userInfo[0] && userInfo[0].memberOf && userInfo[0].memberOf.find((item) => {
-    return item.includes('CN=pa.stipendiater')
-  }) !== undefined || userInfo[0].ugPrimaryAffiliation === 'other'
+/** Converts a warning "string" into a object with data */
+async function parseWarning (message = '', data = {}, options = {}) {
+  const log = options.log || console
+  let isKnownWarning = false
+
+  // Get UserID, sectionID, courseID from "message"
+  const sectionId = (message.match(/Section ID: (\w+)/) || [])[1]
+  const userId = (message.match(/User ID: (\w+)/) || [])[1]
+  const courseId = (message.match(/User ID: (\w+)/) || [])[1]
+
+  isKnownWarning =
+    !message ||
+    message.includes('An enrollment referenced a non-existent section') ||
+    message.includes('Neither course nor section existed') ||
+    /There were [\d,]+ more warnings/.test(message)
+
+  if (!isKnownWarning && message.includes('User not found')) {
+    const ugUrl = data.ugUrl || process.env.UG_URL
+    const ugUsername = data.ugUsername || process.env.UG_USERNAME
+    const ugPassword = data.ugPassword || process.env.UG_PASSWORD
+
+    const ldapClient = ldap.createClient({ url: ugUrl })
+    const ldapBind = util.promisify(ldapClient.bind).bind(ldapClient)
+    const ldapUnbind = util.promisify(ldapClient.unbind).bind(ldapClient)
+    let userInfo
+    try {
+      await ldapBind(ugUsername, ugPassword)
+      userInfo = await getUserInfo(userId, ldapClient)
+    } catch (err) {
+      log.error(err, 'Error in LDAP')
+    } finally {
+      await ldapUnbind()
+    }
+
+    const mOf = userInfo && userInfo[0] && userInfo[0].memberOf && userInfo[0].memberOf
+    const ugPA = userInfo && userInfo[0] && userInfo[0].ugPrimaryAffiliation
+
+    if (mOf && mOf.find && mOf.find(i => i.includes('CN=pa.stipendiater'))) {
+      isKnownWarning = true
+    }
+
+    if (ugPA === 'other') {
+      isKnownWarning = true
+    }
+  }
+
+  return {
+    message,
+    is_known_warning: isKnownWarning,
+    user_id: userId,
+    course_id: courseId,
+    section_id: sectionId
+  }
 }
 
-async function getFilteredErrors (apiUrl, apiKey, from, ugUrl, ugUsername, ugPwd, callback) {
-  const canvasApi = new CanvasApi(apiUrl, apiKey)
+async function traverseErrors (from, data, callback, options = {}) {
+  const log = options.log || console
+  const canvasApiUrl = data.canvasApiUrl || process.env.CANVAS_API_URL
+  const canvasApiToken = data.canvasApiToken || process.env.CANVAS_API_TOKEN
 
-  const allSisImports = await canvasApi.get(`/accounts/1/sis_imports?created_since=${from}&per_page=100`, callback)
+  const canvasApi = new CanvasApi(canvasApiUrl, canvasApiToken)
+  canvasApi.logger = log
 
-  const flattenedSisImports = allSisImports
-    .reduce((a, b) => a.concat(b.sis_imports), []) // Flatten every page
+  await canvasApi.get(`/accounts/1/sis_imports?created_since=${from}&per_page=100`, async page => {
+    for (const sisImport of page.sis_imports) {
+      if (sisImport.errors_attachment && sisImport.errors_attachment.url) {
+        const warnings = await (
+          request({
+            uri: sisImport.errors_attachment.url,
+            headers: {'Connection': 'keep-alive'}
+          })
+            .then(result => papaparse.parse(result, {header: true}).data)
+            .then(result => result.filter(w => w.message))
+        )
+        const parsed = []
 
-  const reportUrls = flattenedSisImports.map(_sisObj => (_sisObj.errors_attachment && _sisObj.errors_attachment.url) || [])
-    .reduce((a, b) => a.concat(b), [])
+        for (const w of warnings) {
+          const pw = await parseWarning(w.message, data, options)
+          parsed.push({
+            warning: pw,
+            row: w.row,
+            id: w.id
+          })
+        }
 
-  const ldapClient = ldap.createClient({
-    url: ugUrl
-  })
-  const ldapClientBindAsync = util.promisify(ldapClient.bind).bind(ldapClient)
-  await ldapClientBindAsync(ugUsername, ugPwd)
-  let logString = ''
-  logString += 'Searching for warnings and errors:\n'
-  logString += 'sis_import_id,file,message,row\n'
-  for (let url of reportUrls) {
-    const warnings = await request({
-      uri: url,
-      headers: {'Connection': 'keep-alive'}
-    })
-    let filteredWarn = warnings.split('\n')
-      .filter(warning => !warning.includes('Neither course nor section existed'))
-      .filter(warning => !warning.includes('An enrollment referenced a non-existent section'))
-      .filter(warning => !/There were [\d,]+ more warnings/.test(warning))
-      .filter(warning => warning !== '')
+        // Filter some of them
+        const kthWarnings = parsed
+          .filter(pw => pw.warning && !pw.warning.is_known_warning)
 
-    // Note: First post is always a header and can be ignored
-    filteredWarn.shift()
-    if (filteredWarn.length > 0) {
-      for (let item of filteredWarn) {
-        if (item.includes('User not found')) {
-          const message = item.split(',')[2]
-          const userId = message.substring(message.length - 8)
-          const stipendiatOrOther = await isUserStipendiatOrOther(userId, ldapClient)
-          if (!stipendiatOrOther) {
-            logString += `${item}\n`
-          }
-        } else {
-          logString += `${item}\n`
+        if (parsed.length > 0) {
+          callback(Object.assign(sisImport, {
+            kthWarnings
+          }))
         }
       }
     }
+  })
+}
+
+/**
+* @deprecated since version 1.2.0
+*/
+async function getFilteredErrors (apiUrl, apiKey, from, ugUrl, ugUsername, ugPwd, callback, options = {}) {
+  const log = options.log || console
+  log.warn('The function "getFilteredErrors" is deprecated. Please use "traverseErrors" instead')
+
+  const result = []
+  const data = {
+    canvasApiUrl: apiUrl,
+    canvasApiToken: apiKey,
+    ugUrl: ugUrl,
+    ugUsername: ugUsername,
+    ugPassword: ugPwd
   }
-  const ldapClientUnbindAsync = util.promisify(ldapClient.unbind).bind(ldapClient)
-  await ldapClientUnbindAsync()
-  return logString
+
+  result.push(
+    ['sis_import_id', 'message', 'row'].join(',')
+  )
+
+  await traverseErrors(from, data, async (canvasErrors) => {
+    if (callback) {
+      await callback({sis_imports: [canvasErrors]}) // eslint-disable-line
+    }
+
+    for (const error of canvasErrors.kthWarnings) {
+      result.push(
+        [canvasErrors.id, error.warning.message, error.row].join(',')
+      )
+    }
+  }, options)
+
+  return result.join('\n')
 }
 
 module.exports = {
-  getFilteredErrors: getFilteredErrors
+  getFilteredErrors,
+  traverseErrors
 }
