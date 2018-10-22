@@ -66,7 +66,6 @@ async function parseWarning (message = '', data = {}, options = {}) {
     try {
       await ldapBind(ugUsername, ugPassword)
       userInfo = await getUserInfo(userId, ldapClient)
-
     } catch (err) {
       log.error(err, 'Error in LDAP')
     } finally {
@@ -110,8 +109,8 @@ async function traverseErrors (from, data, callback, options = {}) {
             uri: sisImport.errors_attachment.url,
             headers: {'Connection': 'keep-alive'}
           })
-          .then(result => papaparse.parse(result, {header: true}).data)
-          .then(result => result.filter(w => w.message))
+            .then(result => papaparse.parse(result, {header: true}).data)
+            .then(result => result.filter(w => w.message))
         )
         const parsed = []
 
@@ -125,12 +124,12 @@ async function traverseErrors (from, data, callback, options = {}) {
         }
 
         // Filter some of them
-        const kth_warnings = parsed
+        const kthWarnings = parsed
           .filter(pw => pw.warning && !pw.warning.is_known_warning)
 
         if (parsed.length > 0) {
           callback(Object.assign(sisImport, {
-            kth_warnings
+            kthWarnings
           }))
         }
       }
@@ -138,6 +137,9 @@ async function traverseErrors (from, data, callback, options = {}) {
   })
 }
 
+/**
+* @deprecated since version 1.2.0
+*/
 async function getFilteredErrors (apiUrl, apiKey, from, ugUrl, ugUsername, ugPwd, callback, options = {}) {
   const log = options.log || console
   log.warn('The function "getFilteredErrors" is deprecated. Please use "traverseErrors" instead')
@@ -155,12 +157,15 @@ async function getFilteredErrors (apiUrl, apiKey, from, ugUrl, ugUsername, ugPwd
     ['sis_import_id', 'message', 'row'].join(',')
   )
 
-  await traverseErrors(from, data, async (errors) => {
-    await callback({sis_imports: [errors]})
+  await traverseErrors(from, data, async (canvasErrors) => {
+    if (callback) {
+      let errorsObject = {sis_imports: [canvasErrors]}
+      await callback(errorsObject)
+    }
 
-    for (const error of errors.kth_warnings) {
+    for (const error of canvasErrors.kthWarnings) {
       result.push(
-        [errors.id, error.warning.message, error.row].join(',')
+        [canvasErrors.id, error.warning.message, error.row].join(',')
       )
     }
   }, options)
@@ -169,6 +174,6 @@ async function getFilteredErrors (apiUrl, apiKey, from, ugUrl, ugUsername, ugPwd
 }
 
 module.exports = {
-  getFilteredErrors: getFilteredErrors,
+  getFilteredErrors,
   traverseErrors
 }
