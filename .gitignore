@@ -63,4 +63,4 @@ csv/
 .DS_Store
 
 # VS Code files
-.vscode
+.vscode/
