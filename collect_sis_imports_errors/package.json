@@ -17,7 +17,11 @@
     "@kth/sis_import_utils": "^1.2.1",
     "dotenv": "^6.1.0",
     "inquirer": "^5.2.0",
+<<<<<<< HEAD
     "kth-canvas-api": "^0.15.6",
+=======
+    "kth-canvas-api": "^0.15.7",
+>>>>>>> master
     "ldapjs": "^1.0.2",
     "moment": "^2.22.2",
     "ora": "^2.1.0",
