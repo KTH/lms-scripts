@@ -3,6 +3,7 @@ const inquirer = require('inquirer')
 const CanvasApi = require('kth-canvas-api')
 const fs = require('fs')
 const readline = require('readline')
+const stripIndent = require('common-tags/lib/stripIndent')
 
 async function getOptions () {
   const canvasApiUrl = process.env.CANVAS_API_URL || (await inquirer.prompt({
@@ -22,8 +23,31 @@ async function getOptions () {
     type: 'string'
   })).answer
 
+  const { createEnv } = await inquirer.prompt({
+    message: stripIndent(`
+      We can create an .env file like this:
+
+      CANVAS_API_URL=${canvasApiUrl}
+      CANVAS_API_KEY=${canvasApiKey}
+
+      Do you want to do it?
+    `),
+    name: 'createEnv',
+    type: 'confirm',
+    default: false
+  })
+
+  if (createEnv) {
+    fs.writeFileSync('.env', stripIndent(`
+      CANVAS_API_URL=${canvasApiUrl}
+      CANVAS_API_KEY=${canvasApiKey}
+    `))
+    console.log('.env file created!')
+  }
+
+
   const { fileName } = await inquirer.prompt({
-    message: 'Write the filename',
+    message: 'Write the csv filename that you want to import',
     name: 'fileName',
     type: 'string'
   })
