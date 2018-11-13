@@ -1,43 +1,61 @@
 require('dotenv').config()
-if (!(process.env.CANVAS_API_URL && process.env.CANVAS_API_KEY && process.env.USERS_CSV_FILE)) {
-  console.log(
-    'This app requires an environment file with the following entries:\n' +
-    'CANVAS_API_URL & CANVAS_API_KEY & USERS_CSV_FILE'
-  )
-}
-
+const inquirer = require('inquirer')
 const CanvasApi = require('kth-canvas-api')
-const canvasApi = new CanvasApi(process.env.CANVAS_API_URL, process.env.CANVAS_API_KEY)
-
 const fs = require('fs')
 const readline = require('readline')
-const rl = readline.createInterface({
-  input: fs.createReadStream(process.env.USERS_CSV_FILE),
-  crlfDelay: Infinity
-})
 
-async function createUser (canvasUser) {
-  try {
-    await canvasApi.createUser(canvasUser)
-  } catch (e) {
-    // Only alert the user about errors that are not related to trying to create an already existing user
-    if (!e.message.includes('"type":"taken"')) {
-      console.log(`Failed to create the user: ${canvasUser}, due to: ${e}`)
-    }
-  } finally {
-    rl.resume()
-  }
+async function getOptions () {
+  const canvasApiUrl = process.env.CANVAS_API_URL || (await inquirer.prompt({
+    message: 'Vilken miljö?',
+    name: 'answer',
+    choices: [
+      { name: 'prod', value: 'https://kth.instructure.com/api/v1' },
+      { name: 'test', value: 'https://kth.test.instructure.com/api/v1' },
+      { name: 'beta', value: 'https://kth.beta.instructure.com/api/v1' }
+    ],
+    type: 'list'
+  })).answer
+
+  const canvasApiKey = process.env.CANVAS_API_KEY || (await inquirer.prompt({
+    message: 'Klistra in api nyckel till Canvas här',
+    name: 'answer',
+    type: 'string'
+  })).answer
+
+  const { fileName } = await inquirer.prompt({
+    message: 'Write the filename',
+    name: 'fileName',
+    type: 'string'
+  })
+
+  return { canvasApiUrl, canvasApiKey, fileName }
 }
 
-let lineCounter = 0
-let headers = []
-rl.on('line', (line) => {
-  const elements = line.split(',')
-  if (!lineCounter) {
-    headers = elements
-  } else {
-    rl.pause()
-    const userData = {}
+async function start () {
+  const options = await getOptions()
+  const canvasApi = new CanvasApi(options.canvasApiUrl, options.canvasApiKey)
+  canvasApi.logger = {
+    log: () => {},
+    info: () => {},
+    warn: () => {},
+    error: () => {}
+  }
+  const rl = readline.createInterface({
+    input: fs.createReadStream(options.fileName),
+    crlfDelay: Infinity
+  })
+
+  let lineCounter = 0
+  let headers = []
+  rl.on('line', async (line) => {
+    const elements = line.split(',')
+    if (!lineCounter) {
+      headers = elements
+      lineCounter++
+      return
+    }
+
+    let userData = {}
     for (let i = 0; i < headers.length; ++i) {
       userData[headers[i]] = elements[i]
     }
@@ -59,11 +77,25 @@ rl.on('line', (line) => {
       },
       enable_sis_reactivation: false
     }
-    createUser(canvasUser)
-  }
-  lineCounter++
-})
 
-rl.on('close', () => {
-  console.log(`Handled ${lineCounter - 1} row(s) of users!`)
-})
+    rl.pause()
+    try {
+      await canvasApi.createUser(canvasUser)
+      console.log(`Canvas user ${userData.user_id} processed successfully`)
+    } catch (e) {
+      if (e.message.includes('"type":"taken"')) {
+        console.log(`Canvas user ${userData.user_id} already exists`)
+      } else {
+        console.error(`Failed to create the user ${userData.user_id} due to an error`, e)
+      }
+    }
+    rl.resume()
+    lineCounter++
+  })
+
+  rl.on('close', () => {
+    console.log(`Handled ${lineCounter - 1} row(s) of users!`)
+  })
+}
+
+start()
