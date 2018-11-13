@@ -2,7 +2,7 @@
   require('dotenv').config()
   if (!(process.env.CANVAS_API_URL && process.env.CANVAS_API_KEY && process.env.USERS_CSV_FILE)) {
     console.log(
-      'This program requires an environment file with the following entries:\n' +
+      'This app requires an environment file with the following entries:\n' +
       'CANVAS_API_URL & CANVAS_API_KEY & USERS_CSV_FILE'
     )
   }
