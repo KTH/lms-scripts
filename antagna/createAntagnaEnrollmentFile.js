@@ -13,9 +13,16 @@ const {VT, HT} = require('kth-canvas-utilities/terms')
 const rp = require('request-promise')
 const util = require('util')
 
-function isValidDate (value) {
-  let date = moment(value)
-  return date.isValid() ? true : 'Felaktig datumsträng, försök igen!'
+function isValidDate (value, oldValue) {
+  let error = 'Felaktig datumsträng, försök igen!'
+  const newDate = moment(value)
+  let validDate = newDate.isValid()
+  if (validDate && oldValue) {
+    error = 'Felaktig datumordning, försök igen!'
+    const oldDate = moment(oldValue)
+    validDate = newDate.isAfter(oldDate)
+  }
+  return validDate ? true : error
 }
 
 async function getUsersForMembers (members, ldapClient) {
@@ -92,7 +99,7 @@ async function searchGroup (filter, ldapClient) {
   })
 }
 
-async function writeAntagnaForCourse ({course, ldapClient, startTerm, startDate, endDate, fileName}) {
+async function writeAntagnaForCourse ({course, ldapClient, startTerm, startDate, endDate, fileName, limited}) {
   const roundId = course.offering_id
   const sisCourseId = `${course.course_code}${course.first_semester}${roundId}` // A11IYAVT181
   const courseInitials = course.course_code.substring(0, 2)
@@ -101,7 +108,9 @@ async function writeAntagnaForCourse ({course, ldapClient, startTerm, startDate,
     ldapClient)
   const enrolled = await getUsersForMembers(members, ldapClient)
   for (let student of enrolled) {
-    await writeLine([sisCourseId, student.ugKthid, 'Admitted not registered', 'active', startDate, endDate], fileName)
+    const line = limited ? [sisCourseId, student.ugKthid, 'Admitted not registered', 'active', startDate, endDate]
+      : [sisCourseId, student.ugKthid, 'Admitted not registered', 'active']
+    await writeLine(line, fileName)
   }
 }
 
@@ -117,6 +126,21 @@ for (var i = -2; i < 4; i++) {
   years.push(`${currentYear + i}`)
 }
 
+const headers = [
+  'section_id',
+  'user_id',
+  'role',
+  'status'
+]
+const headersWithDates = [
+  'section_id',
+  'user_id',
+  'role',
+  'status',
+  'start_date',
+  'end_date'
+]
+
 const terms = [
   {
     name: 'Hösttermin',
@@ -130,6 +154,17 @@ const periods = {
   [HT]: ['0', '1', '2'],
   [VT]: ['3', '4', '5']
 }
+
+const yesOrNo = [
+  {
+    name: 'Ja',
+    value: true
+  },
+  {
+    name: 'Nej',
+    value: false
+  }
+]
 
 module.exports = async function () {
   const {year, term} = await inquirer.prompt([
@@ -148,7 +183,7 @@ module.exports = async function () {
     }
   ])
 
-  const {period, koppsBaseUrl} = await inquirer.prompt([
+  const {period, koppsBaseUrl, limited} = await inquirer.prompt([
     {
       message: 'Välj period',
       name: 'period',
@@ -163,29 +198,45 @@ module.exports = async function () {
         {name: 'prod', value: 'https://www.kth.se/api/kopps/'}
       ],
       type: 'list'
-    }
-  ])
-
-  let {startDate, endDate} = await inquirer.prompt([
-    {
-      message: 'Vilket datum kan studenten interagera med kursen från?',
-      name: 'startDate',
-      type: 'input',
-      default: `${currentMoment}`,
-      validate: isValidDate
     },
     {
-      message: 'Vilket datum kan studenten interagera med kursen till?',
-      name: 'endDate',
-      type: 'input',
-      default: `${futureMoment}`,
-      validate: isValidDate
+      message: 'Ska rollen tidsbegränsas?',
+      name: 'limited',
+      choices: yesOrNo,
+      type: 'list'
     }
   ])
 
-  // Some extra validation
-  startDate = moment(startDate).toISOString()
-  endDate = moment(endDate).toISOString()
+  let startDate = ''
+  let endDate = ''
+  if (limited) {
+    startDate = await inquirer.prompt([
+      {
+        message: 'Vilket datum aktiveras rollen?',
+        name: 'startDate',
+        type: 'input',
+        default: `${currentMoment}`,
+        validate: (value) => {
+          return isValidDate(value)
+        }
+      }
+    ])
+    endDate = await inquirer.prompt([
+      {
+        message: 'Vilket datum deaktiveras rollen?',
+        name: 'endDate',
+        type: 'input',
+        default: `${futureMoment}`,
+        validate: (value) => {
+          return isValidDate(value, startDate)
+        }
+      }
+    ])
+
+    // Some extra validation
+    startDate = moment(startDate).toISOString()
+    endDate = moment(endDate).toISOString()
+  }
 
   const res = await rp({
     url: `${koppsBaseUrl}v2/courses/offerings?from=${year}${term}&skip_coordinator_info=true`,
@@ -205,18 +256,11 @@ module.exports = async function () {
 
   const fileName = `csv/antagna-enrollment-${year}${term}-${period}.csv`
   await deleteFile(fileName)
-  await writeLine([
-    'section_id',
-    'user_id',
-    'role',
-    'status',
-    'start_date',
-    'end_date'
-  ], fileName)
+  await writeLine(limited ? headersWithDates : headers, fileName)
 
   const startTerm = `${year}${term}`
   for (let course of canvasCourses) {
-    await writeAntagnaForCourse({course, ldapClient, startTerm, startDate, endDate, fileName})
+    await writeAntagnaForCourse({course, ldapClient, startTerm, startDate, endDate, fileName, limited})
   }
 
   console.log('😀 Done!')
