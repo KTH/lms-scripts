@@ -15,25 +15,49 @@ async function connectAndHandle () {
         type: 'list'
       })
 
-    const {queue} = await inquirer.prompt(
+    const {serviceBus} = await inquirer.prompt(
       {
-        message: 'Vilken miljö?',
-        name: 'queue',
+        message: 'Vilken Service Bus?',
+        name: 'serviceBus',
         choices: [
-          {name: 'canvas-prod', value: {name: `ug-infoclass-2/Subscriptions/canvas-prod/$DeadLetterQueue`, shortName: 'canvas-prod'}},
-          {name: 'canvas-ref', value: {name: `ug-infoclass-2/Subscriptions/canvas-ref/$DeadLetterQueue`, shortName: 'canvas-ref'}}
+          {name: 'kth-integral', value: {name: 'kth-integral.servicebus.windows.net', shortName: 'kth-integral'}},
+          {name: 'lms-queue', value: {name: 'lms-queue.servicebus.windows.net', shortName: 'lms-queue'}}
         ],
         type: 'list'
       })
+    let subscription
+    if (serviceBus.name === 'kth-integral') {
+      ({subscription} = await inquirer.prompt(
+        {
+          message: 'Vilken Subscription?',
+          name: 'subscription',
+          choices: [
+            {name: 'canvas-prod', value: {name: `ug-infoclass-2/Subscriptions/canvas-prod/$DeadLetterQueue`, shortName: 'canvas-prod', keyName: 'canvas-prod'}},
+            {name: 'canvas-ref', value: {name: `ug-infoclass-2/Subscriptions/canvas-ref/$DeadLetterQueue`, shortName: 'canvas-ref', keyName: 'canvas-ref'}}
+          ],
+          type: 'list'
+        }))
+    } else {
+      ({subscription} = await inquirer.prompt(
+        {
+          message: 'Vilken Subscription?',
+          name: 'subscription',
+          choices: [
+            {name: 'lms-sub-peter', value: {name: `lms-topic-peter/Subscriptions/lms-sub-peter/$DeadLetterQueue`, shortName: 'lms-sub-peter', keyName: 'lms-sub-peter-policy'}}
+          ],
+          type: 'list'
+        }))
+    }
+    console.log(subscription)
 
     const {sharedAccessKey} = await inquirer.prompt({
-      message: `Klistra in en access key till ${queue.shortName} i Azure. Den finns här: https://tinyurl.com/ydfquezj`,
+      message: `Klistra in en access key till ${subscription.shortName} i Azure. Den kan tex finnas här: https://tinyurl.com/ydfquezj`,
       name: 'sharedAccessKey'
     })
 
     const client = await new AMQPClient(Policy.Utils.RenewOnSettle(1, 1, Policy.ServiceBusQueue))
-    await client.connect(`amqps://${queue.shortName}:${urlencode(sharedAccessKey)}@kth-integral.servicebus.windows.net`)
-    const receiver = await client.createReceiver(queue.name)
+    await client.connect(`amqps://${subscription.keyName}:${urlencode(sharedAccessKey)}@${serviceBus.name}`)
+    const receiver = await client.createReceiver(subscription.name)
     console.log('receiver created:', receiver.id)
 
     receiver.on('message', message => {
