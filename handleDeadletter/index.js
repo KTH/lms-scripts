@@ -43,7 +43,8 @@ async function connectAndHandle () {
           message: 'Vilken Subscription?',
           name: 'subscription',
           choices: [
-            {name: 'lms-sub-peter', value: {name: `lms-topic-peter/Subscriptions/lms-sub-peter/$DeadLetterQueue`, shortName: 'lms-sub-peter', keyName: 'lms-sub-peter-policy'}}
+            {name: 'lms-sub-peter', value: {name: `lms-topic-peter/Subscriptions/lms-sub-peter/$DeadLetterQueue`, shortName: 'lms-sub-peter', keyName: 'lms-sub-peter-policy'}},
+            {name: 'lms-sub-integration', value: {name: `lms-topic-integration/Subscriptions/lms-sub-integration/$DeadLetterQueue`, shortName: 'lms-sub-integration', keyName: 'lms-sub-integration-policy'}}
           ],
           type: 'list'
         }))
