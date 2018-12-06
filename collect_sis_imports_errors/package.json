@@ -15,7 +15,7 @@
   },
   "dependencies": {
     "@kth/sis_import_utils": "^1.2.1",
-    "dotenv": "^6.1.0",
+    "dotenv": "^6.2.0",
     "inquirer": "^5.2.0",
     "kth-canvas-api": "^0.15.7",
     "ldapjs": "^1.0.2",
