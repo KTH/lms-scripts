@@ -22,5 +22,6 @@ async function search(){
   })).apiKey
   
     const canvasApi = new CanvasApi(apiUrl, apiKey)
+    canvasApi.get('accounts/1/sis_imports', data => console.log(data))
 }
 search()  
