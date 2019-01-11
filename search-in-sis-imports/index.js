@@ -49,6 +49,7 @@ async function search(){
                     method: 'GET'
                 })
                 if( re.exec( body ) ){
+                    console.log(`Found match in ${JSON.stringify(sis)}`.green)
                     console.log(body.green)
                 }
 
