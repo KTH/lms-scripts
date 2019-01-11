@@ -12,6 +12,7 @@
   "dependencies": {
     "dotenv": "^6.2.0",
     "inquirer": "^6.2.1",
-    "kth-canvas-api": "^0.15.7"
+    "kth-canvas-api": "^0.15.7",
+    "request": "^2.88.0"
   }
 }
