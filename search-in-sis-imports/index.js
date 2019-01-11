@@ -1,7 +1,7 @@
 const inquirer = require('inquirer')
 const CanvasApi = require('kth-canvas-api')
 require('dotenv').config()
-
+require('colors')
 const {promisify} = require('util')
 
 const rp = promisify(require('request'))
@@ -27,6 +27,13 @@ async function search(){
         type: 'string'
     })).apiKey
 
+    const {searchString} = await inquirer.prompt({
+        name: 'searchString',
+        message: 'Vad vill du söka efter? Skriv req exp här',
+        type: 'string'
+    })
+    const re = new RegExp(searchString)
+
     const canvasApi = new CanvasApi(apiUrl, apiKey)
     canvasApi.get('accounts/1/sis_imports', async data =>{
         //console.log(JSON.stringify(data,null,4) ) 
@@ -41,10 +48,11 @@ async function search(){
                     resolveWithFullResponse: true,
                     method: 'GET'
                 })
-                console.log(body)
+                if( re.exec( body ) ){
+                    console.log(body.green)
+                }
 
             }
-            process.exit()
         }
     } )
 }
