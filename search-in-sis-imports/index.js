@@ -36,7 +36,7 @@ async function search(){
 
     const canvasApi = new CanvasApi(apiUrl, apiKey)
     canvasApi.get('accounts/1/sis_imports', async data =>{
-        //console.log(JSON.stringify(data,null,4) ) 
+        console.log(`Checking sis import from date ${data.sis_imports[0].created_at}`.yellow)
         for (const sis of data.sis_imports) {
             const url = sis.csv_attachments && sis.csv_attachments[0].url 
             if(url){
