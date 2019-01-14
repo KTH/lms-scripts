@@ -1,8 +1,8 @@
 const ldap = require('ldapjs')
 const fs = require('fs')
 const fileName = '/tmp/all-ug-users.csv'
-const headers = ['user_id', 'login_id', 'full_name', 'status']
-const attributes = ['ugKthid', 'ugUsername', 'mail', 'email_address', 'name', 'ugEmailAddressHR']
+const headers = ['user_id', 'login_id', 'email','short_name','sortable_name','status']
+const attributes = ['ugKthid', 'ugUsername', 'mail', 'email_address','givenName', 'sn' , 'name', 'ugEmailAddressHR']
 const {csvFile} = require('kth-canvas-utilities') 
 require('dotenv').config()
 try {
@@ -38,7 +38,7 @@ function appendUsers (type) {
         counter++
         const o = entry.object
         const userName = `${o.ugUsername}@kth.se`
-        csvFile.writeLine([o.ugKthid, userName, o.name, 'active'], fileName)
+        csvFile.writeLine([o.ugKthid, userName, o.mail,,`${o.sn}, ${o.givenName}`, 'active'], fileName)
       })
       res.on('error', function (err) {
         console.error('error: ' + err.message)
@@ -56,9 +56,7 @@ client.bind(process.env.LDAP_USERNAME, process.env.LDAP_PASSWORD, function (err)
     throw err
   }
 
-  Promise.all([
-    appendUsers('employee'),
-    appendUsers('student')])
+    appendUsers('member')
     .then(result => client.unbind())
     .then(() => console.log('Done with creating the file', fileName))
 })
