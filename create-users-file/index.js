@@ -1,10 +1,10 @@
 const ldap = require('ldapjs')
 const fs = require('fs')
-const fileName = '/tmp/allUsers.csv'
+const fileName = '/tmp/all-ug-users.csv'
 const headers = ['user_id', 'login_id', 'full_name', 'status']
 const attributes = ['ugKthid', 'ugUsername', 'mail', 'email_address', 'name', 'ugEmailAddressHR']
 const {csvFile} = require('kth-canvas-utilities') 
-
+require('dotenv').config()
 try {
   fs.unlinkSync(fileName)
 } catch (e) {
