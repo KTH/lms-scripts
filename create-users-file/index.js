@@ -1,6 +1,6 @@
 const ldap = require('ldapjs')
 const fs = require('fs')
-const fileName = 'allUsers.csv'
+const fileName = '/tmp/allUsers.csv'
 const headers = ['user_id', 'login_id', 'full_name', 'status']
 const attributes = ['ugKthid', 'ugUsername', 'mail', 'email_address', 'name', 'ugEmailAddressHR']
 const {csvFile} = require('kth-canvas-utilities') 
@@ -11,12 +11,9 @@ try {
   console.log('couldnt delete file. It probably doesnt exist.')
 }
 
-function writeLine(arr, fileName){
-  
-}
 
 const client = ldap.createClient({
-  url: process.env.LDAP_URL || 'ldaps://ldap.ug.kth.se'
+  url: process.env.LDAP_URL
 })
 
 csvFile.writeLine(headers, fileName)
@@ -41,7 +38,7 @@ function appendUsers (type) {
         counter++
         const o = entry.object
         const userName = `${o.ugUsername}@kth.se`
-        writeLine([o.ugKthid, userName, o.name, 'active'], fileName)
+        csvFile.writeLine([o.ugKthid, userName, o.name, 'active'], fileName)
       })
       res.on('error', function (err) {
         console.error('error: ' + err.message)
