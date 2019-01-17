@@ -50,9 +50,10 @@ async function diff(){
             // Alla users som diffar mellan ug och canvas
             i++
             console.log('-----------------')
-            console.log(`<<< Canvas: ${sis_id}: ${provisioningObj.email}, created_by_sis: ${provisioningObj.created_by_sis}`.yellow)
+            console.log('sisid: ',sis_id)
+            console.log(`<<< Canvas: ${provisioningObj.email}`.yellow)
             console.log(`>>> Augusti: ${diffingObj.email}`.yellow,)
-            console.log(`>>>     UG: ${sis_id}: ${email}`.blue)
+            console.log(`>>>     UG: ${email}`.blue)
         }
     }
     console.log('Total: ', i)
