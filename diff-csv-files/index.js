@@ -24,7 +24,7 @@ async function diff(){
         .split('\n')
 
     for (const line of oldProvisioningFilecontent) {
-        const [ ,sis_id,,,login_id,,,,,email,,created_by_sis  ]= line.split(',') 
+        const [ ,sis_id,login_id,email,,created_by_sis  ]= line.split(',') 
         const provisioningObj = provisioningFilecontentObj[sis_id] 
         if( provisioningObj && email !== provisioningObj.email ){            
             diffingProvisioningFileContentObj[sis_id]={
@@ -49,11 +49,16 @@ async function diff(){
         ){
             // Alla users som diffar mellan ug och canvas
             i++
-            console.log('-----------------')
-            console.log('sisid: ',sis_id)
+            /*console.log('-----------------')
             console.log(`<<< Canvas: ${provisioningObj.email}`.yellow)
             console.log(`>>> Augusti: ${diffingObj.email}`.yellow,)
-            console.log(`>>>     UG: ${email}`.blue)
+            console.log(`>>>     UG: ${email}`.blue)*/
+            if(email && email !== diffingObj.email){
+                console.log('-----------------')
+                console.log('sisid: ',sis_id)
+                console.log('Email skiljer sig mellan gamla provisioning och ug: ')
+                console.log(email.blue, diffingObj.email.yellow)
+            }
         }
     }
     console.log('Total: ', i)
