@@ -73,7 +73,7 @@ async function diff(){
             //i++
             console.log('-----------------')
             console.log(`<<< Canvas: ${provisioningObj.email}`.yellow)
-            console.log(`>>> Augusti: ${diffingObj.email}`.yellow,)
+            console.log(`<<< Augusti: ${diffingObj.email}`.yellow,)
             console.log(`>>>     UG: ${email}`.blue)
         }
     }
