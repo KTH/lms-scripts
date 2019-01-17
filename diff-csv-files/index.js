@@ -1,34 +1,38 @@
 const fs = require('fs')
 require('colors')
 async function diff(){
-    const file1 = 'all-ug-users.csv'
-    const file2 = 'provisioning_csv_16_Jan_2019_15720190116-10161-2q8ts0.csv'
-    const file2contentObj = {}
+    const ugFile = 'all-ug-users.csv'
+    const provisioningFile = 'provisioning_csv_16_Jan_2019_15820190116-18321-rw1ulx_include_created_by_sis.csv'
+    const provisioningFilecontentObj = {}
 
-    const file2content = fs.readFileSync(file2, 'utf8')
+    const provisioningFilecontent = fs.readFileSync(provisioningFile, 'utf8')
         .toString()
         .split('\n')
 
-    for (const line of file2content) {
-        const [ sis_id ]= line.split(',') 
-        file2contentObj[sis_id] = line
+    for (const line of provisioningFilecontent) {
+        const [ ,sis_id,,,login_id,,,,,email,,created_by_sis  ]= line.split(',') 
+        provisioningFilecontentObj[sis_id] = {
+            sis_id, login_id,email,created_by_sis
+        }
+       console.log(provisioningFilecontentObj[sis_id]) 
     }
     
-    const file1content = fs.readFileSync(file1, 'utf8')
+    const ugFilecontent = fs.readFileSync(ugFile, 'utf8')
         .toString()
         .split('\n')
 
-    
-    for (const line of file1content){
-        const [ sis_id ]= line.split(',')
-        //console.log(file2content[sis_id])
-        //console.log(sis_id,line)
-        if(line !== file2contentObj[sis_id]){
+   let i = 0 
+    for (const line of ugFilecontent){
+        const [ sis_id, loginid, email ]= line.split(',')
+        
+        if(line !== provisioningFilecontentObj[sis_id]){
+            i++
             console.log('-----------------')
             console.log(`>>>     UG: ${line}`.blue)
-            console.log(`<<< Canvas: ${file2contentObj[sis_id]}`.yellow)
+            console.log(`<<< Canvas: ${provisioningFilecontentObj[sis_id]}`.yellow)
         }
     }
+    console.log('Total: ', i)
 
 } 
 diff()
