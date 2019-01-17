@@ -2,7 +2,7 @@ const fs = require('fs')
 require('colors')
 async function diff(){
     const ugFile = 'all-ug-users.csv'
-    const provisioningFile = 'provisioning_csv_16_Jan_2019_15820190116-18321-rw1ulx_include_created_by_sis.csv'
+    const provisioningFile = 'provisioning_csv_17_Jan_2019_15920190117-6270-tij52n.csv'
     const provisioningFilecontentObj = {}
 
     const provisioningFilecontent = fs.readFileSync(provisioningFile, 'utf8')
@@ -14,22 +14,24 @@ async function diff(){
         provisioningFilecontentObj[sis_id] = {
             sis_id, login_id,email,created_by_sis
         }
-       console.log(provisioningFilecontentObj[sis_id]) 
     }
-    
+
     const ugFilecontent = fs.readFileSync(ugFile, 'utf8')
         .toString()
         .split('\n')
 
-   let i = 0 
+    let i = 0 
     for (const line of ugFilecontent){
-        const [ sis_id, loginid, email ]= line.split(',')
-        
-        if(line !== provisioningFilecontentObj[sis_id]){
+        const [ sis_id, username, email ]= line.split(',')
+        const provisioningObj = provisioningFilecontentObj[sis_id] 
+        if(
+            provisioningObj &&
+            email !== provisioningObj.email
+        ){
             i++
             console.log('-----------------')
-            console.log(`>>>     UG: ${line}`.blue)
-            console.log(`<<< Canvas: ${provisioningFilecontentObj[sis_id]}`.yellow)
+            console.log(`<<< Canvas: ${sis_id}: ${provisioningObj.email}`.yellow)
+            console.log(`>>>     UG: ${sis_id}: ${email}`.blue)
         }
     }
     console.log('Total: ', i)

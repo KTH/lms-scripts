@@ -35,6 +35,9 @@ function appendUsers (type) {
         throw err
       }
       res.on('searchEntry', function (entry) {
+          if(entry.object.ugKthid === 'u1qijg52'){
+            console.log(entry.object)
+          }
         counter++
         const o = entry.object
         const userName = `${o.ugUsername}@kth.se`
