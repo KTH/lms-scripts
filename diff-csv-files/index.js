@@ -42,7 +42,6 @@ async function diff(){
     for (const line of oldProvisioningFilecontent) {
         const [ ,sis_id,login_id,email,,created_by_sis  ]= line.split(',') 
 
-        // Sen: spara de rader som skiljer sig mellan nya o gamla prosisioningfil
         const provisioningObj = provisioningFilecontentObj[sis_id] 
         if( provisioningObj && email !== provisioningObj.email ){            
 
@@ -51,9 +50,9 @@ async function diff(){
             const provisioningUser = provisioningFilecontentObj[sis_id]
 
             console.log('--------------------', sis_id)
-            console.log(`>>>>>> UG: ${ugUser && ugUser.email} `.blue)
-            console.log(`>>>>>> Old provisioning: ${ email } `.yellow)
-            console.log(`>>>>>> New provisioning: ${ provisioningUser.email } `.yellow)
+            console.log(`>>>>>> UG:                 ${ugUser && ugUser.email} `.blue)
+            console.log(`>>>>>> Old provisioning:   ${ email } `.yellow)
+            console.log(`>>>>>> New provisioning:   ${ provisioningUser.email } `.yellow)
             console.log()
         } 
     }
