@@ -24,7 +24,6 @@
     "request-promise": "^4.2.2"
   },
   "devDependencies": {
-    "har-validator": "^5.1.3",
     "standard": "^12.0.1"
   }
 }
