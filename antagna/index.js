@@ -5,13 +5,13 @@ console.log(`Välkommen! Detta program skapar upp csv-filer
   Välj dina alternativ nedan.
   `)
 async function run () {
-  const {choice} = await inquirer.prompt(
+  const { choice } = await inquirer.prompt(
     {
       message: 'Vad vill du skapa för fil?',
       name: 'choice',
       choices: [
-        {name: 'För att ta bort antagna ur samtliga kurser i Canvas', value: 'createUnenrollmentFile'},
-        {name: 'För att lägga till antagna i perioder i Canvas', value: 'createAntagnaEnrollmentFile'}
+        { name: 'För att ta bort antagna ur samtliga kurser i Canvas', value: 'createUnenrollmentFile' },
+        { name: 'För att lägga till antagna i perioder i Canvas', value: 'createAntagnaEnrollmentFile' }
       ],
       type: 'list'
     })

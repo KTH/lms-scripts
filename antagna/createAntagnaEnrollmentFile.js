@@ -1,5 +1,5 @@
 const ldap = require('ldapjs')
-const {deleteFile, writeLine, createCsvFolder} = require('./csvFile')
+const { deleteFile, writeLine, createCsvFolder } = require('./csvFile')
 const attributes = ['ugKthid', 'name']
 require('dotenv').config()
 
@@ -7,7 +7,7 @@ var inquirer = require('inquirer')
 const moment = require('moment')
 const currentYear = moment().year()
 const years = []
-const {VT, HT} = require('kth-canvas-utilities/terms')
+const { VT, HT } = require('kth-canvas-utilities/terms')
 const rp = require('request-promise')
 const util = require('util')
 
@@ -85,7 +85,7 @@ async function searchGroup (filter, ldapClient) {
   })
 }
 
-async function writeAntagnaForCourse ({course, ldapClient, startTerm, fileName}) {
+async function writeAntagnaForCourse ({ course, ldapClient, startTerm, fileName }) {
   const roundId = course.offering_id
   const sisCourseId = `${course.course_code}${course.first_semester}${roundId}` // A11IYAVT181
   const courseInitials = course.course_code.substring(0, 2)
@@ -113,7 +113,7 @@ for (var i = -2; i < 4; i++) {
 const terms = [
   {
     name: 'Hösttermin',
-    value: HT},
+    value: HT },
   {
     name: 'Vårtermin',
     value: VT
@@ -125,7 +125,7 @@ const periods = {
 }
 
 module.exports = async function () {
-  const {year, term} = await inquirer.prompt([
+  const { year, term } = await inquirer.prompt([
     {
       message: 'Välj år',
       name: 'year',
@@ -141,7 +141,7 @@ module.exports = async function () {
     }
   ])
 
-  const {period, koppsBaseUrl} = await inquirer.prompt([
+  const { period, koppsBaseUrl } = await inquirer.prompt([
     {
       message: 'Välj period',
       name: 'period',
@@ -152,8 +152,8 @@ module.exports = async function () {
       message: 'Sista frågan, vilken koppsmiljö ska vi hämta data från?',
       name: 'koppsBaseUrl',
       choices: [
-        {name: 'ref', value: 'https://www-r.referens.sys.kth.se/api/kopps/'},
-        {name: 'prod', value: 'https://www.kth.se/api/kopps/'}
+        { name: 'ref', value: 'https://www-r.referens.sys.kth.se/api/kopps/' },
+        { name: 'prod', value: 'https://www.kth.se/api/kopps/' }
       ],
       type: 'list'
     }])
@@ -162,7 +162,7 @@ module.exports = async function () {
     url: `${koppsBaseUrl}v2/courses/offerings?from=${year}${term}&skip_coordinator_info=true`,
     method: 'GET',
     json: true,
-    headers: {'content-type': 'application/json'}
+    headers: { 'content-type': 'application/json' }
   })
 
   const canvasCourses = res.filter(courseOffering => courseOffering.state === 'Godkänt' || courseOffering.state === 'Fullsatt')
@@ -185,7 +185,7 @@ module.exports = async function () {
 
   const startTerm = `${year}${term}`
   for (let course of canvasCourses) {
-    await writeAntagnaForCourse({course, ldapClient, startTerm, fileName})
+    await writeAntagnaForCourse({ course, ldapClient, startTerm, fileName })
   }
 
   console.log('😀 Done!')
