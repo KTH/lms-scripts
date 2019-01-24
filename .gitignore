@@ -64,3 +64,5 @@ csv/
 
 # VS Code files
 .vscode/
+
+*.csv
