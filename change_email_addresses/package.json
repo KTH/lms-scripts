@@ -1,5 +1,5 @@
 {
-  "name": "create-users-file",
+  "name": "change_email_addresses",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
@@ -9,8 +9,6 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
-    "dotenv": "^6.2.0",
-    "kth-canvas-utilities": "^1.18.0",
-    "ldapjs": "^1.0.2"
+    "kth-canvas-api": "^0.15.7"
   }
 }
