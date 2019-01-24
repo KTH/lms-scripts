@@ -13,14 +13,35 @@ async function update() {
         if(canvasUserId === 'canvas_id') continue
         console.log(canvasUserId, ugEmail)
 
-        const commChannels = await canvasApi.get(`users/${canvasUserId}/communication_channels`)
-        console.log(commChannels)
+        const url = `users/${canvasUserId}/communication_channels`
+        const commChannels = await canvasApi.get(url)
         // THe user should only have one email channel, but double check anyway
-        if(commChannels.filter(channel => channel.type === 'email').length != 1){
+        const emailCommChannels = commChannels.filter(channel => channel.type === 'email')
+        if(emailCommChannels.length != 1){
             console.error('The user has wrong number of email communication channels!', line)
             process.exit()
         }
-        
+        console.log('----------------')
+        const [communication_channel] = emailCommChannels
+
+        // Step one: delete the old email communication channel, since it's not possible to update them through the api
+        await canvasApi.requestUrl( `${url}/${communication_channel.id}`, 'DELETE' )
+        await canvasApi.requestUrl(
+            `users/${canvasUserId}/communication_channels`,
+            'POST',
+            {
+                communication_channel:{
+                    type: 'email',
+                    address: ugEmail 
+                }
+                ,skip_confirmation:true
+            }
+
+        )
+        console.log('done with updating the user with canvas id', canvasUserId)
+        process.exit()
+        //await canvasApi.requestUrl(`users/${canvasUserId}/communication_channels/`)
+
     }
 }
 update()
