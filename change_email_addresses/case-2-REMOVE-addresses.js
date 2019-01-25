@@ -22,10 +22,11 @@ async function update() {
         // The user should have more then one email channel, but double check anyway
         if(emailCommChannels.length <= 1){
             console.error('The user has wrong number of email communication channels!', emailCommChannels.length)
+            console.error('Manually check this user to make sure it is ok.', url)
         } else {
             const removeChannel = emailCommChannels.find(channel => channel.address === removeAddress)
             if(!removeChannel){
-                console.error('Could not find the incorrect email adress. Skipping this user!')
+                console.error('Could not find the incorrect email adress. Manually check this user to make sure it is ok.', url)
             }else{
                 console.log('About to remove the communication channel',removeChannel)
                 await canvasApi.requestUrl( `${url}/${removeChannel.id}`, 'DELETE' )
