@@ -7,5 +7,10 @@
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "",
-  "license": "MIT"
+  "license": "MIT",
+  "dependencies": {
+    "dotenv": "^6.2.0",
+    "kth-canvas-utilities": "^1.18.0",
+    "ldapjs": "^1.0.2"
+  }
 }
