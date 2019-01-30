@@ -1,8 +1,8 @@
 const ldap = require('ldapjs')
 const fs = require('fs')
-const fileName = 'allUsers.csv'
-const headers = ['user_id', 'login_id', 'full_name', 'status']
-const attributes = ['ugKthid', 'ugUsername', 'mail', 'email_address', 'name', 'ugEmailAddressHR']
+const fileName = '/tmp/all-ug-ref-users.csv'
+const headers = ['_user_id', '_login_id', '_email', '_status']
+const attributes = ['ugKthid', 'ugUsername', 'mail', 'name' ]
 const {csvFile} = require('kth-canvas-utilities')
 require('dotenv').config()
 try {
@@ -22,6 +22,7 @@ function appendUsers (type) {
     let counter = 0
 
     const opts = {
+      filter: `objectClass=user`,
       scope: 'sub',
       paged: true,
       sizeLimit: 1000,
@@ -32,13 +33,12 @@ function appendUsers (type) {
         throw err
       }
       res.on('searchEntry', function (entry) {
-          console.log(entry.object)
         counter++
         // console.log(entry.object)
         // console.log('.')
         const o = entry.object
         const userName = `${o.ugUsername}@kth.se`
-        csvFile.writeLine([o.ugKthid, userName, o.name, 'active'], fileName)
+        csvFile.writeLine([o.ugKthid, userName, o.mail, 'active'], fileName)
       })
       res.on('error', function (err) {
         console.error('error: ' + err.message)
