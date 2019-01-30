@@ -1,9 +1,6 @@
 const fs = require('fs')
-const CanvasApi = require('kth-canvas-api')
-require('dotenv').config()
-const canvasApi = new CanvasApi(process.env.CANVAS_API_URL,process.env.CANVAS_API_KEY )
 
-const csvLines = fs.readFileSync('Possibly wrong email addresses.csv', 'utf8')
+const csvLines = fs.readFileSync('case-3-MAYBE-NOT-CORRECT.csv', 'utf8')
     .toString()
     .split('\n')
 
@@ -15,10 +12,16 @@ const ugUsers = {}
 csvLinesUgRef
     .map(line => line.split(','))
     .forEach(([ugKthId, ugUsername,ugEmail]) => ugUsers[ugKthId]={ugKthId, ugUsername, ugEmail})
-let usersWithEmailFromUgRef = []
-let usersNotInUgRef= []
-let others = []
+
+const replaceFileName = 'case-3-MAYBE-NOT-CORRECT-a:replace.csv'
+const ignoreFileName = 'case-3-MAYBE-NOT-CORRECT-b:ignore.csv'
+const manualFileName = 'case-3-MAYBE-NOT-CORRECT-c:manual-check.csv'
+
 async function update() {
+
+    for (const fileName of [replaceFileName, ignoreFileName, manualFileName]){
+        fs.writeFileSync(fileName,'canvas_id,sis_user_id,canvas_emails,status,status_comment,action,action_comment')
+    }
     for (const line of csvLines) {
         //console.log('----------------', line)
         const [canvasUserId,sisUserId,canvasEmail] = line.split(',')
@@ -27,18 +30,14 @@ async function update() {
         if(  !canvasUserId ) continue // Ignore empty lines
 
         const ugUser = ugUsers[sisUserId]
+        const data = {...ugUser, line} 
         if(!ugUser){
-           usersNotInUgRef.push(ugUser) 
-        }
-        else if(ugUser.ugEmail === canvasEmail){
-            usersWithEmailFromUgRef.push(ugUser)
+            fs.appendFileSync(ignoreFileName, line+ '\n')
+        }else if(ugUser.ugEmail === canvasEmail){
+            fs.appendFileSync(replaceFileName,line+ '\n')
         }else{
-            others.push(ugUser)
+            fs.appendFileSync(manualFileName, line+ '\n')
         }
     }
-    console.log('done :)', )
-    console.log('Users with incorrect email from ug ref:', usersWithEmailFromUgRef.length)
-    console.log('Users that dont exist in ug ref:', usersNotInUgRef.length)
-    console.log('Others:', others.length)
 }
 update()

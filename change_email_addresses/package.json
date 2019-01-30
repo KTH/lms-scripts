@@ -9,6 +9,7 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
-    "kth-canvas-api": "^0.15.7"
+    "kth-canvas-api": "^0.15.7",
+    "kth-canvas-utilities": "^1.18.0"
   }
 }
