@@ -17,11 +17,13 @@ async function update() {
 
         const url = `users/${canvasUserId}/communication_channels`
         const commChannels = await canvasApi.get(url)
-        const emailCommChannels = commChannels.filter(channel => channel.type === 'email' && channel.address === )
+        const [emailCommChannel ]= commChannels.filter(
+            channel => channel.type === 'email' && 
+            channel.address === canvasEmail)
         
         // THe user should only have one email channel, but double check anyway
         //const [communication_channel] = emailCommChannels
-        console.log(emailCommChannels)
+        console.log('emailCommChannel to replace: ',emailCommChannel)
         // Step one: delete the old email communication channel, since it's not possible to update them through the api
         /*await canvasApi.requestUrl( `${url}/${communication_channel.id}`, 'DELETE' )
 
