@@ -17,14 +17,14 @@ async function update() {
 
         const url = `users/${canvasUserId}/communication_channels`
         const commChannels = await canvasApi.get(url)
-        const [emailCommChannel ]= commChannels.filter(
-            channel => channel.type === 'email' && 
+        const [emailCommChannel ]= commChannels.filter(channel => 
+            channel.type === 'email' && 
             channel.address === canvasEmail)
 
-       if(!emailCommChannel){
+        if(!emailCommChannel){
             console.log('no incorrect email found, skipping')
-           continue
-       } 
+            continue
+        } 
         // THe user should only have one email channel, but double check anyway
         //const [communication_channel] = emailCommChannels
         console.log('emailCommChannel to replace: ',emailCommChannel)
@@ -32,20 +32,26 @@ async function update() {
         console.log('replace with the email from ug instead: ', ugEmail)
         // Step one: delete the old email communication channel, since it's not possible to update them through the api
         await canvasApi.requestUrl( `${url}/${emailCommChannel.id}`, 'DELETE' )
-        
-        // ... and then create a new one with the correct email address
-         await canvasApi.requestUrl(
-            url,
-            'POST',
-            {
-                communication_channel:{
-                    type: 'email',
-                    address: ugEmail 
-                }
-                ,skip_confirmation:true
-            }
 
-        )
+        // ... and then create a new one with the correct email address
+        try {
+            await canvasApi.requestUrl(
+                url,
+                'POST',
+                {
+                    communication_channel:{
+                        type: 'email',
+                        address: ugEmail 
+                    }
+                    ,skip_confirmation:true
+                }
+
+            )
+
+        } catch (error) {
+            console.error('An error occured when trying to add the ug email:', error)               
+        } 
+
         console.log('done with updating the user with canvas id', canvasUserId)
     }
     console.log('done :)')
