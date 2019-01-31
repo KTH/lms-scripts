@@ -20,7 +20,7 @@ const manualFileName = 'case-3-MAYBE-NOT-CORRECT-c:manual-check.csv'
 async function update() {
 
     for (const fileName of [replaceFileName, ignoreFileName, manualFileName]){
-        fs.writeFileSync(fileName,'canvas_id,sis_user_id,canvas_emails,status,status_comment,action,action_comment')
+        fs.writeFileSync(fileName,'canvas_id,sis_user_id,canvas_emails,status,status_comment,action,action_comment\n')
     }
     for (const line of csvLines) {
         //console.log('----------------', line)
