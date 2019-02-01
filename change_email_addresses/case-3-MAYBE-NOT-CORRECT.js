@@ -32,11 +32,16 @@ async function update() {
         const ugUser = ugUsers[sisUserId]
         const data = {...ugUser, line} 
         if(!ugUser){
+            // These should probably be fixed anyways, since their email could have been changed ny rapp?
+            // Is it enough to just add a correct email, and not delete any?
             fs.appendFileSync(ignoreFileName, line+ '\n')
         }else if(ugUser.ugEmail === canvasEmail){
             fs.appendFileSync(replaceFileName,line+ '\n')
         }else{
+            // These should probably be fixed anyways, since their email could have been changed ny rapp?
+            // Is it enough to just add a correct email, and not delete any?
             fs.appendFileSync(manualFileName, line+ '\n')
+            
         }
     }
 }
