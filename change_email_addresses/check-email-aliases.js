@@ -15,11 +15,12 @@ csvLinesUg
 
 async function update() {
     for (const line of csvLines) {
+        process.stdout.write('.')
         const [canvasUserId, kthId,canvasEmail] = line.split(',')
         // Seach for this email in all of the aliases
         const foundAlias = ugUsers.find(ugUser => 
             ugUser.aliases.find(alias => 
-                alias === canvasEmail &&  ugKthId !== kthId))
+                alias === canvasEmail &&  ugUser.ugKthId !== kthId))
         if(foundAlias){
             console.log(canvasEmail,foundAlias)
         }
