@@ -2,6 +2,7 @@ const path = require('path')
 const fs = require('fs')
 const rp = require('request-promise')
 const parse = require('csv-parse/lib/sync')
+const stringify = require('csv-stringify/lib/sync')
 const inquirer = require('inquirer')
 
 const appModes = {
@@ -190,6 +191,33 @@ const appModes = {
         console.error(deleteError)
       }
     }
+  },
+  excelifyCsv: async () => {
+    const { csvFilePath } = await inquirer.prompt([
+      {
+        type: 'input',
+        name: 'csvFilePath',
+        message: 'Please enter the relative path name of the csv file to be made more Excel friendly!',
+        default: 'csvFiles/excelify.csv'
+      }
+    ])
+
+    let input = fs.readFileSync(path.resolve(__dirname, csvFilePath), 'utf8')
+    const ogCsvFile = parse(input, {
+      columns: false,
+      skip_empty_lines: true
+    })
+
+    const regex = /\n/g
+    const friendlyCsvFile = ogCsvFile.map(innerArray => {
+      return innerArray.map((item, index, array) => {
+        return item.replace(regex, ' ')
+      })
+    })
+
+    const data = stringify(friendlyCsvFile)
+
+    fs.writeFileSync(path.resolve(__dirname, 'csvFiles/output.csv'), data, 'utf8')
   }
 }
 
@@ -211,6 +239,10 @@ async function csvApp () {
         {
           name: 'Delete users',
           value: 'deleteUsers'
+        },
+        {
+          name: 'Make csv file more Excel friendly!',
+          value: 'excelifyCsv'
         }
       ]
     }
