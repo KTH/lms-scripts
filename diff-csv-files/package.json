@@ -10,6 +10,6 @@
   "license": "MIT",
   "dependencies": {
     "colors": "^1.3.3",
-    "inquirer": "^6.2.1"
+    "inquirer": "^6.3.1"
   }
 }
