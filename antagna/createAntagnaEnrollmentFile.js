@@ -8,7 +8,7 @@ const moment = require('moment')
 const currentYear = moment().year()
 const years = []
 const { VT, HT } = require('kth-canvas-utilities/terms')
-const rp = require('request-promise')
+const got = require('got')
 const util = require('util')
 
 async function getUsersForMembers (members, ldapClient) {
@@ -158,14 +158,12 @@ module.exports = async function () {
       type: 'list'
     }])
 
-  const res = await rp({
+  const { body } = await got({
     url: `${koppsBaseUrl}v2/courses/offerings?from=${year}${term}&skip_coordinator_info=true`,
-    method: 'GET',
-    json: true,
-    headers: { 'content-type': 'application/json' }
+    json: true
   })
 
-  const canvasCourses = res.filter(courseOffering => courseOffering.state === 'Godkänt' || courseOffering.state === 'Fullsatt')
+  const canvasCourses = body.filter(courseOffering => courseOffering.state === 'Godkänt' || courseOffering.state === 'Fullsatt')
     .filter(courseOffering => courseOffering.first_period === `${year}${term}P${period}`)
 
   const ldapClient = ldap.createClient({

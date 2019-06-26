@@ -1,7 +1,7 @@
 const CanvasApi = require('kth-canvas-api')
 const ldap = require('ldapjs')
 const util = require('util')
-const request = require('request-promise')
+const got = require('got')
 const papaparse = require('papaparse')
 
 async function getUserInfo (userId, ldapClient) {
@@ -105,11 +105,11 @@ async function traverseErrors (from, data, callback, options = {}) {
     for (const sisImport of page.sis_imports) {
       if (sisImport.errors_attachment && sisImport.errors_attachment.url) {
         const warnings = await (
-          request({
-            uri: sisImport.errors_attachment.url,
-            headers: {'Connection': 'keep-alive'}
+          got({
+            url: sisImport.errors_attachment.url,
+            headers: { 'Connection': 'keep-alive' }
           })
-            .then(result => papaparse.parse(result, {header: true}).data)
+            .then(result => papaparse.parse(result.body, { header: true }).data)
             .then(result => result.filter(w => w.message))
         )
         const parsed = []

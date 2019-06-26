@@ -45,7 +45,6 @@ async function getOptions () {
     console.log('.env file created!')
   }
 
-
   const { fileName } = await inquirer.prompt({
     message: 'Write the csv filename that you want to import',
     name: 'fileName',

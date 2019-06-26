@@ -1,32 +1,32 @@
-const {Client: AMQPClient, Policy} = require('amqp10')
+const { Client: AMQPClient, Policy } = require('amqp10')
 const urlencode = require('urlencode')
 const inquirer = require('inquirer')
 
 async function connectAndHandle () {
   try {
-    const {action} = await inquirer.prompt(
+    const { action } = await inquirer.prompt(
       {
         message: 'Vad vill du göra?',
         name: 'action',
         choices: [
-          {name: 'Bara läsa meddelanden', value: 'read'},
-          {name: 'Läsa meddelanden och rensa kön', value: 'delete'}
+          { name: 'Bara läsa meddelanden', value: 'read' },
+          { name: 'Läsa meddelanden och rensa kön', value: 'delete' }
         ],
         type: 'list'
       })
 
-    const {queue} = await inquirer.prompt(
+    const { queue } = await inquirer.prompt(
       {
         message: 'Vilken miljö?',
         name: 'queue',
         choices: [
-          {name: 'canvas-prod', value: {name: `ug-infoclass-2/Subscriptions/canvas-prod/$DeadLetterQueue`, shortName: 'canvas-prod'}},
-          {name: 'canvas-ref', value: {name: `ug-infoclass-2/Subscriptions/canvas-ref/$DeadLetterQueue`, shortName: 'canvas-ref'}}
+          { name: 'canvas-prod', value: { name: `ug-infoclass-2/Subscriptions/canvas-prod/$DeadLetterQueue`, shortName: 'canvas-prod' } },
+          { name: 'canvas-ref', value: { name: `ug-infoclass-2/Subscriptions/canvas-ref/$DeadLetterQueue`, shortName: 'canvas-ref' } }
         ],
         type: 'list'
       })
 
-    const {sharedAccessKey} = await inquirer.prompt({
+    const { sharedAccessKey } = await inquirer.prompt({
       message: `Klistra in en access key till ${queue.shortName} i Azure. Den finns här: https://tinyurl.com/ydfquezj`,
       name: 'sharedAccessKey'
     })
