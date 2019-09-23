@@ -3,17 +3,17 @@ const azureSb = require('azure-sb')
 const serviceBusUrl = 'lms-queue.servicebus.windows.net'
 const topicName = 'lms-topic-emil2'
 const subName= 'lms-sub-emil2'
+const message = require('./message')
 
 const sBConnectionString = `Endpoint=sb://lms-queue.servicebus.windows.net/;SharedAccessKeyName=${process.env.AZURE_SHARED_ACCESS_KEY_NAME};SharedAccessKey=${process.env.AZURE_SHARED_ACCESS_KEY}`
 const sBService = azureSb.createServiceBusService(sBConnectionString)
 
 async function start () {
-
-    const message = {body: JSON.stringify({foo:1})}
+    const body = JSON.stringify(message)
 
     try {
 return new Promise((resolve, reject) => {
-        sBService.sendTopicMessage(topicName, message, (err) => {
+        sBService.sendTopicMessage(topicName, {body}, (err) => {
           if (err) {
             reject(err)
           } else {
