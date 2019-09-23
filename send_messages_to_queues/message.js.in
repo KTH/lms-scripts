@@ -1,0 +1,9 @@
+module.exports = { kthid: 'abc123',
+     ugClass: 'user',
+     deleted: false,
+     affiliation: [ 'member', 'student' ],
+     ug_version: 0,
+     services: [],
+     ladok3_student_uid: '',
+     title_en: [],
+     title_sv: [] }
