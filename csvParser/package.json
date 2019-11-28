@@ -5,7 +5,8 @@
   "main": "index.js",
   "scripts": {
     "start": "node index.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "debug": "NODE_ENV=development node --nolazy --inspect-brk=9229 index.js"
   },
   "keywords": [
     "csv",
@@ -14,7 +15,7 @@
   "author": "Peter Delmeby",
   "license": "MIT",
   "devDependencies": {
-    "standard": "^12.0.1"
+    "prettier-standard": "^15.0.1"
   },
   "dependencies": {
     "csv-parse": "^4.6.5",
