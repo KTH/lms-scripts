@@ -1,3 +1,4 @@
+const snr = require('./appModes/snr.js')
 const path = require('path')
 const fs = require('fs')
 const got = require('got')
@@ -517,6 +518,7 @@ const appModes = {
     console.info(
       `Number of students exposed to Möbius: ${moebiusNumberOfEnrolledUsers}`
     )
+    console.info('Students grouped by school:')
     for (const [key, value] of moebiusSchoolMap) {
       console.info(`${key} = ${value[1]}`)
     }
@@ -531,10 +533,12 @@ const appModes = {
     console.info(
       `Number of students exposed to Wiris: ${wirisNumberOfEnrolledUsers}`
     )
+    console.info('Students grouped by school:')
     for (const [key, value] of wirisSchoolMap) {
       console.info(`${key} = ${value[1]}`)
     }
-  }
+  },
+  gatherLEQStatistics: snr
 }
 
 async function csvApp () {
@@ -559,6 +563,10 @@ async function csvApp () {
         {
           name: 'Gather Möbius, Wiris and Kaltura statistics',
           value: 'gatherMWKStatistics'
+        },
+        {
+          name: 'Gather LEQ statistics',
+          value: 'gatherLEQStatistics'
         }
       ]
     }
