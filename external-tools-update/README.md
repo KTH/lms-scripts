@@ -1,21 +1,25 @@
 ## A simple app to batch-update external tools in Canvas
 
-Useful if you install tools per course (not per account), and you need to change something in the configuration.
+Useful if you install tools per course (not per account), and you need to check or change something in the configuration.
 
 
 ### How to use
 
 1. Fill in .env file
-2. Know exact External Tool Name
-3. Know which account you want to apply changes to
-4. Know which fields you want to change with this tool. Right now possible are:
+2. `npm start` to run the app. Fill the values into inquirer as you're asked.
+3. Select search method (by Name or Url)
+4. Fill in exact search term.
+5. Fill Canvas account number you want to search
+6. Specify if you want to make changes. If not, you can skip next two points.
+7. Define which fields you want to change with this tool. Right now options are:
     * name
     * url
     * domain
-5. `npm start` to run the app. Fill the values into inquirer.
-6. Wait for app to scrub the account in search of the provided tool name.
-7. Check found tools and courses, if correct, proceed.
-6. Check if values were updated correctly, and hopefully you're done!
+8. Fill new values for specified fields.
+9. Decide if you want to save the search results to csv.
+10. Wait for script to scrub the account in search of the provided search term.
+11. Check found tools and courses, if correct, proceed. (prompt)
+12. Check if values were updated correctly, and hopefully you're done!
 
 *Note:* Example external tool object below.
 You can change fields that can be modified in `inquirerQuestions` variable under `toolFields`.
