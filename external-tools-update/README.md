@@ -10,7 +10,7 @@ Useful if you install tools per course (not per account), and you need to check 
 3. Select search method (by Name or Url)
 4. Fill in exact search term.
 5. Fill Canvas account number you want to search
-6. Specify if you want to make changes. If not, you can skip next two points.
+6. Specify if you want to make changes. If not, you can skip to point 9.
 7. Define which fields you want to change with this tool. Right now options are:
     * name
     * url
