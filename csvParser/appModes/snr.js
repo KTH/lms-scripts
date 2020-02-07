@@ -1,8 +1,6 @@
 require('dotenv').config()
 const got = require('got')
-
-const START_OF_2019 = 1546297200000
-const END_OF_2019 = 1575154800000
+const inquirer = require('inquirer')
 
 const SCHOOL_MAPPING = {
   A: 'ABE',
@@ -38,14 +36,18 @@ function extractMillis (surveyAndReportDate) {
   return parseInt(surveyAndReportDate.substring(startIndex, endIndex), 10)
 }
 
-// This checks if the "from date" falls within 2019-01-01 and 2019-12-01 (Swedish locale)
-function isPublishedFromYear2019 (
+// This checks if the "from date" falls within <desiredYear>-01-01 and <desiredYear>-12-31 (Swedish locale)
+function isPublishedFromDesiredYear (
   surveyAndReportFromDate,
-  surveyAndReportToDate
+  surveyAndReportToDate,
+  desiredYear
 ) {
   const millisFrom = extractMillis(surveyAndReportFromDate)
   const millisTo = extractMillis(surveyAndReportToDate)
-  return millisFrom >= 1546297200000 && millisTo <= 1575154800000
+  return (
+    millisFrom >= new Date(`${desiredYear}-01-01T00:00`).getTime() &&
+    millisTo <= new Date(`${desiredYear + 1}-01-01T00:00`)
+  )
 }
 
 function addSchoolProperty (survey) {
@@ -63,6 +65,16 @@ async function addAnswers (client, survey) {
 }
 
 module.exports = async function () {
+  const { desiredYear } = await inquirer.prompt([
+    {
+      type: 'number',
+      name: 'desiredYear',
+      message:
+        'Please enter the year for which you want to collect statistics!',
+      default: 2019
+    }
+  ])
+
   let { body } = await got.post(
     'https://sunet.artologik.net/kth/Admin/services/api.svc/authenticate',
     {
@@ -70,8 +82,8 @@ module.exports = async function () {
       form: true,
       body: {
         mode: 'plain',
-        username: 'vcclient',
-        password: process.env.SNR_API_PASSWORD
+        username: process.env.LEQ_SNR_API_USERNAME,
+        password: process.env.LEQ_SNR_API_PASSWORD
       }
     }
   )
@@ -88,8 +100,8 @@ module.exports = async function () {
     query: {
       q: ' - ',
       type: '1',
-      publishedFrom: '20190101',
-      publishedTo: '20191201',
+      publishedFrom: `${desiredYear}0101`,
+      publishedTo: `${desiredYear}1201`,
       status: '2,3'
     }
   }))
@@ -97,7 +109,11 @@ module.exports = async function () {
     survey =>
       !survey.Name.startsWith('Report') &&
       survey.ParticipatingRespondentsCount > 0 && // Have detected 9 odd courses that have 0 respondents...
-      isPublishedFromYear2019(survey.PublishedFrom, survey.PublishedTo)
+      isPublishedFromDesiredYear(
+        survey.PublishedFrom,
+        survey.PublishedTo,
+        desiredYear
+      )
   )
   const schoolMap = new Map()
   const templateResponseRateMap = new Map()
@@ -148,7 +164,9 @@ module.exports = async function () {
   // New segment
   console.info('===')
   for ([key, value] of schoolMap) {
-    console.info(`The ${key} school published ${value[0]} surveys during 2019.`)
+    console.info(
+      `The ${key} school published ${value[0]} surveys during ${desiredYear}.`
+    )
     console.info(
       `The ${key} school had an average response rate of ${value[1] /
         value[0]}.`

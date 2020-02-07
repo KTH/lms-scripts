@@ -119,7 +119,7 @@ module.exports = async function () {
   )
   console.debug(`Files in enrollments directory: ${filesInEnrollmentsDir}`)
   const enrollmentsFilenames = filesInEnrollmentsDir.filter(item =>
-    item.startsWith('1178-enrollment_dim')
+    item.includes('-enrollment_dim-')
   )
   console.debug(`Relevant enrollments files: ${enrollmentsFilenames}`)
   const multipleERecords = []
