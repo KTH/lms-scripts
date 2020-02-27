@@ -74,15 +74,26 @@ function isPublished (state) {
   }
 }
 
-async function isViewed (canvas, courseId) {
+async function getStudentSummary (canvas, courseId) {
   try {
-    const { body: students } = await canvas.get(
-      `/courses/${courseId}/analytics/student_summaries`,
-      {
-        sort_column: 'page_views_descending'
-      }
+    const students = canvas.list(
+      `/courses/${courseId}/analytics/student_summaries`
     )
-    return students[0].page_views > 0
+    let pageViews = 0
+    let numberOfStudents = 0
+    let totalParticipations = 0
+    for await (student of students) {
+      numberOfStudents++
+      totalParticipations += student.participations
+      pageViews += student.page_views
+    }
+
+    return {
+      pageViews,
+      averageParticipation: numberOfStudents
+        ? totalParticipations / numberOfStudents
+        : 0
+    }
   } catch (e) {
     // Note: Enable some extra logging for debugging!
     /*console.warn(
@@ -307,7 +318,10 @@ async function start () {
     'conferences',
     'is_syllabus',
     'ltis',
-    'ltis_wo_redirect'
+    'ltis_wo_redirect',
+    'avg_participation',
+    'page_views',
+    'is_contentful'
   ]
   fs.appendFileSync(outputPath, `${courseDataHeaders.join(';')}\n`)
 
@@ -334,7 +348,10 @@ async function start () {
     const subAccount = getSubAccountType(course.account.name)
 
     const courseId = course.id
-    const viewed = (await isViewed(canvas, courseId)).toString()
+    const { pageViews, averageParticipation } = await getStudentSummary(
+      canvas,
+      courseId
+    )
 
     const courseData = [
       course.name,
@@ -346,7 +363,7 @@ async function start () {
       course.teachers.length, // Note: (Teacher, Course Responsible, Examiner, Ext. teacher, Course admin).
       course.total_students, // Note: Active and invited "students" (Student, Re-reg student, Ext. student, PhD student, Manually added student, Admitted not registered student).
       isPublished(course.workflow_state),
-      viewed,
+      pageViews > 0,
       getSemester(course.sis_course_id),
       course.start_at, // Note: Somewhat speculative. If we can do a perfect mapping with KOPPS, the information from that source is likely better.
       getYear(course.start_at),
@@ -396,8 +413,14 @@ async function start () {
       ltis - redirects
     ]
 
-    // Step X: append data to file
-    const outputData = courseData.concat(componentData)
+    // Step 3: gather participation data
+    const contentful = assignments + quizzes + modules > 3
+    const participationData = [averageParticipation, pageViews, contentful]
+
+    // Step 4: append data to file
+    const outputData = courseData
+      .concat(componentData)
+      .concat(participationData)
     fs.appendFileSync(outputPath, `${outputData.join(';')}\n`)
   }
 }
