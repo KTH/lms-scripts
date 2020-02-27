@@ -10,6 +10,7 @@ const FOLDER_NAME = 'output'
 const INVALID_COURSE_CODE_CHARACTERS_REGEX = /Sandbox|@|\s|-|_/
 const SEMESTER_REGEX = /(HT|VT)\d\d/g
 const KOPPS_LANG_TO_CANVAS_LANG = { Svenska: 'sv', Engelska: 'en-GB' }
+const REDIRECT_URL_PATTERN = /https:\/\/www.edu-apps.org\/redirect/
 
 // For creating an url to a desired course in Canvas
 function getCourseURL (courseId) {
@@ -32,13 +33,16 @@ async function getKOPPSData (courseCode) {
       `${process.env.KOPPS_API_URL}/course/${courseCode}/detailedinformation`
     ).json()
     const educationCycle = response.course.educationalLevelCode
-    const language = response.roundInfos[0].round.language // TODO: This might need fine tuning!
+    const language = response.roundInfos
+      ? response.roundInfos[0].round.language
+      : '' // TODO: This might need fine tuning!
     return { educationCycle, language: KOPPS_LANG_TO_CANVAS_LANG[language] }
   } catch (e) {
-    console.warn(
+    // Note: Enable some extra logging for debugging!
+    /*console.warn(
       `Something went wrong when calling the KOPPS for course ${courseCode}`
     )
-    console.warn(e)
+    console.warn(e)*/
     return { educationCycle: '', language: '' }
   }
 }
@@ -80,10 +84,11 @@ async function isViewed (canvas, courseId) {
     )
     return students[0].page_views > 0
   } catch (e) {
-    console.warn(
+    // Note: Enable some extra logging for debugging!
+    /*console.warn(
       `Something went wrong when fetching student summaries for course ${courseId}`
     )
-    console.warn(e)
+    console.warn(e)*/
     return false
   }
 }
@@ -131,6 +136,130 @@ function getVisibility (isPublic, isPublicToAuthUsers) {
   }
 }
 
+async function getAssignmentData (canvas, courseId) {
+  const publishedAssignments = (
+    await canvas.list(`/courses/${courseId}/assignments`).toArray()
+  ).filter(assignment => assignment.published)
+
+  const assignmentSubmissions = (
+    await canvas
+      .list(`/courses/${courseId}/students/submissions`, {
+        'student_ids[]': 'all',
+        assignment_ids: publishedAssignments.map(assignment => assignment.id),
+        workflow_state: ['graded', 'submitted', 'pending_review']
+      })
+      .toArray()
+  ).length
+
+  return { assignments: publishedAssignments.length, assignmentSubmissions }
+}
+
+async function getDiscussionData (canvas, courseId) {
+  const topics = canvas.list(`/courses/${courseId}/discussion_topics`)
+
+  let discussions = 0
+  let posts = 0
+  for await (topic of topics) {
+    discussions++
+
+    const entries = canvas.list(
+      `/courses/${courseId}/discussion_topics/${topic.id}/entries`
+    )
+    for await (entry of entries) {
+      posts++
+      if (entry.has_more_replies) {
+        posts += (
+          await canvas
+            .list(
+              `/courses/${courseId}/discussion_topics/${topic.id}/entries/${entry.id}/replies`
+            )
+            .toArray()
+        ).length
+      } else {
+        posts += entry.recent_replies ? entry.recent_replies.length : 0
+      }
+    }
+  }
+
+  return { discussions, posts }
+}
+
+async function getPages (canvas, courseId) {
+  return (
+    await canvas
+      .list(`/courses/${courseId}/pages`, { published: true })
+      .toArray()
+  ).length
+}
+
+async function getFiles (canvas, courseId) {
+  return (
+    await canvas
+      .list(`/courses/${courseId}/files`, { 'only[]': 'names' })
+      .toArray()
+  ).length
+}
+
+async function hasOutcomes (canvas, courseId) {
+  return (
+    await canvas.list(`/courses/${courseId}/outcome_group_links`).toArray()
+  ).length
+    ? true
+    : false
+}
+
+async function getQuizData (canvas, courseId) {
+  const quizzesResponse = canvas.list(`/courses/${courseId}/quizzes`)
+
+  let quizzes = 0
+  let quizSubmissions = 0
+  for await (quiz of quizzesResponse) {
+    quizzes++
+    quizSubmissions += (
+      await canvas.get(`/courses/${courseId}/quizzes/${quiz.id}/submissions`)
+    ).body.quiz_submissions.length
+  }
+
+  return { quizzes, quizSubmissions }
+}
+
+async function getModuleData (canvas, courseId) {
+  const modulesResponse = canvas.list(`/courses/${courseId}/modules`)
+
+  let modules = 0
+  let moduleItems = 0
+  for await (mod of modulesResponse) {
+    modules++
+    moduleItems += (
+      await canvas
+        .list(`/courses/${courseId}/modules/${mod.id}/items`)
+        .toArray()
+    ).length
+  }
+
+  return { modules, moduleItems }
+}
+
+async function getConferences (canvas, courseId) {
+  return (await canvas.get(`/courses/${courseId}/conferences`)).body.conferences
+    .length
+}
+
+async function getExternalTools (canvas, courseId) {
+  let ltis = 0
+  let redirects = 0
+
+  const externalTools = await canvas
+    .list(`/courses/${courseId}/external_tools`)
+    .toArray()
+
+  ltis = externalTools.length
+  redirects = externalTools.filter(tool => REDIRECT_URL_PATTERN.test(tool.url))
+    .length
+
+  return { ltis, redirects }
+}
+
 // TODO: Using ; instead of , for now - should I?
 async function start () {
   // Fetch id:s for all Canvas courses which have been exported
@@ -155,15 +284,30 @@ async function start () {
     'sub-account',
     'number_of_teachers',
     'number_of_students',
-    'published',
-    'viewed',
+    'is_published',
+    'is_viewed',
     'semester',
     'start_date',
     'year',
     'license',
     'visibility',
     'language',
-    'transferredToLadok'
+    'is_transferred_to_ladok',
+    'assignments',
+    'assignment_submissions',
+    'discussions',
+    'posts',
+    'pages',
+    'files',
+    'is_outcomes',
+    'quizzes',
+    'quiz_submissions',
+    'modules',
+    'module_items',
+    'conferences',
+    'is_syllabus',
+    'ltis',
+    'ltis_wo_redirect'
   ]
   fs.appendFileSync(outputPath, `${courseDataHeaders.join(';')}\n`)
 
@@ -172,11 +316,18 @@ async function start () {
     process.env.CANVAS_ACCESS_TOKEN
   )
   const courses = canvas.list('/accounts/1/courses', {
-    include: ['account', 'total_students', 'teachers', 'concluded']
+    include: [
+      'account',
+      'total_students',
+      'teachers',
+      'concluded',
+      'syllabus_body'
+    ]
   })
   for await (const course of courses) {
     console.debug(`Processing course: ${course.name}`)
 
+    // Step 1: gather course data
     const courseCode = course.course_code
     const { educationCycle, language } = await getKOPPSData(courseCode)
 
@@ -205,7 +356,49 @@ async function start () {
       transferredCourses.includes(courseId)
     ]
 
-    fs.appendFileSync(outputPath, `${courseData.join(';')}\n`)
+    // Step 2: gather component data
+    const { assignments, assignmentSubmissions } = await getAssignmentData(
+      canvas,
+      courseId
+    )
+
+    const { discussions, posts } = await getDiscussionData(canvas, courseId)
+
+    const pages = await getPages(canvas, courseId)
+
+    const files = await getFiles(canvas, courseId)
+
+    const outcomes = await hasOutcomes(canvas, courseId)
+
+    const { quizzes, quizSubmissions } = await getQuizData(canvas, courseId)
+
+    const { modules, moduleItems } = await getModuleData(canvas, courseId)
+
+    const conferences = await getConferences(canvas, courseId)
+
+    const { ltis, redirects } = await getExternalTools(canvas, courseId)
+
+    const componentData = [
+      assignments, // Note: "New Quizzes" are treated as assignments due to being an LTI app
+      assignmentSubmissions,
+      discussions,
+      posts,
+      pages,
+      files,
+      outcomes,
+      quizzes,
+      quizSubmissions,
+      modules,
+      moduleItems,
+      conferences,
+      course.syllabus_body ? true : false,
+      ltis,
+      ltis - redirects
+    ]
+
+    // Step X: append data to file
+    const outputData = courseData.concat(componentData)
+    fs.appendFileSync(outputPath, `${outputData.join(';')}\n`)
   }
 }
 
