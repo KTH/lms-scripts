@@ -98,7 +98,7 @@ The output of this script contains the following data.
 - _is_contentful_\
   Set to `true` if (number of assignments + number of quizzes + number of modules) > 3.
 
-## Shortcoming
+## Shortcomings
 
 - The current data set does not in any way reflect which courses are cross-listed. Improvements can and probably should be made to improve the data set to handle this scenario better.
 - No indicator of page view time for courses. The only possible lead found thus far is to create some measurement based on the _user page views_ data: https://canvas.instructure.com/doc/api/users.html#method.page_views.index
