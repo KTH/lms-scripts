@@ -9,7 +9,6 @@ const FOLDER_NAME = 'output'
 // TODO: How should course code filtering work, in general?
 const INVALID_COURSE_CODE_CHARACTERS_REGEX = /Sandbox|@|\s|-|_/
 const SEMESTER_REGEX = /(HT|VT)\d\d/g
-const KOPPS_LANG_TO_CANVAS_LANG = { Svenska: 'sv', Engelska: 'en-GB' }
 const REDIRECT_URL_PATTERN = /https:\/\/www.edu-apps.org\/redirect/
 
 // For creating an url to a desired course in Canvas
@@ -36,7 +35,7 @@ async function getKOPPSData (courseCode) {
     const language = response.roundInfos
       ? response.roundInfos[0].round.language
       : '' // TODO: This might need fine tuning!
-    return { educationCycle, language: KOPPS_LANG_TO_CANVAS_LANG[language] }
+    return { educationCycle, language }
   } catch (e) {
     // Note: Enable some extra logging for debugging!
     /*console.warn(
@@ -152,6 +151,10 @@ async function getAssignmentData (canvas, courseId) {
     await canvas.list(`/courses/${courseId}/assignments`).toArray()
   ).filter(assignment => assignment.published)
 
+  const publishedLTIAssignments = publishedAssignments.filter(
+    assignment => assignment.is_quiz_lti_assignment
+  )
+
   const assignmentSubmissions = (
     await canvas
       .list(`/courses/${courseId}/students/submissions`, {
@@ -162,7 +165,11 @@ async function getAssignmentData (canvas, courseId) {
       .toArray()
   ).length
 
-  return { assignments: publishedAssignments.length, assignmentSubmissions }
+  return {
+    assignments: publishedAssignments.length,
+    ltiAssignments: publishedLTIAssignments.length,
+    assignmentSubmissions
+  }
 }
 
 async function getDiscussionData (canvas, courseId) {
@@ -225,10 +232,20 @@ async function getQuizData (canvas, courseId) {
   let quizzes = 0
   let quizSubmissions = 0
   for await (quiz of quizzesResponse) {
-    quizzes++
-    quizSubmissions += (
-      await canvas.get(`/courses/${courseId}/quizzes/${quiz.id}/submissions`)
-    ).body.quiz_submissions.length
+    if (quiz.published) {
+      quizzes++
+      const submissionsResponse = await canvas.get(
+        `/courses/${courseId}/quizzes/${quiz.id}/submissions`
+      )
+      for (submission of submissionsResponse.body.quiz_submissions) {
+        if (
+          submission.workflow_state === 'pending_review' ||
+          submission.workflow_state === 'complete'
+        ) {
+          quizSubmissions++
+        }
+      }
+    }
   }
 
   return { quizzes, quizSubmissions }
@@ -240,12 +257,17 @@ async function getModuleData (canvas, courseId) {
   let modules = 0
   let moduleItems = 0
   for await (mod of modulesResponse) {
-    modules++
-    moduleItems += (
-      await canvas
-        .list(`/courses/${courseId}/modules/${mod.id}/items`)
-        .toArray()
-    ).length
+    if (mod.published) {
+      modules++
+      const itemsResponse = canvas.list(
+        `/courses/${courseId}/modules/${mod.id}/items`
+      )
+      for await (item of itemsResponse) {
+        if (item.published) {
+          moduleItems++
+        }
+      }
+    }
   }
 
   return { modules, moduleItems }
@@ -281,50 +303,53 @@ async function start () {
     fs.mkdirSync('output')
   }
   const outputPath = path.resolve('./output', process.env.OUTPUT_DATA_FILE)
-  if (fs.existsSync(outputPath)) {
+  if (fs.existsSync(outputPath) && !process.env.APPEND_FROM_ID) {
     fs.unlinkSync(outputPath)
   }
 
-  // Create a new file and add headers
-  const courseDataHeaders = [
-    'name',
-    'course_code',
-    'course_url',
-    'school',
-    'education_cycle',
-    'sub-account',
-    'number_of_teachers',
-    'number_of_students',
-    'is_published',
-    'is_viewed',
-    'semester',
-    'start_date',
-    'year',
-    'license',
-    'visibility',
-    'language',
-    'is_transferred_to_ladok',
-    'assignments',
-    'assignment_submissions',
-    'discussions',
-    'posts',
-    'pages',
-    'files',
-    'is_outcomes',
-    'quizzes',
-    'quiz_submissions',
-    'modules',
-    'module_items',
-    'conferences',
-    'is_syllabus',
-    'ltis',
-    'ltis_wo_redirect',
-    'avg_participation',
-    'page_views',
-    'is_contentful'
-  ]
-  fs.appendFileSync(outputPath, `${courseDataHeaders.join(';')}\n`)
-
+  if (!process.env.APPEND_FROM_ID) {
+    // Create a new file and add headers
+    const courseDataHeaders = [
+      'name',
+      'course_code',
+      'course_url',
+      'school',
+      'education_cycle',
+      'sub-account',
+      'number_of_teachers',
+      'number_of_students',
+      'is_published',
+      'is_viewed',
+      'semester',
+      'start_date',
+      'year',
+      'license',
+      'visibility',
+      'kopps_language',
+      'canvas_language',
+      'is_transferred_to_ladok',
+      'assignments',
+      'lti_assignments',
+      'assignment_submissions',
+      'discussions',
+      'posts',
+      'pages',
+      'files',
+      'is_outcomes',
+      'quizzes',
+      'quiz_submissions',
+      'modules',
+      'module_items',
+      'conferences',
+      'is_syllabus',
+      'ltis',
+      'ltis_wo_redirect',
+      'avg_participation',
+      'page_views',
+      'is_contentful'
+    ]
+    fs.appendFileSync(outputPath, `${courseDataHeaders.join(';')}\n`)
+  }
   const canvas = CanvasApi(
     process.env.CANVAS_API_URL,
     process.env.CANVAS_ACCESS_TOKEN
@@ -339,6 +364,10 @@ async function start () {
     ]
   })
   for await (const course of courses) {
+    if (course.id < process.env.APPEND_FROM_ID) {
+      console.debug(`Skipping ${course.name} due to append mode.`)
+      continue
+    }
     console.debug(`Processing course: ${course.name}`)
 
     // Step 1: gather course data
@@ -369,15 +398,17 @@ async function start () {
       getYear(course.start_at),
       getLicense(course.license),
       getVisibility(course.is_public, course.is_public_to_auth_users),
-      language ? language : course.locale ? course.locale : 'sv', // Note: Defaulting locale to Swedish!
+      language,
+      course.locale || 'sv', // Note: Defaulting locale to Swedish!
       transferredCourses.includes(courseId)
     ]
 
     // Step 2: gather component data
-    const { assignments, assignmentSubmissions } = await getAssignmentData(
-      canvas,
-      courseId
-    )
+    const {
+      assignments,
+      ltiAssignments,
+      assignmentSubmissions
+    } = await getAssignmentData(canvas, courseId)
 
     const { discussions, posts } = await getDiscussionData(canvas, courseId)
 
@@ -397,6 +428,7 @@ async function start () {
 
     const componentData = [
       assignments, // Note: "New Quizzes" are treated as assignments due to being an LTI app
+      ltiAssignments,
       assignmentSubmissions,
       discussions,
       posts,
