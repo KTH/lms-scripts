@@ -1,6 +1,6 @@
 const inquirer = require('inquirer')
-const http = require('http')
 const got = require('got')
+const fs = require('fs')
 
 async function getCourseDetails () {
   const { courseCode, termNumber } = await inquirer.prompt([
@@ -99,33 +99,18 @@ async function chooseExam (exams) {
   return answer
 }
 
-function serveExam (fileId) {
-  return new Promise(resolve => {
-    const server = new http.Server(async (req, res) => {
-      const url = `https://tentaapi.ug.kth.se/api/v2.0/windream/file/${fileId}/true`
-      console.log(`Getting ${url}`)
+async function saveExam (fileId) {
+  const url = `https://tentaapi.ug.kth.se/api/v2.0/windream/file/${fileId}/true`
+  console.log(`Getting ${url}`)
 
-      const {body} = await got(url, {
-        json: true
-      })
-      console.log(`Downloading ${body.wdFile.fileName}...`)
 
-      res.writeHead(200, {
-        'Content-Type': 'application/pdf',
-        'Content-Disposition': `attachment; filename="${body.wdFile.fileName}"`
-      })
-
-      const download = Buffer.from(body.wdFile.fileAsBase64.toString('utf-8'), 'base64')
-      res.end(download)
-      server.close()
-      resolve()
-    })
-
-    server.listen(3000, () => {
-      console.log(`Go to http://localhost:3000 to download the exam ${fileId}`)
-    })
+  const {body} = await got(url, {
+    json: true
   })
 
+  console.log(`Saving file to "/tmp/${body.wdFile.fileName}"...`)
+  const download = Buffer.from(body.wdFile.fileAsBase64.toString('utf-8'), 'base64')
+  fs.writeFileSync(`/tmp/${body.wdFile.fileName}`, download)
 }
 
 async function start () {
@@ -137,7 +122,7 @@ async function start () {
 
   while (true) {
     await chooseExam(exams)
-      .then(serveExam)
+      .then(saveExam)
   }
 }
 
