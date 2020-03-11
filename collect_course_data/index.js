@@ -321,6 +321,7 @@ async function start () {
   if (!process.env.APPEND_FROM_ID) {
     // Create a new file and add headers
     const courseDataHeaders = [
+      'canvas_id',
       'name',
       'course_code',
       'course_url',
@@ -395,6 +396,7 @@ async function start () {
     )
 
     const courseData = [
+      course.id,
       course.name,
       courseCode,
       getCourseURL(courseId),
