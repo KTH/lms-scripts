@@ -31,7 +31,7 @@ function parseSisId (sisId) {
       year: '?'
     }
   }
-  const found = sisId.match(/(\w+)(HT|VT)(\d\d)/)
+  const found = sisId.match(/(\w+)(HT|VT)(\d\d)(\w+)/)
 
   if (!found) {
     console.warn(`Wrong SIS ID format: ${sisId}`)
