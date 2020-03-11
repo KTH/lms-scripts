@@ -322,6 +322,7 @@ async function start () {
     // Create a new file and add headers
     const courseDataHeaders = [
       'canvas_id',
+      'sis_id',
       'name',
       'course_code',
       'course_url',
@@ -397,6 +398,7 @@ async function start () {
 
     const courseData = [
       course.id,
+      course.sis_course_id,
       course.name,
       courseCode,
       getCourseURL(courseId),
