@@ -22,6 +22,35 @@ function getSchoolName (accountName) {
   return splitAccountName[0]
 }
 
+function parseSisId (sisId) {
+  if (!sisId) {
+    console.warn('Current course has no SIS ID')
+
+    return {
+      courseCode: '?',
+      semester: '?',
+      year: '?'
+    }
+  }
+  const found = sisId.match(/(\w+)(HT|VT)(\d\d)/)
+
+  if (!found) {
+    console.warn(`Wrong SIS ID format: ${sisId}`)
+
+    return {
+      courseCode: '?',
+      semester: '?',
+      year: '?'
+    }
+  }
+
+  return {
+    courseCode: found[1],
+    semester: found[2],
+    year: found[3]
+  }
+}
+
 async function getKOPPSData (courseCode) {
   if (!courseCode || INVALID_COURSE_CODE_CHARACTERS_REGEX.test(courseCode)) {
     return { educationCycle: '', language: '' }
@@ -370,8 +399,9 @@ async function start () {
     }
     console.debug(`Processing /courses/${course.id}: ${course.name}`)
 
+    const { courseCode, semester, year } = parseSisId(course.sis_course_id)
+
     // Step 1: gather course data
-    const courseCode = course.course_code
     const { educationCycle, language } = await getKOPPSData(courseCode)
 
     const subAccount = getSubAccountType(course.account.name)
@@ -393,9 +423,9 @@ async function start () {
       course.total_students, // Note: Active and invited "students" (Student, Re-reg student, Ext. student, PhD student, Manually added student, Admitted not registered student).
       isPublished(course.workflow_state),
       pageViews > 0,
-      getSemester(course.sis_course_id),
+      semester + year,
       course.start_at, // Note: Somewhat speculative. If we can do a perfect mapping with KOPPS, the information from that source is likely better.
-      getYear(course.start_at),
+      year,
       getLicense(course.license),
       getVisibility(course.is_public, course.is_public_to_auth_users),
       language,
