@@ -368,7 +368,7 @@ async function start () {
       console.debug(`Skipping ${course.name} due to append mode.`)
       continue
     }
-    console.debug(`Processing course: ${course.name}`)
+    console.debug(`Processing /courses/${course.id}: ${course.name}`)
 
     // Step 1: gather course data
     const courseCode = course.course_code
