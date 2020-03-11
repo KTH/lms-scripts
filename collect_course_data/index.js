@@ -8,7 +8,6 @@ const fs = require('fs')
 const FOLDER_NAME = 'output'
 // TODO: How should course code filtering work, in general?
 const INVALID_COURSE_CODE_CHARACTERS_REGEX = /Sandbox|@|\s|-|_/
-const SEMESTER_REGEX = /(HT|VT)\d\d/g
 const REDIRECT_URL_PATTERN = /https:\/\/www.edu-apps.org\/redirect/
 
 // For creating an url to a desired course in Canvas
@@ -130,23 +129,6 @@ async function getStudentSummary (canvas, courseId) {
     console.warn(e)*/
     return false
   }
-}
-
-function getSemester (sisId) {
-  if (!sisId) {
-    return ''
-  }
-
-  const semester = sisId.match(SEMESTER_REGEX)
-  return semester ? semester[0] : ''
-}
-
-function getYear (dateString) {
-  if (!dateString) {
-    return ''
-  }
-
-  return new Date(dateString).getFullYear()
 }
 
 function getLicense (licenseString) {
