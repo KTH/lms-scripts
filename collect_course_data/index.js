@@ -26,9 +26,9 @@ function parseSisId (sisId) {
     console.warn('Current course has no SIS ID')
 
     return {
-      courseCode: '?',
-      semester: '?',
-      year: '?'
+      courseCode: '',
+      semester: '',
+      year: ''
     }
   }
   const found = sisId.match(/(\w+)(HT|VT)(\d\d)(\w+)/)
@@ -37,9 +37,9 @@ function parseSisId (sisId) {
     console.warn(`Wrong SIS ID format: ${sisId}`)
 
     return {
-      courseCode: '?',
-      semester: '?',
-      year: '?'
+      courseCode: '',
+      semester: '',
+      year: ''
     }
   }
 
