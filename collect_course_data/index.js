@@ -18,7 +18,7 @@ function getCourseURL (courseId) {
 // For parsing the school name from an account name
 function getSchoolName (accountName) {
   const splitAccountName = accountName.split(' ')
-  return splitAccountName[0]
+  return splitAccountName[0] === 'Ω' ? 'OMEGA' : splitAccountName[0]
 }
 
 function parseSisId (sisId) {
@@ -415,7 +415,7 @@ async function start () {
       getLicense(course.license),
       getVisibility(course.is_public, course.is_public_to_auth_users),
       language,
-      course.locale || 'sv', // Note: Defaulting locale to Swedish!
+      course.locale || 'default',
       transferredCourses.includes(courseId)
     ]
 

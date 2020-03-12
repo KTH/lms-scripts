@@ -60,7 +60,7 @@ The output of this script contains the following data.
 - _kopps_language_\
   The language of the course fetch from a "randomly" selected course round of the course in Kopps. The logic might need to be improved to pick the correct course round.
 - _canvas_language_\
-  The locale of the course in Canvas. Defaults to `sv`.
+  The locale of the course in Canvas. If no value has been set it is listed as `default`.
 - _is_transferred_to_ladok_\
   Set to `true` if there is at least one record in the _Transfer to Ladok LTI app_ log database of grades being sent from the course.
 - _assignments_\
