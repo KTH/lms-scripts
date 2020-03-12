@@ -9,6 +9,17 @@ const FOLDER_NAME = 'output'
 // TODO: How should course code filtering work, in general?
 const INVALID_COURSE_CODE_CHARACTERS_REGEX = /Sandbox|@|\s|-|_/
 const REDIRECT_URL_PATTERN = /https:\/\/www.edu-apps.org\/redirect/
+const NEW_SCHOOL_MAP = new Map([
+  ['BIO', 'CBH'],
+  ['CSC', 'EECS'],
+  ['EES', 'EECS'],
+  ['STH', 'CBH'],
+  ['ICT', 'EECS'],
+  ['CHE', 'CBH'],
+  ['ECE', 'ITM'],
+  ['UF', 'GVS'],
+  ['Ω', 'OMEGA']
+])
 
 // For creating an url to a desired course in Canvas
 function getCourseURL (courseId) {
@@ -18,7 +29,8 @@ function getCourseURL (courseId) {
 // For parsing the school name from an account name
 function getSchoolName (accountName) {
   const splitAccountName = accountName.split(' ')
-  return splitAccountName[0] === 'Ω' ? 'OMEGA' : splitAccountName[0]
+  const newAccountName = NEW_SCHOOL_MAP.get(splitAccountName[0])
+  return newAccountName ? newAccountName : splitAccountName[0]
 }
 
 function parseSisId (sisId) {
