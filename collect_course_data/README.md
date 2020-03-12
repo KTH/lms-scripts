@@ -23,10 +23,14 @@ To make the script run properly, one needs to create a file called `.env` and se
 
 The output of this script contains the following data.
 
+- _canvas_id_\
+  The ID for the course in Canvas.
+- _sis_id_\
+  The SIS ID for the course in Canvas.
 - _name_\
   The name of the course in Canvas.
 - _course_code_\
-  The course code of the course in Canvas.
+  The course code extracted from the _SIS ID_ of the course in Canvas.
 - _course_url_\
   The url to the course in Canvas Test.
 - _school_\
@@ -48,7 +52,7 @@ The output of this script contains the following data.
 - _start_date_\
   The start date of the Canvas course. If missing; an empty string.
 - _year_\
-  The start year of the Canvas course. If missing; an empty string.
+  The start year of the Canvas course, extracted from the _SIS ID_ of the course. If missing; an empty string.
 - _license_\
   The license of the course in Canvas. Simplified to three different values; `Private`, `Public Domain` or `Creative Commons` (or an empty string if missing).
 - _visibility_\
