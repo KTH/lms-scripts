@@ -4,6 +4,8 @@ const CanvasApi = require('@kth/canvas-api')
 const got = require('got')
 const path = require('path')
 const fs = require('fs')
+const util = require('util')
+const parseStringAsync = util.promisify(require('xml2js').parseString)
 
 const FOLDER_NAME = 'output'
 // TODO: How should course code filtering work, in general?
@@ -19,6 +21,10 @@ const NEW_SCHOOL_MAP = new Map([
   ['ECE', 'ITM'],
   ['UF', 'GVS'],
   ['Ω', 'OMEGA']
+])
+const SEMESTER_TO_NUMBER = new Map([
+  ['VT', 1],
+  ['HT', 2]
 ])
 
 // For creating an url to a desired course in Canvas
@@ -40,7 +46,8 @@ function parseSisId (sisId) {
     return {
       courseCode: '',
       semester: '',
-      year: ''
+      year: '',
+      roundId: ''
     }
   }
   const found = sisId.match(/(\w+)(HT|VT)(\d\d)(\w+)/)
@@ -51,38 +58,54 @@ function parseSisId (sisId) {
     return {
       courseCode: '',
       semester: '',
-      year: ''
+      year: '',
+      roundId: ''
     }
   }
 
   return {
     courseCode: found[1],
     semester: found[2],
-    year: found[3]
+    year: found[3],
+    roundId: found[4]
   }
 }
 
-async function getKOPPSData (courseCode) {
+// Note: Using KOPPS v1 since it seems to be the place to get all the needed info.
+async function getKOPPSData (courseCode, semester, year, roundId) {
+  const periods = []
   if (!courseCode || INVALID_COURSE_CODE_CHARACTERS_REGEX.test(courseCode)) {
-    return { educationCycle: '', language: '' }
+    return { educationCycle: '', language: '', periods }
   }
 
   try {
-    const response = await got(
-      `${process.env.KOPPS_API_URL}/course/${courseCode}/detailedinformation`
-    ).json()
-    const educationCycle = response.course.educationalLevelCode
-    const language = response.roundInfos
-      ? response.roundInfos[0].round.language
-      : '' // TODO: This might need fine tuning!
-    return { educationCycle, language }
+    const courseResponse = await got(
+      `${process.env.KOPPS_API_V1_URL}/course/${courseCode}`
+    )
+    const courseResponseObject = await parseStringAsync(courseResponse.body)
+    const educationCycle = courseResponseObject.course.educationalLevelCode[0]._
+
+    const roundResponse = await got(
+      `${
+        process.env.KOPPS_API_V1_URL
+      }/course/${courseCode}/round/20${year}:${SEMESTER_TO_NUMBER.get(
+        semester
+      )}/${roundId}`
+    )
+    const roundResponseObject = await parseStringAsync(roundResponse.body)
+    const language = roundResponseObject.courseRound.tutoringLanguage[1]._
+
+    for (const p of roundResponseObject.courseRound.periods[0].period) {
+      periods.push(p.$.number)
+    }
+    return { educationCycle, language, periods }
   } catch (e) {
     // Note: Enable some extra logging for debugging!
     /*console.warn(
       `Something went wrong when calling the KOPPS for course ${courseCode}`
     )
     console.warn(e)*/
-    return { educationCycle: '', language: '' }
+    return { educationCycle: '', language: '', periods }
   }
 }
 
@@ -347,6 +370,7 @@ async function start () {
       'is_viewed',
       'semester',
       'start_date',
+      'periods',
       'year',
       'license',
       'visibility',
@@ -395,10 +419,17 @@ async function start () {
     }
     console.debug(`Processing /courses/${course.id}: ${course.name}`)
 
-    const { courseCode, semester, year } = parseSisId(course.sis_course_id)
+    const { courseCode, semester, year, roundId } = parseSisId(
+      course.sis_course_id
+    )
 
     // Step 1: gather course data
-    const { educationCycle, language } = await getKOPPSData(courseCode)
+    const { educationCycle, language, periods } = await getKOPPSData(
+      courseCode,
+      semester,
+      year,
+      roundId
+    )
 
     const subAccount = getSubAccountType(course.account.name)
 
@@ -423,6 +454,7 @@ async function start () {
       pageViews > 0,
       semester + year,
       course.start_at, // Note: Somewhat speculative. If we can do a perfect mapping with KOPPS, the information from that source is likely better.
+      periods.join(','),
       year,
       getLicense(course.license),
       getVisibility(course.is_public, course.is_public_to_auth_users),

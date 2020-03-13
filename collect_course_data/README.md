@@ -10,8 +10,8 @@ To make the script run properly, one needs to create a file called `.env` and se
   This variable points to the relevant Canvas API to use.
 - **CANVAS_ACCESS_TOKEN**\
   This variable contains an access token for the Canvas API.
-- **KOPPS_API_URL**\
-  This variable points to the Kopps API v2.
+- **KOPPS_API_V1_URL**\
+  This variable points to the Kopps API v1.
 - **MONGODB_CONNECTION_STRING**\
   This variable contains a connection string to a MongoDB database containing stats about certain LTI usage.
 - **MONGODB_DATABASE_NAME**\
@@ -51,6 +51,8 @@ The output of this script contains the following data.
   Either `HTXX` or `VTXX` where `XX` is a year. The value is extracted from the _SIS ID_ of the course; if it is malformed, no value is set.
 - _start_date_\
   The start date of the Canvas course. If missing; an empty string.
+- _periods_\
+  The periods over which the course runs (separated by commas). Data fetched from Kopps.
 - _year_\
   The start year of the Canvas course, extracted from the _SIS ID_ of the course. If missing; an empty string.
 - _license_\
