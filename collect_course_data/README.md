@@ -66,7 +66,9 @@ The output of this script contains the following data.
 - _is_transferred_to_ladok_\
   Set to `true` if there is at least one record in the _Transfer to Ladok LTI app_ log database of grades being sent from the course.
 - _assignments_\
-  The number of published assignments in the course.
+  The total number of published assignments in the course.
+- _quiz_assignments_\
+  The number of published assignments in the course that are of type quiz. Subset of _assignments_.
 - _lti_assignments_\
   The number of published assignments that are associated with an LTI, e.g. Quizzes.Next. Subset of _assignments_.
 - _assignment_submissions_\

@@ -197,6 +197,10 @@ async function getAssignmentData (canvas, courseId) {
     await canvas.list(`/courses/${courseId}/assignments`).toArray()
   ).filter(assignment => assignment.published)
 
+  const publishedQuizAssignments = publishedAssignments.filter(
+    assignment => assignment.is_quiz_assignment
+  )
+
   const publishedLTIAssignments = publishedAssignments.filter(
     assignment => assignment.is_quiz_lti_assignment
   )
@@ -213,6 +217,7 @@ async function getAssignmentData (canvas, courseId) {
 
   return {
     assignments: publishedAssignments.length,
+    quizAssignments: publishedQuizAssignments.length,
     ltiAssignments: publishedLTIAssignments.length,
     assignmentSubmissions
   }
@@ -378,6 +383,7 @@ async function start () {
       'canvas_language',
       'is_transferred_to_ladok',
       'assignments',
+      'quiz_assignments',
       'lti_assignments',
       'assignment_submissions',
       'discussions',
@@ -466,6 +472,7 @@ async function start () {
     // Step 2: gather component data
     const {
       assignments,
+      quizAssignments,
       ltiAssignments,
       assignmentSubmissions
     } = await getAssignmentData(canvas, courseId)
@@ -488,6 +495,7 @@ async function start () {
 
     const componentData = [
       assignments, // Note: "New Quizzes" are treated as assignments due to being an LTI app
+      quizAssignments, // Note: "Old Quizzes" are included in assignments if they are of type "graded"
       ltiAssignments,
       assignmentSubmissions,
       discussions,
