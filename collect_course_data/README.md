@@ -39,6 +39,12 @@ The output of this script contains the following data.
   The educational level code of the course from Kopps.
 - _sub-account_\
   The type of subaccount which contains the course in Canvas. Can be `manual`, `imported`, `sandbox` or an empty string.
+- _sections_\
+  The total number of sections in the course.
+- _cross-listed_sections_\
+  The total number of cross-listed sections in the course. A subset of _sections_.
+- _section_sis_ids_\
+  A list of the _SIS ID_ for each section in the course. Sections missing a _SIS ID_ will be excluded.
 - _number_of_teachers_\
   The number of teachers associated with the course in Canvas. Includes the roles `Teacher`, `Course Responsible`, `Examiner`, `Ext. teacher`, `Course admin`.
 - _number_of_students_\

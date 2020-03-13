@@ -121,6 +121,24 @@ function getSubAccountType (accountName) {
   }
 }
 
+async function getSectionData (canvas, courseId) {
+  const sectionsResponse = await canvas
+    .list(`/courses/${courseId}/sections`)
+    .toArray()
+
+  const sections = sectionsResponse.length
+
+  const crossListedSections = sectionsResponse.filter(
+    section => section.nonxlist_course_id
+  ).length
+
+  const sectionIds = sectionsResponse
+    .filter(section => section.sis_section_id)
+    .map(section => section.sis_section_id)
+
+  return { sections, crossListedSections, sectionIds }
+}
+
 function isPublished (state) {
   switch (state) {
     case 'unpublished':
@@ -376,6 +394,9 @@ async function start () {
       'school',
       'education_cycle',
       'sub-account',
+      'sections',
+      'cross-listed_sections',
+      'section_sis_ids',
       'number_of_teachers',
       'number_of_students',
       'is_published',
@@ -427,11 +448,12 @@ async function start () {
     ]
   })
   for await (const course of courses) {
-    if (course.id < process.env.APPEND_FROM_ID) {
+    const courseId = course.id
+    if (courseId < process.env.APPEND_FROM_ID) {
       console.debug(`Skipping ${course.name} due to append mode.`)
       continue
     }
-    console.debug(`Processing /courses/${course.id}: ${course.name}`)
+    console.debug(`Processing /courses/${courseId}: ${course.name}`)
 
     const { courseCode, semester, year, roundId } = parseSisId(
       course.sis_course_id
@@ -445,23 +467,31 @@ async function start () {
       roundId
     )
 
-    const subAccount = getSubAccountType(course.account.name)
+    const courseAccountName = course.account.name
+    const subAccount = getSubAccountType(courseAccountName)
 
-    const courseId = course.id
+    const { sections, crossListedSections, sectionIds } = await getSectionData(
+      canvas,
+      courseId
+    )
+
     const { pageViews, averageParticipation } = await getStudentSummary(
       canvas,
       courseId
     )
 
     const courseData = [
-      course.id,
+      courseId,
       course.sis_course_id,
       course.name,
       courseCode,
       getCourseURL(courseId),
-      getSchoolName(course.account.name),
+      getSchoolName(courseAccountName),
       educationCycle,
       subAccount,
+      sections,
+      crossListedSections,
+      sectionIds.join(','),
       course.teachers.length, // Note: (Teacher, Course Responsible, Examiner, Ext. teacher, Course admin).
       course.total_students, // Note: Active and invited "students" (Student, Re-reg student, Ext. student, PhD student, Manually added student, Admitted not registered student).
       isPublished(course.workflow_state),
