@@ -192,6 +192,13 @@ function getVisibility (isPublic, isPublicToAuthUsers) {
   }
 }
 
+async function getGroupData (canvas, courseId) {
+  const groupsWithMembers = (
+    await canvas.list(`/courses/${courseId}/groups`).toArray()
+  ).filter(group => group.members_count > 0)
+  return groupsWithMembers.length
+}
+
 async function getAssignmentData (canvas, courseId) {
   const publishedAssignments = (
     await canvas.list(`/courses/${courseId}/assignments`).toArray()
@@ -382,6 +389,7 @@ async function start () {
       'kopps_language',
       'canvas_language',
       'is_transferred_to_ladok',
+      'groups',
       'assignments',
       'quiz_assignments',
       'lti_assignments',
@@ -470,6 +478,8 @@ async function start () {
     ]
 
     // Step 2: gather component data
+    const groups = await getGroupData(canvas, courseId)
+
     const {
       assignments,
       quizAssignments,
@@ -494,6 +504,7 @@ async function start () {
     const { ltis, redirects } = await getExternalTools(canvas, courseId)
 
     const componentData = [
+      groups,
       assignments, // Note: "New Quizzes" are treated as assignments due to being an LTI app
       quizAssignments, // Note: "Old Quizzes" are included in assignments if they are of type "graded"
       ltiAssignments,

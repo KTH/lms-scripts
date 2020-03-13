@@ -65,6 +65,8 @@ The output of this script contains the following data.
   The locale of the course in Canvas. If no value has been set it is listed as `default`.
 - _is_transferred_to_ladok_\
   Set to `true` if there is at least one record in the _Transfer to Ladok LTI app_ log database of grades being sent from the course.
+- _groups_\
+  The total number of groups with at least one member, in the course.
 - _assignments_\
   The total number of published assignments in the course.
 - _quiz_assignments_\
