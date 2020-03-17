@@ -1,0 +1,38 @@
+{
+  "name": "collect_course_data",
+  "version": "1.0.0",
+  "description": "A simple script which collects quality data about courses in an LMS.",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "test": "prettier-standard --lint --check \"**/*.{js,md,yml,json}\"",
+    "format": "prettier-standard \"**/*.{js,md,yml,json}\"",
+    "debug": "NODE_ENV=development node --nolazy --inspect-brk=9229 index.js | bunyan -o short"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/KTH/lms-scripts.git"
+  },
+  "keywords": [
+    "canvas",
+    "lms",
+    "data",
+    "kth"
+  ],
+  "author": "team e-larande",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/KTH/lms-scripts/issues"
+  },
+  "homepage": "https://github.com/KTH/lms-scripts#readme",
+  "devDependencies": {
+    "prettier-standard": "^16.1.0"
+  },
+  "dependencies": {
+    "@kth/canvas-api": "^2.1.0",
+    "dotenv": "^8.2.0",
+    "got": "^10.6.0",
+    "mongodb": "^3.5.3",
+    "xml2js": "^0.4.23"
+  }
+}
