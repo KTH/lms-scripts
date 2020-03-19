@@ -6,75 +6,36 @@ const path = require('path')
 inquirer.registerPrompt('datetime', require('inquirer-datepicker-prompt'))
 
 async function getExamDate() {
-  const { courseCode } = await inquirer.prompt([
+  const { examDate} = await inquirer.prompt([
     {
       type: 'datetime',
-      format: ['yyyy', '-', 'MM', '-', 'dd' ],
+      format: ['yyyy', '-', 'mm', '-', 'dd' ],
       name: 'examDate',
       message: 'Write the examination date for the exam'
     }
   ])
 
-  return courseCode
+  return examDate 
 }
-
-
 
 async function getCourseCode () {
   const { courseCode } = await inquirer.prompt([
     {
       type: 'input',
       name: 'courseCode',
-      message: 'Write a course code (XX0000)',
+      default: 'AF1733',
+      message: 'Write a course code ',
     }
   ])
 
   return courseCode
 }
 
-async function getModules (courseCode) {
-  const { body: courseDetails } = await got(
-    `https://api.kth.se/api/kopps/v2/course/${courseCode}/detailedinformation`,
-    {
-      json: true
-    }
-  )
-
-  const examinationRounds = []
-  for (const set of Object.values(courseDetails.examinationSets)) {
-    for (const e of set.examinationRounds) {
-      examinationRounds.push(e)
-    }
-  }
-
-  return examinationRounds.map(round => ({
-    id: round.ladokUID,
-    name: round.examCode,
-    title: round.title
-  }))
-}
-
-async function chooseModule (modules) {
-  const { answer } = await inquirer.prompt([
-    {
-      type: 'list',
-      name: 'answer',
-      message: 'Choose a module',
-      choices: modules.map(m => ({
-        name: `${m.name} (${m.title})`,
-        value: m.name,
-        short: m.name
-      }))
-    },
-  ])
-
-  return answer
-}
-
 async function getExams (courseCode, examId) {
   console.log(`Getting the list of exams in ${courseCode} (it may take a while)`)
 
   const { body } = await got(`https://tentaapi.ug.kth.se/api/v2.0/windream/search/documents/c_code/${courseCode}/true/false/false/false`, {
+    method: 'POST',
     json: true
   })
 
@@ -150,15 +111,12 @@ async function saveExams (fileIds) {
 }
 
 async function start () {
-  const examDate = await getExamDate()
   const courseCode = await getCourseCode()
-  const examId = await getModules(courseCode)
-    .then(chooseModule)
+  const examDate = await getExamDate()
 
-  const exams = await getExams(courseCode, examId)
+  const exams = await getExams(courseCode, examDate)
 
-  await chooseStudent(exams)
-    .then(saveExams)
+  await saveExams(exams) 
 }
 
 start()
