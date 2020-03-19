@@ -108,7 +108,7 @@ async function chooseStudent (exams) {
 }
 
 async function saveExams (courseCode, examDate, examObjects) {
-  const dir = `exams/${courseCode}/examDate` 
+  const dir = `exams/${courseCode}/${examDate}` 
   const exists = util.promisify(fs.exists)
   const mkdir = util.promisify(fs.mkdir)
 
@@ -125,7 +125,7 @@ async function saveExams (courseCode, examDate, examObjects) {
       json: true
     })
 
-    const filePath = path.join(dir, body.wdFile.fileName)
+    const filePath = path.join(dir, kthId )
 
     console.log(`Saving file to "${filePath}"...`)
     const download = Buffer.from(body.wdFile.fileAsBase64.toString('utf-8'), 'base64')
