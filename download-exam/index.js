@@ -125,7 +125,7 @@ async function saveExams (courseCode, examDate, examObjects) {
       json: true
     })
 
-    const filePath = path.join(dir, kthId )
+    const filePath = path.join(dir, `${kthId}-${ body.wdFile.fileName}`) 
 
     console.log(`Saving file to "${filePath}"...`)
     const download = Buffer.from(body.wdFile.fileAsBase64.toString('utf-8'), 'base64')
