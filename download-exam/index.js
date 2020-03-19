@@ -3,6 +3,22 @@ const got = require('got')
 const fs = require('fs')
 const os = require('os')
 const path = require('path')
+inquirer.registerPrompt('datetime', require('inquirer-datepicker-prompt'))
+
+async function getExamDate() {
+  const { courseCode } = await inquirer.prompt([
+    {
+      type: 'datetime',
+      format: ['yyyy', '-', 'MM', '-', 'dd' ],
+      name: 'examDate',
+      message: 'Write the examination date for the exam'
+    }
+  ])
+
+  return courseCode
+}
+
+
 
 async function getCourseCode () {
   const { courseCode } = await inquirer.prompt([
@@ -134,6 +150,7 @@ async function saveExams (fileIds) {
 }
 
 async function start () {
+  const examDate = await getExamDate()
   const courseCode = await getCourseCode()
   const examId = await getModules(courseCode)
     .then(chooseModule)

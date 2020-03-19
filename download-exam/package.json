@@ -12,6 +12,8 @@
   "license": "ISC",
   "dependencies": {
     "got": "^9.6.0",
-    "inquirer": "^7.0.6"
+    "inquirer": "^7.0.6",
+    "inquirer-autocomplete-prompt": "^1.0.2",
+    "inquirer-datepicker-prompt": "^0.4.2"
   }
 }
