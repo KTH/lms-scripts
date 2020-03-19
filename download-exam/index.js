@@ -2,7 +2,9 @@ const inquirer = require('inquirer')
 const got = require('got')
 const fs = require('fs')
 const os = require('os')
+const util = require('util')
 const path = require('path')
+
 inquirer.registerPrompt('datetime', require('inquirer-datepicker-prompt'))
 
 async function getExamDate() {
@@ -66,7 +68,6 @@ async function getExams (courseCode, examDate) {
   return body.documentSearchResults
     .map(result => ({
       id: result.fileId,
-      date: result.createDate,
       kthId: getValue(result, 's_uid')
     }))
 }
@@ -106,10 +107,16 @@ async function chooseStudent (exams) {
     .map(exam => exam.id)
 }
 
-async function saveExams (fileIds) {
-  const directory = fs.mkdtempSync(os.tmpdir())
+async function saveExams (courseCode, examDate, examObjects) {
+  const dir = `exams/${courseCode}/examDate` 
+  const exists = util.promisify(fs.exists)
+  const mkdir = util.promisify(fs.mkdir)
 
-  for (const fileId of fileIds) {
+  if (!await exists(dir)){
+    await mkdir(dir, { recursive: true })
+  }
+
+  for (const {id:fileId, kthId} of examObjects) {
     const url = `https://tentaapi.ug.kth.se/api/v2.0/windream/file/${fileId}/true`
     console.log(`Getting ${url}`)
 
@@ -118,7 +125,7 @@ async function saveExams (fileIds) {
       json: true
     })
 
-    const filePath = path.join(directory, body.wdFile.fileName)
+    const filePath = path.join(dir, body.wdFile.fileName)
 
     console.log(`Saving file to "${filePath}"...`)
     const download = Buffer.from(body.wdFile.fileAsBase64.toString('utf-8'), 'base64')
@@ -134,7 +141,7 @@ async function start () {
   const exams = await getExams(courseCode, examDate)
   console.log(exams)
 
-  // await saveExams(exams) 
+  await saveExams(courseCode, examDate, exams) 
 }
 
 start()
