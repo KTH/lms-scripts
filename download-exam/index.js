@@ -11,6 +11,7 @@ async function getExamDate() {
       type: 'datetime',
       format: ['yyyy', '-', 'mm', '-', 'dd' ],
       name: 'examDate',
+      initial: new Date('2020-03-10'),
       message: 'Write the examination date for the exam'
     }
   ])
@@ -31,26 +32,42 @@ async function getCourseCode () {
   return courseCode
 }
 
-async function getExams (courseCode, examId) {
+async function getExams (courseCode, examDate) {
   console.log(`Getting the list of exams in ${courseCode} (it may take a while)`)
 
-  const { body } = await got(`https://tentaapi.ug.kth.se/api/v2.0/windream/search/documents/c_code/${courseCode}/true/false/false/false`, {
+  const { body } = await got('https://tentaapi.ug.kth.se/api/v2.0/windream/search/documents/false', {
     method: 'POST',
-    json: true
+    json: true,
+    body: {
+  "searchIndiceses": [
+    {
+      "index": "c_code",
+      "value": courseCode,
+      "useWildcard": false
+    },
+    {
+      "index": "e_date",
+      "value": examDate,
+      "useWilcard": false
+    }
+  ],
+  "includeDocumentIndicesesInResponse": true,
+  "includeSystemIndicesesInResponse": false,
+  "useDatesInSearch": false
+}
   })
 
+  if(!body || !body.documentSearchResults){
+    console.warn('Found no exams for this date!')
+    return []
+  }
   console.log(body.documentSearchResults.length)
 
   return body.documentSearchResults
-    .filter(result =>
-      result.documentIndiceses.find(indice => indice.index === 'e_code' && indice.value === examId)
-    )
     .map(result => ({
       id: result.fileId,
       date: result.createDate,
-      kthId: getValue(result, 's_uid'),
-      firstName: getValue(result, 's_firstname'),
-      lastName: getValue(result, 's_lastname')
+      kthId: getValue(result, 's_uid')
     }))
 }
 
@@ -115,8 +132,9 @@ async function start () {
   const examDate = await getExamDate()
 
   const exams = await getExams(courseCode, examDate)
+  console.log(exams)
 
-  await saveExams(exams) 
+  // await saveExams(exams) 
 }
 
 start()
