@@ -34,8 +34,7 @@ async function getCourseCode () {
   return courseCode
 }
 
-async function getExams (courseCode, examDate) {
-  const examDateFormatted = moment(examDate).format('YYYY-MM-DD')
+async function getExams (courseCode, examDateFormatted) {
   console.log(`Getting the list of exams in ${courseCode} for date ${examDateFormatted} (it may take a while)`)
 
   const { body } = await got('https://tentaapi.ug.kth.se/api/v2.0/windream/search/documents/false', {
@@ -140,11 +139,11 @@ async function saveExams (courseCode, examDate, examObjects) {
 async function start () {
   const courseCode = await getCourseCode()
   const examDate = await getExamDate()
+  const examDateFormatted = moment(examDate).format('YYYY-MM-DD')
 
-  const exams = await getExams(courseCode, examDate)
-  console.log(exams)
+  const exams = await getExams(courseCode, examDateFormatted)
 
-  await saveExams(courseCode, examDate, exams) 
+  await saveExams(courseCode, examDateFormatted, exams) 
 }
 
 start()
