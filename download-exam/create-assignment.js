@@ -121,11 +121,12 @@ async function start () {
       assignment: {
         name: `LADOK - ${examinationRound.examCode} (${examinationRound.title})`,
         description: `This assignment is created for Ladok module <strong>"${examinationRound.title}" (${examinationRound.examCode})</strong>.<br>Scanned exams is imported into this exam as submissions.<br>This assignment is prepared to send to Ladok with the "KTH Transfer to Ladok" link.`,
-        muted: true,
         submission_types: ['online_upload'],
         grading_type: 'letter_grade',
         points_possible: 10,
         grading_standard_id: gradingSchemas[examinationRound.gradeScaleCode],
+        allowed_attempts: 1,
+        post_manually: false, 
         integration_id: modulId,
         integration_data: JSON.stringify({
           sis_assignment_id: assignmentSisID
