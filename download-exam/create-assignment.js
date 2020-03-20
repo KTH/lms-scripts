@@ -111,7 +111,6 @@ async function start () {
 
   const examinationRounds = examinationSets[examinationSets.length - 1].examinationRounds
   const examinationRound = await chooseLadokModule(examinationRounds)
-  console.log(examinationRound)
   
     const assignmentSisID = `${course.sis_course_id}_${examinationRound.examCode}`
   //   const assignment = assignments.find(a => a.integration_data.sis_assignment_id === assignmentSisID)
@@ -123,7 +122,7 @@ async function start () {
         name: `LADOK - ${examinationRound.examCode} (${examinationRound.title})`,
         description: `This assignment is created for Ladok module <strong>"${examinationRound.title}" (${examinationRound.examCode})</strong>.<br>Scanned exams is imported into this exam as submissions.<br>This assignment is prepared to send to Ladok with the "KTH Transfer to Ladok" link.`,
         muted: true,
-        submission_types: ['online'],
+        submission_types: ['online_upload'],
         grading_type: 'letter_grade',
         points_possible: 10,
         grading_standard_id: gradingSchemas[examinationRound.gradeScaleCode],
@@ -133,16 +132,7 @@ async function start () {
         })
       }
     }
-  console.log(body)
-  //
-  //   if (!assignment) {
-  //     await canvas.requestUrl(`courses/${course.id}/assignments/`, 'POST', body)
-  //   } else if (modulId !== assignment.integration_id) {
-  //     await canvas.requestUrl(`courses/${course.id}/assignments/${assignment.id}`, 'PUT', body)
-  //   }
-  // }
-
-
+  await canvas.requestUrl(`courses/${course.id}/assignments/`, 'POST', body)
 }
 
 start().catch(e => console.error(e))
