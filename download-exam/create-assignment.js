@@ -134,7 +134,7 @@ async function start () {
       }
     }
   await canvas.requestUrl(`courses/${course.id}/assignments/`, 'POST', body)
-  console.log(Done.)
+  console.log('Done.')
 }
 
 start().catch(e => console.error(e))
