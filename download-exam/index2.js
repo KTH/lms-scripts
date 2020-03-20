@@ -31,30 +31,18 @@ async function sendFile ({ upload_url, upload_params }, filePath) {
     })
 }
 
-async function start () {
-  const canvas = CanvasApi(process.env.CANVAS_API_URL, process.env.CANVAS_API_TOKEN)
-
-  const courseId = 8318
-  const assignmentId = 108237
-  const userId = 77979
-  const filePath = 'exams/AF1733/2020-03-10/u1a4mc9g-UDQ7IQIP0000.pdf'
-
-  // Create the "spot"
+async function submitFile (courseId, assignmentId, userId, filePath) {
+  // Create the "spot" for the submission file
   const { body: spot } = await canvas.requestUrl(
     `/courses/${courseId}/assignments/${assignmentId}/submissions/${userId}/files`,
     'POST'
   )
 
-  console.log('Spot created')
-  console.log(spot)
-
+  // Upload the actual file
   const { body: uploadedFile } = await sendFile(spot, filePath)
 
-  console.log('File uploaded')
-  console.log(uploadedFile)
-
   // 3. Link the uploaded file with the submission
-  const { body } = await canvas.requestUrl(
+  await canvas.requestUrl(
     `/courses/${courseId}/assignments/${assignmentId}/submissions/`,
     'POST',
     {
@@ -65,6 +53,21 @@ async function start () {
       }
     }
   )
+}
+
+async function start () {
+  const canvas = CanvasApi(process.env.CANVAS_API_URL, process.env.CANVAS_API_TOKEN)
+
+  const courseId = 8318
+  const assignmentId = 108237
+  const kthId = 'u1a4mc9g'
+  const filePath = 'exams/AF1733/2020-03-10/u1a4mc9g-UDQ7IQIP0000.pdf'
+
+  // Get the user ID
+  const { body: user } = await canvas.get(`/users/sis_user_id:${kthId}`)
+  const userId = user.id
+
+  await submitFile(courseId, assignmentId, userId, filePath)
 }
 
 start()
