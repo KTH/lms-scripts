@@ -119,7 +119,7 @@ async function start () {
 
     const body = {
       assignment: {
-        name: `LADOK - ${examinationRound.examCode} (${examinationRound.title})`,
+        name: `${examinationRound.examCode} (${examinationRound.title})`,
         description: `This assignment is created for Ladok module <strong>"${examinationRound.title}" (${examinationRound.examCode})</strong>.<br>Scanned exams is imported into this exam as submissions.<br>This assignment is prepared to send to Ladok with the "KTH Transfer to Ladok" link.`,
         submission_types: ['online_upload'],
         grading_type: 'letter_grade',
