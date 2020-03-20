@@ -18,7 +18,7 @@ async function getExamDate() {
     }
   ])
 
-  return examDate 
+  return examDate
 }
 
 async function getCourseCode () {
@@ -78,37 +78,8 @@ function getValue (exam, key) {
   return keyValue && keyValue.value
 }
 
-async function chooseStudent (exams) {
-  console.log(`Got ${exams.length} exams`)
-
-  // Group by student
-  const students = new Map()
-
-  for (const exam of exams) {
-    if (students.has(exam.kthId)) {
-      students.set(exam.kthId, students.get(exam.kthId) + 1)
-    } else {
-      students.set(exam.kthId, 1)
-    }
-  }
-
-  const { answer } = await inquirer.prompt([{
-    type: 'list',
-    name: 'answer',
-    message: 'Choose a student',
-    choices: Array.from(students, ([k, v]) => ({
-      name: `${k} (it has ${v} exams)`,
-      value: k,
-    }))
-  }])
-
-  return exams
-    .filter(exam => exam.kthId === answer)
-    .map(exam => exam.id)
-}
-
 async function saveExams (courseCode, examDate, examObjects) {
-  const dir = `exams/${courseCode}/${examDate}` 
+  const dir = `exams/${courseCode}/${examDate}`
   const exists = util.promisify(fs.exists)
   const mkdir = util.promisify(fs.mkdir)
 
@@ -125,7 +96,7 @@ async function saveExams (courseCode, examDate, examObjects) {
       json: true
     })
 
-    const filePath = path.join(dir, `${kthId}-${ body.wdFile.fileName}`) 
+    const filePath = path.join(dir, `${kthId}-${ body.wdFile.fileName}`)
 
     console.log(`Saving file to "${filePath}"...`)
     const download = Buffer.from(body.wdFile.fileAsBase64.toString('utf-8'), 'base64')
@@ -141,7 +112,7 @@ async function start () {
   const exams = await getExams(courseCode, examDate)
   console.log(exams)
 
-  await saveExams(courseCode, examDate, exams) 
+  await saveExams(courseCode, examDate, exams)
 }
 
 start()
