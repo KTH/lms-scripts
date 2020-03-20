@@ -68,11 +68,13 @@ async function getExams (courseCode, examDate) {
   return body.documentSearchResults
     .map(result => ({
       id: result.fileId,
+      eCode: getValue(result, 'e_code'),
       kthId: getValue(result, 's_uid')
     }))
 }
 
 function getValue (exam, key) {
+  // exam.documentIndiceses.forEach(i => console.log(i.index)) 
   const keyValue = exam.documentIndiceses.find(i => i.index === key)
 
   return keyValue && keyValue.value
@@ -116,7 +118,7 @@ async function saveExams (courseCode, examDate, examObjects) {
     await mkdir(dir, { recursive: true })
   }
 
-  for (const {id:fileId, kthId} of examObjects) {
+  for (const {id:fileId, kthId, eCode} of examObjects) {
     const url = `https://tentaapi.ug.kth.se/api/v2.0/windream/file/${fileId}/true`
     console.log(`Getting ${url}`)
 
@@ -125,7 +127,7 @@ async function saveExams (courseCode, examDate, examObjects) {
       json: true
     })
 
-    const filePath = path.join(dir, `${kthId}-${ body.wdFile.fileName}`) 
+    const filePath = path.join(dir, `${kthId}-${eCode}-${ body.wdFile.fileName}`) 
 
     console.log(`Saving file to "${filePath}"...`)
     const download = Buffer.from(body.wdFile.fileAsBase64.toString('utf-8'), 'base64')
