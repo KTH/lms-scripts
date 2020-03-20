@@ -126,7 +126,6 @@ async function start () {
         points_possible: 10,
         grading_standard_id: gradingSchemas[examinationRound.gradeScaleCode],
         allowed_attempts: 1,
-        post_manually: false, 
         integration_id: modulId,
         integration_data: JSON.stringify({
           sis_assignment_id: assignmentSisID
