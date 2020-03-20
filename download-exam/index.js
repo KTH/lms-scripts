@@ -4,6 +4,7 @@ const fs = require('fs')
 const os = require('os')
 const util = require('util')
 const path = require('path')
+const moment = require('moment')
 
 inquirer.registerPrompt('datetime', require('inquirer-datepicker-prompt'))
 
@@ -17,7 +18,6 @@ async function getExamDate() {
       message: 'Write the examination date for the exam'
     }
   ])
-
   return examDate 
 }
 
@@ -35,7 +35,8 @@ async function getCourseCode () {
 }
 
 async function getExams (courseCode, examDate) {
-  console.log(`Getting the list of exams in ${courseCode} (it may take a while)`)
+  const examDateFormatted = moment(examDate).format('YYYY-MM-DD')
+  console.log(`Getting the list of exams in ${courseCode} for date ${examDateFormatted} (it may take a while)`)
 
   const { body } = await got('https://tentaapi.ug.kth.se/api/v2.0/windream/search/documents/false', {
     method: 'POST',
@@ -49,7 +50,7 @@ async function getExams (courseCode, examDate) {
     },
     {
       "index": "e_date",
-      "value": examDate,
+      "value": examDateFormatted,
       "useWilcard": false
     }
   ],
