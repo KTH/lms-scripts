@@ -1,10 +1,23 @@
 require('dotenv').config()
 const inquirer = require('inquirer')
-const canvas = require('@kth/canvas-api')(process.env.CANVAS_API_URL, process.env.CANVAS_API_TOKEN)
+const Canvas = require('@kth/canvas-api')
 const got = require('got')
 
 
-async function chooseCourse () {
+async function chooseLadokModule(_ladokModules) {
+  const ladokModules = _ladokModules.map(m => ({name: m.examCode, ...m}))
+
+    const { ladokModule} = await inquirer.prompt({
+      name: 'ladokModule',
+      type: 'list',
+      message: 'For which Ladok module do you want to create an assignment?',
+      choices: ladokModules
+    })
+
+  return ladokModule 
+}
+
+async function chooseCourse (canvas) {
   let course
 
   while (!course) {
@@ -12,7 +25,7 @@ async function chooseCourse () {
       name: 'courseId',
       type: 'input',
       message: 'Write the canvas course ID (you can prefix "sis_course_id:" to use the SIS ID)',
-      default: 'sis_course_id:LT1016VT191'
+      default: 'sis_course_id:AF1733VT201'
     })
 
     try {
@@ -35,14 +48,46 @@ async function chooseCourse () {
   return course
 }
 
+async function initCanvas(){
+  
+  const { canvasApiUrl } = await inquirer.prompt({
+    type: 'list',
+    name: 'canvasApiUrl',
+    message: 'Select a Canvas instance',
+    choices: [
+      {
+        name: 'test',
+        value: 'https://kth.test.instructure.com/api/v1',
+        short: 'test'
+      },
+      {
+        name: 'beta',
+        value: 'https://kth.beta.instructure.com/api/v1',
+        short: 'beta'
+      },
+      {
+        name: 'prod',
+        value: 'https://kth.instructure.com/api/v1',
+        short: 'prod'
+      }
+    ]
+  })
+
+  const canvasApiToken =
+    process.env.CANVAS_API_TOKEN ||
+    (
+      await inquirer.prompt({
+        name: 'value',
+        message: 'Paste the Canvas API token'
+      })
+    ).value
+
+  return Canvas(canvasApiUrl, canvasApiToken)
+}
 
 async function start () {
-  console.log(`This app will set up the Ladok data to a course in ${process.env.CANVAS_API_URL}.`)
-  console.log()
-
-  const course = await chooseCourse()
-  await createButton(course)
-  const assignments = await canvas.list(`/courses/${course.id}/assignments`).toArray()
+  const canvas = await initCanvas()
+  const course = await chooseCourse(canvas)
 
   const [, courseCode, term, year] = course.sis_course_id.match(/(.*)(VT|HT)(\d{2})\d/)
 
@@ -65,74 +110,40 @@ async function start () {
     .filter(e => parseInt(e.startingTerm.term, 10) <= termNumber)
 
   const examinationRounds = examinationSets[examinationSets.length - 1].examinationRounds
-  console.log('examinationRounds in Ladok: ', examinationRounds)
-  for (const examinationRound of examinationRounds) {
-    const assignmentSisID = `${course.sis_course_id}_${examinationRound.examCode}`
-    const assignment = assignments.find(a => a.integration_data.sis_assignment_id === assignmentSisID)
+  console.log(examinationRounds)
+  const ladokModule = await chooseLadokModule(examinationRounds)
+  console.log(ladokModule)
 
-    const modulId = examinationRound.ladokUID
+  // for (const examinationRound of examinationRounds) {
+  //   const assignmentSisID = `${course.sis_course_id}_${examinationRound.examCode}`
+  //   const assignment = assignments.find(a => a.integration_data.sis_assignment_id === assignmentSisID)
+  //
+  //   const modulId = examinationRound.ladokUID
+  //
+  //   const body = {
+  //     assignment: {
+  //       name: `LADOK - ${examinationRound.examCode} (${examinationRound.title})`,
+  //       description: `Denna uppgift motsvarar Ladokmodul <strong>"${examinationRound.title}" (${examinationRound.examCode})</strong>.<br>Betygsunderlag i denna uppgift skickas till Ladok.`,
+  //       muted: true,
+  //       submission_types: ['none'],
+  //       grading_type: 'letter_grade',
+  //       points_possible: 10,
+  //       grading_standard_id: gradingSchemas[examinationRound.gradeScaleCode],
+  //       integration_id: modulId,
+  //       integration_data: JSON.stringify({
+  //         sis_assignment_id: assignmentSisID
+  //       })
+  //     }
+  //   }
+  //
+  //   if (!assignment) {
+  //     await canvas.requestUrl(`courses/${course.id}/assignments/`, 'POST', body)
+  //   } else if (modulId !== assignment.integration_id) {
+  //     await canvas.requestUrl(`courses/${course.id}/assignments/${assignment.id}`, 'PUT', body)
+  //   }
+  // }
 
-    const body = {
-      assignment: {
-        name: `LADOK - ${examinationRound.examCode} (${examinationRound.title})`,
-        description: `Denna uppgift motsvarar Ladokmodul <strong>"${examinationRound.title}" (${examinationRound.examCode})</strong>.<br>Betygsunderlag i denna uppgift skickas till Ladok.`,
-        muted: true,
-        submission_types: ['none'],
-        grading_type: 'letter_grade',
-        points_possible: 10,
-        grading_standard_id: gradingSchemas[examinationRound.gradeScaleCode],
-        integration_id: modulId,
-        integration_data: JSON.stringify({
-          sis_assignment_id: assignmentSisID
-        })
-      }
-    }
 
-    if (!assignment) {
-      await canvas.requestUrl(`courses/${course.id}/assignments/`, 'POST', body)
-    } else if (modulId !== assignment.integration_id) {
-      await canvas.requestUrl(`courses/${course.id}/assignments/${assignment.id}`, 'PUT', body)
-    }
-  }
-
-  const { setupUsers } = await inquirer.prompt({
-    name: 'setupUsers',
-    type: 'confirm',
-    message: 'Do you want to set the Ladok ID to all the users in the section?'
-  })
-
-  if (setupUsers) {
-    const ldap = require('../lib/ldap')
-    try {
-      await ldap.connect()
-      const section = await chooseSection(course)
-      for await (const enrollment of canvas.list(`sections/${section.id}/enrollments`, { type: 'StudentEnrollment' })) {
-        const kthId = enrollment.user.sis_user_id
-
-        if (kthId) {
-          const [user] = await ldap.search(`(ugKthId=${kthId})`, [])
-          if (!user) {
-            throw new Error(`No user found for ${kthId}`)
-          }
-
-          const ladokId = user.ugLadok3StudentUid
-          if (ladokId) {
-            await setupUser(kthId, ladokId)
-          } else {
-            console.error('No ladok id found for the user ', user)
-          }
-        }
-      }
-    } catch (e) {
-      console.log('Error:', e)
-    }
-    try {
-      await ldap.disconnect()
-    } catch (e) {
-      console.log('Error:', e)
-    }
-  }
 }
 
 start().catch(e => console.error(e))
-// ... or test: setUserLadokId('u1famwov', '000-00000-00-0000000-00-00000')
