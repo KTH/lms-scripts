@@ -1,12 +1,10 @@
 require('dotenv').config()
 const CanvasApi = require('@kth/canvas-api')
-const inquirer = require('inquirer')
 const FormData = require('form-data')
 const got = require('got')
 const fs = require('fs')
-const os = require('os')
-const util = require('util')
 const path = require('path')
+const canvas = CanvasApi(process.env.CANVAS_API_URL, process.env.CANVAS_API_TOKEN)
 
 async function sendFile ({ upload_url, upload_params }, filePath) {
   const form = new FormData()
@@ -56,18 +54,49 @@ async function submitFile (courseId, assignmentId, userId, filePath) {
 }
 
 async function start () {
-  const canvas = CanvasApi(process.env.CANVAS_API_URL, process.env.CANVAS_API_TOKEN)
+  const courseId = 17771
+  const assignmentId = 108238
+  const directoryPath = 'exams/AF1733/2020-03-10'
 
-  const courseId = 8318
-  const assignmentId = 108237
-  const kthId = 'u1a4mc9g'
-  const filePath = 'exams/AF1733/2020-03-10/u1a4mc9g-UDQ7IQIP0000.pdf'
+  const files = await fs.promises.readdir(directoryPath)
 
-  // Get the user ID
-  const { body: user } = await canvas.get(`/users/sis_user_id:${kthId}`)
-  const userId = user.id
+  console.log(`Exams found: ${files.length}`)
+  console.log(`Checking enrollments in the course ${courseId}`)
+  const students = (
+    await canvas.list(`/courses/${courseId}/enrollments`).toArray()
+  )
+  .map(enrollment => enrollment.sis_user_id)
 
-  await submitFile(courseId, assignmentId, userId, filePath)
+  let found = 0
+  let notFound = 0
+  for (const file of files) {
+    const kthId = file.split('-')[0]
+
+    if (students.find(st => st === kthId)) {
+      found++
+    } else {
+      notFound++
+    }
+  }
+  console.log(`Enrolled: ${found}. Not enrolled: ${notFound}`)
+  console.log()
+  console.log()
+  console.log('Starting to upload exams')
+  for (const file of files) {
+    const kthId = file.split('-')[0]
+    const filePath = path.join(__dirname, directoryPath, file)
+
+    if (!students.find(st => st === kthId)) {
+      console.log(`The student ${kthId} is not enrolled. Ignoring`)
+      continue
+    }
+
+    console.log(`Uploading for ${kthId}...`)
+
+    const { body: user } = await canvas.get(`/users/sis_user_id:${kthId}`)
+    const userId = user.id
+    await submitFile(courseId, assignmentId, userId, filePath)
+  }
 }
 
 start()
