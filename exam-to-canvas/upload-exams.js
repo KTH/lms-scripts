@@ -1,10 +1,10 @@
 require('dotenv').config()
-const CanvasApi = require('@kth/canvas-api')
 const FormData = require('form-data')
 const got = require('got')
 const fs = require('fs')
 const path = require('path')
-const canvas = CanvasApi(process.env.CANVAS_API_URL, process.env.CANVAS_API_TOKEN)
+const utils = require('./utils')
+const inquirer = require('inquirer')
 
 async function sendFile ({ upload_url, upload_params }, filePath) {
   const form = new FormData()
@@ -53,17 +53,46 @@ async function submitFile (courseId, assignmentId, userId, filePath) {
   )
 }
 
-async function start () {
-  const courseId = 17771
-  const assignmentId = 108238
-  const directoryPath = 'exams/AF1733/2020-03-10'
+function isValidAssignment (assignment) {
+  if (assignment.workflow_state !== 'published') {
+    return false
+  }
 
+  return assignment.submission_types.includes('online_upload')
+}
+
+async function chooseAssignment (canvas, course) {
+  const assignments = await canvas.list(`/courses/${course.id}/assignments`).toArray()
+
+  const { chosen } = await inquirer.prompt({
+    type: 'list',
+    name: 'chosen',
+    message: 'Select an assignment',
+    choices: assignments
+      .filter(isValidAssignment)
+      .map(a => ({
+        name: `${a.id}: ${a.name}`,
+        value: a.id,
+        short: a.id
+      }))
+  })
+  console.log(chosen)
+
+  return chosen
+}
+
+async function start () {
+  const canvas = await utils.initCanvas()
+  const course = await utils.chooseCourse(canvas)
+  const assignment = await chooseAssignment(canvas, course)
+
+  const directoryPath = 'exams/AF1733/2020-03-10'
   const files = await fs.promises.readdir(directoryPath)
 
   console.log(`Exams found: ${files.length}`)
-  console.log(`Checking enrollments in the course ${courseId}`)
+  console.log(`Checking enrollments in the course ${course.id}`)
   const students = (
-    await canvas.list(`/courses/${courseId}/enrollments`).toArray()
+    await canvas.list(`/courses/${course.id}/enrollments`).toArray()
   )
   .map(enrollment => enrollment.sis_user_id)
 
@@ -94,8 +123,7 @@ async function start () {
     console.log(`Uploading for ${kthId}...`)
 
     const { body: user } = await canvas.get(`/users/sis_user_id:${kthId}`)
-    const userId = user.id
-    await submitFile(courseId, assignmentId, userId, filePath)
+    await submitFile(course.id, assignment.id, user.id, filePath)
   }
 }
 

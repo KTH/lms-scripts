@@ -1,8 +1,7 @@
 require('dotenv').config()
 const inquirer = require('inquirer')
-const Canvas = require('@kth/canvas-api')
 const got = require('got')
-
+const utils = require('./utils')
 
 async function chooseLadokModule(_ladokModules) {
   const ladokModules = _ladokModules.map(m => ({name: m.examCode, ...m}))
@@ -14,7 +13,7 @@ async function chooseLadokModule(_ladokModules) {
       choices: ladokModules
     })
 
-  return _ladokModules.find(m => m.examCode === ladokModule) 
+  return _ladokModules.find(m => m.examCode === ladokModule)
 }
 
 async function chooseCourse (canvas) {
@@ -48,45 +47,8 @@ async function chooseCourse (canvas) {
   return course
 }
 
-async function initCanvas(){
-  
-  const { canvasApiUrl } = await inquirer.prompt({
-    type: 'list',
-    name: 'canvasApiUrl',
-    message: 'Select a Canvas instance',
-    choices: [
-      {
-        name: 'test',
-        value: 'https://kth.test.instructure.com/api/v1',
-        short: 'test'
-      },
-      {
-        name: 'beta',
-        value: 'https://kth.beta.instructure.com/api/v1',
-        short: 'beta'
-      },
-      {
-        name: 'prod',
-        value: 'https://kth.instructure.com/api/v1',
-        short: 'prod'
-      }
-    ]
-  })
-
-  const canvasApiToken =
-    process.env.CANVAS_API_TOKEN ||
-    (
-      await inquirer.prompt({
-        name: 'value',
-        message: 'Paste the Canvas API token'
-      })
-    ).value
-
-  return Canvas(canvasApiUrl, canvasApiToken)
-}
-
 async function start () {
-  const canvas = await initCanvas()
+  const canvas = await utils.initCanvas()
   const course = await chooseCourse(canvas)
 
   const [, courseCode, term, year] = course.sis_course_id.match(/(.*)(VT|HT)(\d{2})\d/)
@@ -111,7 +73,7 @@ async function start () {
 
   const examinationRounds = examinationSets[examinationSets.length - 1].examinationRounds
   const examinationRound = await chooseLadokModule(examinationRounds)
-  
+
     const assignmentSisID = `${course.sis_course_id}_${examinationRound.examCode}`
   //   const assignment = assignments.find(a => a.integration_data.sis_assignment_id === assignmentSisID)
   //
