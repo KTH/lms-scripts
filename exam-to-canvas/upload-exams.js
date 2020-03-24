@@ -103,42 +103,6 @@ async function checkEnrollments (canvas, course, kthIds) {
   return { found, notFound }
 }
 
-async function enrollStudents (canvas, kthIds) {
-  const { ok } = await inquirer.prompt({
-    name: 'ok',
-    type: 'confirm',
-    message: `We are going to create an enrollments CSV file for ${kthIds.length}. Continue?`
-  })
-
-  if (!ok) {
-    process.exit()
-  }
-
-  const course = await utils.chooseCourse(canvas)
-
-  const filePath = './enrollments.csv'
-  const writeHeaders = headers => fs.writeFileSync(filePath, headers.join(',') + '\n')
-  const writeContent = content => fs.appendFileSync(filePath, content.join(',') + '\n')
-
-  writeHeaders([
-    'user_id',
-    'course_id',
-    'status',
-    'role_id'
-  ])
-
-  for (const kthId of kthIds) {
-    writeContent([
-      kthId,
-      course.id,
-      'active',
-      '3'
-    ])
-  }
-
-  console.log(`File ${filePath} created successfully`)
-}
-
 async function start () {
   const canvas = await utils.initCanvas()
   const course = await utils.chooseCourse(canvas)
@@ -150,7 +114,7 @@ async function start () {
   console.log(`Exams found: ${files.length}. Checking enrollments...`)
 
   const kthIds = files.map(file => file.split('-')[0])
-  const { found, notFound } = await checkEnrollments(canvas, course, kthIds)
+  const { found } = await checkEnrollments(canvas, course, kthIds)
 
   const { ok } = await inquirer.prompt({
     name: 'ok',
@@ -158,25 +122,25 @@ async function start () {
     message: `We are going to upload ${found.length}/${kthIds.length} exams in course ${course.id}, assignment ${assignment.id}. Continue?`
   })
 
-  if (ok) {
-    let i = 0
-    for (const file of files) {
-      i++
-      const kthId = file.split('-')[0]
-      const filePath = path.join(__dirname, directoryPath, file)
-
-      if (!found.find(st => st === kthId)) {
-        continue
-      }
-
-      console.log(`${i}/${files.length}. Uploading for ${kthId}...`)
-
-      const { body: user } = await canvas.get(`/users/sis_user_id:${kthId}`)
-      await submitFile(canvas, course.id, assignment.id, user.id, filePath)
-    }
+  if (!ok) {
+    return
   }
 
-  await enrollStudents(canvas, notFound)
+  let i = 0
+  for (const file of files) {
+    i++
+    const kthId = file.split('-')[0]
+    const filePath = path.join(__dirname, directoryPath, file)
+
+    if (!found.find(st => st === kthId)) {
+      continue
+    }
+
+    console.log(`${i}/${files.length}. Uploading for ${kthId}...`)
+
+    const { body: user } = await canvas.get(`/users/sis_user_id:${kthId}`)
+    await submitFile(canvas, course.id, assignment.id, user.id, filePath)
+  }
 }
 
 start()
