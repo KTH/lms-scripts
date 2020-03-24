@@ -29,7 +29,7 @@ async function sendFile ({ upload_url, upload_params }, filePath) {
     })
 }
 
-async function submitFile (courseId, assignmentId, userId, filePath) {
+async function submitFile (canvas, courseId, assignmentId, userId, filePath) {
   // Create the "spot" for the submission file
   const { body: spot } = await canvas.requestUrl(
     `/courses/${courseId}/assignments/${assignmentId}/submissions/${userId}/files`,
@@ -72,13 +72,23 @@ async function chooseAssignment (canvas, course) {
       .filter(isValidAssignment)
       .map(a => ({
         name: `${a.id}: ${a.name}`,
-        value: a.id,
+        value: a,
         short: a.id
       }))
   })
-  console.log(chosen)
 
   return chosen
+}
+
+async function choosePath () {
+  const { path } = await inquirer.prompt({
+    type: 'input',
+    name: 'path',
+    message: 'Where are the exams?',
+    default: './exams/AF1733/2020-03-10'
+  })
+
+  return path
 }
 
 async function checkEnrollments (canvas, course, kthIds) {
@@ -87,17 +97,46 @@ async function checkEnrollments (canvas, course, kthIds) {
   )
   .map(enrollment => enrollment.sis_user_id)
 
-  const found = kthIds.filter(id => students.find(st => st === id)).length
+  const found = kthIds.filter(id => students.find(st => st === id))
+  const notFound = kthIds.filter(id => !students.find(st => st === id))
 
+  return { found, notFound }
+}
+
+async function enrollStudents (canvas, kthIds) {
   const { ok } = await inquirer.prompt({
     name: 'ok',
     type: 'confirm',
-    message: `Found ${found}/${kthIds.length} enrollments. Continue?`
+    message: `We are going to create an enrollments CSV file for ${kthIds.length}. Continue?`
   })
 
   if (!ok) {
     process.exit()
   }
+
+  const course = await utils.chooseCourse(canvas)
+
+  const filePath = './enrollments.csv'
+  const writeHeaders = headers => fs.writeFileSync(filePath, headers.join(',') + '\n')
+  const writeContent = content => fs.appendFileSync(filePath, content.join(',') + '\n')
+
+  writeHeaders([
+    'user_id',
+    'course_id',
+    'status',
+    'role_id'
+  ])
+
+  for (const kthId of kthIds) {
+    writeContent([
+      kthId,
+      course.id,
+      'active',
+      '3'
+    ])
+  }
+
+  console.log(`File ${filePath} created successfully`)
 }
 
 async function start () {
@@ -105,29 +144,39 @@ async function start () {
   const course = await utils.chooseCourse(canvas)
   const assignment = await chooseAssignment(canvas, course)
 
-  const directoryPath = 'exams/AF1733/2020-03-10'
+  const directoryPath = await choosePath()
   const files = await fs.promises.readdir(directoryPath)
 
-  console.log(`Exams found: ${files.length}`)
+  console.log(`Exams found: ${files.length}. Checking enrollments...`)
 
   const kthIds = files.map(file => file.split('-')[0])
-  await checkEnrollments(canvas, course, kthIds)
+  const { found, notFound } = await checkEnrollments(canvas, course, kthIds)
 
-  console.log('Starting to upload exams')
-  for (const file of files) {
-    const kthId = file.split('-')[0]
-    const filePath = path.join(__dirname, directoryPath, file)
+  const { ok } = await inquirer.prompt({
+    name: 'ok',
+    type: 'confirm',
+    message: `We are going to upload ${found.length}/${kthIds.length} exams in course ${course.id}, assignment ${assignment.id}. Continue?`
+  })
 
-    if (!students.find(st => st === kthId)) {
-      console.log(`The student ${kthId} is not enrolled. Ignoring`)
-      continue
+  if (ok) {
+    let i = 0
+    for (const file of files) {
+      i++
+      const kthId = file.split('-')[0]
+      const filePath = path.join(__dirname, directoryPath, file)
+
+      if (!found.find(st => st === kthId)) {
+        continue
+      }
+
+      console.log(`${i}/${files.length}. Uploading for ${kthId}...`)
+
+      const { body: user } = await canvas.get(`/users/sis_user_id:${kthId}`)
+      await submitFile(canvas, course.id, assignment.id, user.id, filePath)
     }
-
-    console.log(`Uploading for ${kthId}...`)
-
-    const { body: user } = await canvas.get(`/users/sis_user_id:${kthId}`)
-    await submitFile(course.id, assignment.id, user.id, filePath)
   }
+
+  await enrollStudents(canvas, notFound)
 }
 
 start()
