@@ -81,6 +81,25 @@ async function chooseAssignment (canvas, course) {
   return chosen
 }
 
+async function checkEnrollments (canvas, course, kthIds) {
+  const students = (
+    await canvas.list(`/courses/${course.id}/enrollments`).toArray()
+  )
+  .map(enrollment => enrollment.sis_user_id)
+
+  const found = kthIds.filter(id => students.find(st => st === id)).length
+
+  const { ok } = await inquirer.prompt({
+    name: 'ok',
+    type: 'confirm',
+    message: `Found ${found}/${kthIds.length} enrollments. Continue?`
+  })
+
+  if (!ok) {
+    process.exit()
+  }
+}
+
 async function start () {
   const canvas = await utils.initCanvas()
   const course = await utils.chooseCourse(canvas)
@@ -90,26 +109,10 @@ async function start () {
   const files = await fs.promises.readdir(directoryPath)
 
   console.log(`Exams found: ${files.length}`)
-  console.log(`Checking enrollments in the course ${course.id}`)
-  const students = (
-    await canvas.list(`/courses/${course.id}/enrollments`).toArray()
-  )
-  .map(enrollment => enrollment.sis_user_id)
 
-  let found = 0
-  let notFound = 0
-  for (const file of files) {
-    const kthId = file.split('-')[0]
+  const kthIds = files.map(file => file.split('-')[0])
+  await checkEnrollments(canvas, course, kthIds)
 
-    if (students.find(st => st === kthId)) {
-      found++
-    } else {
-      notFound++
-    }
-  }
-  console.log(`Enrolled: ${found}. Not enrolled: ${notFound}`)
-  console.log()
-  console.log()
   console.log('Starting to upload exams')
   for (const file of files) {
     const kthId = file.split('-')[0]
