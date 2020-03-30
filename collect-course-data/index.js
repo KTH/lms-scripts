@@ -483,7 +483,7 @@ async function start () {
     const courseData = [
       courseId,
       course.sis_course_id,
-      course.name,
+      `"${course.name}"`,
       courseCode,
       getCourseURL(courseId),
       getSchoolName(courseAccountName),
