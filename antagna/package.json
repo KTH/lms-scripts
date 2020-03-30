@@ -21,12 +21,8 @@
     "kth-canvas-api": "^0.15.7",
     "kth-canvas-utilities": "^1.17.2",
     "ldapjs": "^1.0.2",
-<<<<<<< HEAD
     "moment": "^2.22.2",
     "request-promise": "^4.2.4"
-=======
-    "moment": "^2.22.2"
->>>>>>> 9ab34785a9f234273fd97fc6b229892834afdd12
   },
   "devDependencies": {
     "standard": "^12.0.1"
