@@ -4,7 +4,10 @@
   "description": "A script which compiles students registered for examinations to a csv file and sends it to the Canvas LMS.",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node index.js",
+    "format": "prettier-standard \"**/*.{js,md,yml,json}\"",
+    "test": "prettier-standard --lint --check \"**/*.{js,md,yml,json}\"",
+    "debug": "NODE_ENV=development node --nolazy --inspect-brk=9229 index.js"
   },
   "repository": {
     "type": "git",
@@ -19,5 +22,12 @@
   "bugs": {
     "url": "https://github.com/KTH/lms-scripts/issues"
   },
-  "homepage": "https://github.com/KTH/lms-scripts#readme"
+  "homepage": "https://github.com/KTH/lms-scripts#readme",
+  "devDependencies": {
+    "prettier-standard": "^16.2.1"
+  },
+  "dependencies": {
+    "@kth/canvas-api": "^2.1.0",
+    "dotenv": "^8.2.0"
+  }
 }
