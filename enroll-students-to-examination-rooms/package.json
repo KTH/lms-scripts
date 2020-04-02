@@ -1,0 +1,23 @@
+{
+  "name": "enroll-students-to-examination-rooms",
+  "version": "1.0.0",
+  "description": "A script which compiles students registered for examinations to a csv file and sends it to the Canvas LMS.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/KTH/lms-scripts.git"
+  },
+  "keywords": [
+    "canvas",
+    "kth"
+  ],
+  "author": "team e-learning",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/KTH/lms-scripts/issues"
+  },
+  "homepage": "https://github.com/KTH/lms-scripts#readme"
+}
