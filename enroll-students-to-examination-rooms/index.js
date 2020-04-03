@@ -6,6 +6,8 @@ const canvasApi = CanvasApi(
   process.env.CANVAS_API_URL,
   process.env.CANVAS_API_TOKEN
 )
+
+const STUDENT_ROLE_ID = 3
 // Note: Right now, using a prebaked json!
 const exampleExaminations = require('./example-data.json')
 
@@ -21,11 +23,13 @@ async function start () {
   // TODO: Insert code here for fetching data from the fancy new StudAdm API
 
   for (const examination of exampleExaminations) {
-    for (const courseCode of examination.courseCodes) {
+    // Eliminate duplicates
+    const courseCodes = new Set(examination.courseCodes)
+    for (const courseCode of courseCodes) {
       for (const student of examination.registeredStudents) {
         writeContent([
           student.kthid,
-          3,
+          STUDENT_ROLE_ID,
           `${courseCode}_${examination.type}_${examination.date}`,
           'active'
         ])
