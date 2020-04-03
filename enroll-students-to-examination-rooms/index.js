@@ -63,7 +63,7 @@ async function start () {
       courseCodes.sort()
       for (const student of examination.registeredStudents) {
         const baseSectionId = `${courseCodes[0]}_${examination.type}_${examination.date}`
-        const fullSectionId = student.funka.length
+        const fullSectionId = student.funka.length > 0
           ? `${baseSectionId}_FUNKA`
           : baseSectionId
         if (!student.kthid) {
