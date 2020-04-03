@@ -28,6 +28,7 @@
   },
   "dependencies": {
     "@kth/canvas-api": "^2.1.0",
-    "dotenv": "^8.2.0"
+    "dotenv": "^8.2.0",
+    "got": "^10.7.0"
   }
 }
