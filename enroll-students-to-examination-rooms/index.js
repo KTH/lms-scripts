@@ -31,17 +31,20 @@ async function start () {
   )
   const examinations = body.aktivitetstillfallen
   for (const examination of examinations) {
-    // Eliminate duplicates
-    const courseCodes = new Set(examination.courseCodes)
-    for (const courseCode of courseCodes) {
-      for (const student of examination.registeredStudents) {
-        writeContent([
-          student.kthid,
-          STUDENT_ROLE_ID,
-          `${courseCode}_${examination.type}_${examination.date}`,
-          'active'
-        ])
-      }
+    // Eliminate duplicates.
+    const courseCodes = examination.courseCodes.filter(
+      (courseCode, index) =>
+        examination.courseCodes.indexOf(courseCode) === index
+    )
+    // Sort course codes.
+    courseCodes.sort()
+    for (const student of examination.registeredStudents) {
+      writeContent([
+        student.kthid,
+        STUDENT_ROLE_ID,
+        `${courseCodes[0]}_${examination.type}_${examination.date}`,
+        'active'
+      ])
     }
   }
 
