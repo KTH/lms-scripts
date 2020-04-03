@@ -12,3 +12,7 @@ A script which compiles students registered for examinations to a csv file and s
   The URL to the API where to get examination data.
 - **AKTIVITETSTILLFALLEN_API_TOKEN**\
   A token for accessing the aforementioned Aktivitetstillfallen API.
+- **FROM_DATE**\
+  The first date from which to collect students, e.g. `2020-04-17`.
+- **TO_DATE**\
+  The last date from which to collect students, e.g. `2020-04-17`.
