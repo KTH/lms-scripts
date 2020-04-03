@@ -26,10 +26,10 @@ async function start () {
 
   writeHeaders(['user_id', 'role_id', 'section_id', 'status'])
 
-  const { body } = await aktivitetstillfallenApi(
+  const { body: aktivitetstillfallenResponse } = await aktivitetstillfallenApi(
     'aktivitetstillfallen/students?fromDate=2020-04-17&toDate=2020-04-17'
   )
-  const examinations = body.aktivitetstillfallen
+  const examinations = aktivitetstillfallenResponse.aktivitetstillfallen
   for (const examination of examinations) {
     // Eliminate duplicates.
     const courseCodes = examination.courseCodes.filter(
@@ -39,6 +39,9 @@ async function start () {
     // Sort course codes.
     courseCodes.sort()
     for (const student of examination.registeredStudents) {
+      if (!student.kthid) {
+        continue
+      }
       writeContent([
         student.kthid,
         STUDENT_ROLE_ID,
@@ -48,8 +51,11 @@ async function start () {
     }
   }
 
-  const { body } = await canvasApi.sendSis('/accounts/1/sis_imports', filePath)
-  console.info('SIS Import response: ', body)
+  const { body: sisImportResponse } = await canvasApi.sendSis(
+    '/accounts/1/sis_imports',
+    filePath
+  )
+  console.info('SIS Import response: ', sisImportResponse)
 }
 
 start()
