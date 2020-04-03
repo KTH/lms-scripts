@@ -42,6 +42,8 @@ async function start () {
     date.setDate(date.getDate() + 1)
   ) {
     const dateString = date.toISOString().split('T')[0]
+    console.log(`Fetching date ${dateString}`)
+
     const {
       body: aktivitetstillfallenResponse
     } = await aktivitetstillfallenApi(
