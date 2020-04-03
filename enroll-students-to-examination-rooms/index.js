@@ -53,10 +53,12 @@ async function start () {
     console.log(`Obtained ${examinations.length} examinations`)
     for (const examination of examinations) {
       // Eliminate duplicates.
-      const courseCodes = examination.courseCodes.filter(
-        (courseCode, index) =>
-          examination.courseCodes.indexOf(courseCode) === index
-      )
+      const courseCodes = Array.from(new Set(examination.courseCodes))
+
+      if (courseCodes.length > 1) {
+        console.log(`${examination.ladokUID}: has several course codes: ${courseCodes.join(',')}`)
+      }
+
       // Sort course codes.
       courseCodes.sort()
       for (const student of examination.registeredStudents) {
