@@ -50,6 +50,7 @@ async function start () {
       `aktivitetstillfallen/students?fromDate=${dateString}&toDate=${dateString}`
     )
     const examinations = aktivitetstillfallenResponse.aktivitetstillfallen
+    console.log(`Obtained ${examinations.length} examinations`)
     for (const examination of examinations) {
       // Eliminate duplicates.
       const courseCodes = examination.courseCodes.filter(
