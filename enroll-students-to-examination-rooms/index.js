@@ -1,17 +1,13 @@
 require('dotenv').config()
 require('@kth/reqvars').check()
+
 const fs = require('fs')
 const got = require('got')
-const CanvasApi = require('@kth/canvas-api')
 const inquirer = require('inquirer')
 const { addDays, isAfter, format } = require('date-fns')
 
 inquirer.registerPrompt('datetime', require('inquirer-datepicker-prompt'))
 
-const canvasApi = CanvasApi(
-  process.env.CANVAS_API_URL,
-  process.env.CANVAS_API_TOKEN
-)
 const aktivitetstillfallenApi = got.extend({
   prefixUrl: process.env.AKTIVITETSTILLFALLEN_API_URL,
   responseType: 'json',
@@ -107,13 +103,6 @@ async function start () {
       }
     }
   }
-  const { body: sisImportResponse } = await canvasApi.sendSis(
-    '/accounts/1/sis_imports',
-    sisImportFilePath
-  )
-  console.info('SIS Import response: ', sisImportResponse)
 }
 
 start()
-
-// TODO: Try to fetch stats about how many aktivitetstillfallen have multiple courses
