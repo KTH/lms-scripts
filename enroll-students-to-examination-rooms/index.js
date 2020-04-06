@@ -4,7 +4,7 @@ const fs = require('fs')
 const got = require('got')
 const CanvasApi = require('@kth/canvas-api')
 const inquirer = require('inquirer')
-const { addDays, isAfter } = require('date-fns')
+const { addDays, isAfter, format } = require('date-fns')
 
 inquirer.registerPrompt('datetime', require('inquirer-datepicker-prompt'))
 
@@ -66,8 +66,8 @@ async function start () {
   const toDate = await promptDate('End date', new Date('2020-04-17'))
 
   for (const date of intervalArray(fromDate, toDate)) {
-    const dateString = date.toISOString().split('T')[0]
-    console.log(`Fetching date ${dateString}`)
+    const dateString = format(date, 'yyyy-MM-dd')
+    console.log(`Fetching exams for date ${dateString}`)
 
     const {
       body: aktivitetstillfallenResponse
