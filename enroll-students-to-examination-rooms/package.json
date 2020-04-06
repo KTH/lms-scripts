@@ -27,7 +27,6 @@
     "prettier-standard": "^16.2.1"
   },
   "dependencies": {
-    "@kth/canvas-api": "^2.1.0",
     "@kth/reqvars": "^2.0.1",
     "date-fns": "^2.11.1",
     "dotenv": "^8.2.0",
