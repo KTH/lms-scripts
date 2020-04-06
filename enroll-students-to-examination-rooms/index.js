@@ -43,7 +43,8 @@ async function start () {
     'user_id',
     'role_id',
     'section_id',
-    'status'
+    'status',
+    'limit_section_privileges'
   ])
   writeHeaders(incompleteStudentsFilePath, ['section_id', 'ladok_uid'])
 
@@ -95,7 +96,8 @@ async function start () {
             student.kthid,
             STUDENT_ROLE_ID,
             fullSectionId,
-            'active'
+            'active',
+            'true'
           ])
         }
       }
