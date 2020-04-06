@@ -62,31 +62,30 @@ async function start () {
     for (const examination of examinations) {
       // Eliminate duplicates.
       const courseCodes = Array.from(new Set(examination.courseCodes))
-      console.log(`$`)
 
       if (courseCodes.length > 1) {
         console.log(`${examination.ladokUID}: has several course codes: ${courseCodes.join(',')}`)
       }
 
-      // Sort course codes.
+      // All course rooms will be in one "examination room", the first in
+      // alphabetical order
       courseCodes.sort()
+      const examinationRoomCode = courseCodes[0]
 
-      // Pick the first in alphabetical order
-      const courseCode = courseCodes[0]
+      for (const courseCode of courseCodes) {
+        const { body } = await got(`https://api.kth.se/api/kopps/v2/course/${courseCode}/detailedinformation`, {
+          responseType: 'json'
+        })
 
-      // Kopps API
-      const { body } = await got(`https://api.kth.se/api/kopps/v2/course/${courseCode}/detailedinformation`, {
-        responseType: 'json'
-      })
-
-      for (const examiner of body.examiners) {
-        const sectionId = `${courseCode}_${examination.type}_${examination.date}`
-        writeContent(sisImportFilePath, [
-          examiner.kthid,
-          EXAMINER_ROLE_ID,
-          sectionId,
-          'active'
-        ])
+        for (const examiner of body.examiners) {
+          const sectionId = `${examinationRoomCode}_${examination.type}_${examination.date}`
+          writeContent(sisImportFilePath, [
+            examiner.kthid,
+            EXAMINER_ROLE_ID,
+            sectionId,
+            'active'
+          ])
+        }
       }
     }
   }
