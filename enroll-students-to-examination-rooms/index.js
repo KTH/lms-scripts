@@ -3,6 +3,9 @@ require('@kth/reqvars').check()
 const fs = require('fs')
 const got = require('got')
 const CanvasApi = require('@kth/canvas-api')
+const inquirer = require('inquirer')
+
+inquirer.registerPrompt('datetime', require('inquirer-datepicker-prompt'))
 
 const canvasApi = CanvasApi(
   process.env.CANVAS_API_URL,
@@ -15,6 +18,20 @@ const aktivitetstillfallenApi = got.extend({
     canvas_api_token: process.env.AKTIVITETSTILLFALLEN_API_TOKEN
   }
 })
+
+async function promptDate (message, initial) {
+  const { examDate } = await inquirer.prompt([
+    {
+      type: 'datetime',
+      format: ['yyyy', '-', 'mm', '-', 'dd' ],
+      name: 'examDate',
+      initial: initial || new Date('2020-03-10'),
+      message
+    }
+  ])
+
+  return examDate
+}
 
 const STUDENT_ROLE_ID = 3
 
@@ -34,8 +51,9 @@ async function start () {
   ])
   writeHeaders(incompleteStudentsFilePath, ['section_id', 'ladok_uid'])
 
-  const fromDate = new Date(process.env.FROM_DATE)
-  const toDate = new Date(process.env.TO_DATE)
+  const fromDate = await promptDate('Start date', new Date('2020-04-14'))
+  const toDate = await promptDate('End date', new Date('2020-04-17'))
+
   for (
     const date = fromDate;
     date <= toDate;
