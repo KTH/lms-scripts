@@ -38,7 +38,7 @@ async function start () {
   const toDate = new Date(process.env.TO_DATE)
   for (
     const date = fromDate;
-    date <= toDate;
+    date <= toDate; // eslint-disable-line no-unmodified-loop-condition
     date.setDate(date.getDate() + 1)
   ) {
     const dateString = date.toISOString().split('T')[0]
@@ -53,19 +53,25 @@ async function start () {
     console.log(`Obtained ${examinations.length} examinations`)
     for (const examination of examinations) {
       // Eliminate duplicates.
-      const courseCodes = Array.from(new Set(examination.courseCodes))
+      const fixedCasingCourseCodes = examination.courseCodes.map(courseCode =>
+        courseCode.toUpperCase()
+      )
+      const courseCodes = Array.from(new Set(fixedCasingCourseCodes))
 
       if (courseCodes.length > 1) {
-        console.log(`${examination.ladokUID}: has several course codes: ${courseCodes.join(',')}`)
+        console.log(
+          `${
+            examination.ladokUID
+          }: has several course codes: ${courseCodes.join(',')}`
+        )
       }
 
       // Sort course codes.
       courseCodes.sort()
       for (const student of examination.registeredStudents) {
         const baseSectionId = `${courseCodes[0]}_${examination.type}_${examination.date}`
-        const fullSectionId = student.funka.length > 0
-          ? `${baseSectionId}_FUNKA`
-          : baseSectionId
+        const fullSectionId =
+          student.funka.length > 0 ? `${baseSectionId}_FUNKA` : baseSectionId
         if (!student.kthid) {
           writeContent(incompleteStudentsFilePath, [
             fullSectionId,
@@ -82,11 +88,16 @@ async function start () {
       }
     }
   }
-  const { body: sisImportResponse } = await canvasApi.sendSis(
-    '/accounts/1/sis_imports',
-    sisImportFilePath
-  )
-  console.info('SIS Import response: ', sisImportResponse)
+
+  if (process.env.UPLOAD_TO_CANVAS) {
+    const { body: sisImportResponse } = await canvasApi.sendSis(
+      '/accounts/1/sis_imports',
+      sisImportFilePath
+    )
+    console.log('SIS Import response: ', sisImportResponse)
+  } else {
+    console.log('File(s) has/have been generated!')
+  }
 }
 
 start()

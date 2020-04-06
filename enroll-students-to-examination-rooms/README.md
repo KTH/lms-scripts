@@ -16,3 +16,5 @@ A script which compiles students registered for examinations to a csv file and s
   The first date from which to collect students, e.g. `2020-04-17`.
 - **TO_DATE**\
   The last date from which to collect students, e.g. `2020-04-17`.
+- **UPLOAD_TO_CANVAS**\
+  Boolean to determine if the script should automatically upload the data to Canvas or not
