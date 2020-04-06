@@ -4,7 +4,6 @@ require('@kth/reqvars').check()
 const fs = require('fs')
 const got = require('got')
 const inquirer = require('inquirer')
-const { addDays, isAfter, format } = require('date-fns')
 
 inquirer.registerPrompt('datetime', require('inquirer-datepicker-prompt'))
 
@@ -20,24 +19,14 @@ async function promptDate (message, initial) {
   const { examDate } = await inquirer.prompt([
     {
       type: 'datetime',
-      format: ['yyyy', '-', 'mm', '-', 'dd' ],
       name: 'examDate',
-      initial: initial || new Date('2020-03-10'),
-      message
+      message,
+      format: ['yyyy', '-', 'mm', '-', 'dd'],
+      initial: initial || new Date('2020-03-10')
     }
   ])
 
   return examDate
-}
-
-function intervalArray (startDate, endDate) {
-  const interval = []
-
-  for (let date = startDate; !isAfter(date, endDate); date = addDays(date, 1)) {
-    interval.push(date)
-  }
-
-  return interval
 }
 
 const STUDENT_ROLE_ID = 3
@@ -60,9 +49,12 @@ async function start () {
 
   const fromDate = await promptDate('Start date', new Date('2020-04-14'))
   const toDate = await promptDate('End date', new Date('2020-04-17'))
-
-  for (const date of intervalArray(fromDate, toDate)) {
-    const dateString = format(date, 'yyyy-MM-dd')
+  for (
+    const date = fromDate;
+    date <= toDate; // eslint-disable-line no-unmodified-loop-condition
+    date.setDate(date.getDate() + 1)
+  ) {
+    const dateString = date.toISOString().split('T')[0]
     console.log(`Fetching exams for date ${dateString}`)
 
     const {
@@ -73,20 +65,26 @@ async function start () {
     const examinations = aktivitetstillfallenResponse.aktivitetstillfallen
     console.log(`Obtained ${examinations.length} examinations`)
     for (const examination of examinations) {
+      const fixedCasingCourseCodes = examination.courseCodes.map(courseCode =>
+        courseCode.toUpperCase()
+      )
       // Eliminate duplicates.
-      const courseCodes = Array.from(new Set(examination.courseCodes))
+      const courseCodes = Array.from(new Set(fixedCasingCourseCodes))
 
       if (courseCodes.length > 1) {
-        console.log(`${examination.ladokUID}: has several course codes: ${courseCodes.join(',')}`)
+        console.log(
+          `${
+            examination.ladokUID
+          }: has several course codes: ${courseCodes.join(',')}`
+        )
       }
 
       // Sort course codes.
       courseCodes.sort()
       for (const student of examination.registeredStudents) {
         const baseSectionId = `${courseCodes[0]}_${examination.type}_${examination.date}`
-        const fullSectionId = student.funka.length > 0
-          ? `${baseSectionId}_FUNKA`
-          : baseSectionId
+        const fullSectionId =
+          student.funka.length > 0 ? `${baseSectionId}_FUNKA` : baseSectionId
         if (!student.kthid) {
           writeContent(incompleteStudentsFilePath, [
             fullSectionId,

@@ -28,7 +28,6 @@
   },
   "dependencies": {
     "@kth/reqvars": "^2.0.1",
-    "date-fns": "^2.11.1",
     "dotenv": "^8.2.0",
     "got": "^10.7.0",
     "inquirer": "^7.1.0",
