@@ -2,20 +2,20 @@ require('dotenv').config()
 
 const fs = require('fs')
 const got = require('got')
+const memoize = require('memoizee')
+const JSZip = require('jszip')
 const inquirer = require('inquirer')
 inquirer.registerPrompt('datetime', require('inquirer-datepicker-prompt'))
 
 const EXAMINER_ROLE_ID = 10
 const STUDENT_ROLE_ID = 3
 
+const COURSES_FILE = 'courses-examinations.csv'
+const SECTIONS_FILE = 'sections-examinations.csv'
 const STUDENTS_FILE = 'enrollments-students.csv'
 const TEACHERS_FILE = 'enrollments-examiners.csv'
 const MISSING_STUDENTS_FILE = 'students-without-kthid.csv'
-
-/* Not implemented
-const SECTIONS_FILE = 'sections.csv'
-const COURSES_FILE = 'courses.csv'
-*/
+const ZIP_FILE = 'examinations-to-canvas.zip'
 
 /** Fetches all examination rounds from the aktivitetstillfällen API */
 async function listExaminations (baseUrl, token, date) {
@@ -32,8 +32,31 @@ async function listExaminations (baseUrl, token, date) {
   return body.aktivitetstillfallen
 }
 
+/** Fetches detailed information about a course from the Kopps API */
+async function getDetailedCourseInfoWithoutCache (courseCode) {
+  const { body } = await got(
+    `${process.env.KOPPS_API_URL}/course/${courseCode}/detailedinformation`,
+    {
+      responseType: 'json'
+    }
+  )
+  return body
+}
+
+const getDetailedCourseInfo = memoize(getDetailedCourseInfoWithoutCache)
+
 function writeHeader (file) {
   const headers = {
+    [COURSES_FILE]: [
+      'course_id',
+      'short_name',
+      'long_name',
+      'account_id',
+      'status'
+    ],
+
+    [SECTIONS_FILE]: ['course_id', 'section_id', '"name"', 'status'],
+
     [STUDENTS_FILE]: [
       'user_id',
       'role_id',
@@ -42,38 +65,68 @@ function writeHeader (file) {
       'limit_section_privileges'
     ],
 
-    [TEACHERS_FILE]: [
-      'user_id',
-      'role_id',
-      'section_id',
-      'status'
-    ],
+    [TEACHERS_FILE]: ['user_id', 'role_id', 'section_id', 'status'],
 
-    [MISSING_STUDENTS_FILE]: [
-      'section_id',
-      'ladok_uid'
-    ]
+    [MISSING_STUDENTS_FILE]: ['section_id', 'ladok_uid']
   }
 
-  fs.writeFileSync(
-    file,
-    headers[file].join(',') + '\n'
-  )
+  fs.writeFileSync(file, headers[file].join(',') + '\n')
 }
 
 function writeContent (file, content) {
   fs.appendFileSync(file, content.join(',') + '\n')
 }
 
-function studentsEnrollments (students, defaultSectionSisId, funkaSectionSisId) {
+async function courses (courseCodes, courseSisId, courseName) {
+  // Note: We are only adding one instance of each examination room,
+  // thus we are choose one subaccount based on course code alphabetic
+  // order.
+  const body = await getDetailedCourseInfo(courseCodes[0])
+  // Note: Doing this maneuver to avoid making two separate requests to Kopps
+  const schoolCode = body.course.department.name.split('/')[0]
+  // TODO: Decide if short_name and long_name should be something else.
+  writeContent(COURSES_FILE, [
+    courseSisId,
+    courseName,
+    courseName,
+    `${schoolCode} - Examinations`,
+    'active'
+  ])
+}
+
+function sections (
+  courseCodes,
+  courseSisId,
+  defaultSectionSisId,
+  funkaSectionSisId,
+  courseName
+) {
+  writeContent(SECTIONS_FILE, [
+    courseSisId,
+    defaultSectionSisId,
+    courseName,
+    'active'
+  ])
+
+  writeContent(SECTIONS_FILE, [
+    courseSisId,
+    funkaSectionSisId,
+    courseName,
+    'active'
+  ])
+}
+
+function studentsEnrollments (
+  students,
+  defaultSectionSisId,
+  funkaSectionSisId
+) {
   for (const student of students) {
-    const sectionId = student.funka.length > 0 ? funkaSectionSisId : defaultSectionSisId
+    const sectionId =
+      student.funka.length > 0 ? funkaSectionSisId : defaultSectionSisId
 
     if (!student.kthid) {
-      writeContent(MISSING_STUDENTS_FILE, [
-        sectionId,
-        student.ladokUID
-      ])
+      writeContent(MISSING_STUDENTS_FILE, [sectionId, student.ladokUID])
     } else {
       writeContent(STUDENTS_FILE, [
         student.kthid,
@@ -86,11 +139,13 @@ function studentsEnrollments (students, defaultSectionSisId, funkaSectionSisId) 
   }
 }
 
-async function teachersEnrollments (courseCodes, defaultSectionSisId, funkaSectionSisId) {
+async function teachersEnrollments (
+  courseCodes,
+  defaultSectionSisId,
+  funkaSectionSisId
+) {
   for (const courseCode of courseCodes) {
-    const { body } = await got(`https://api.kth.se/api/kopps/v2/course/${courseCode}/detailedinformation`, {
-      responseType: 'json'
-    })
+    const body = await getDetailedCourseInfo(courseCode)
 
     for (const examiner of body.examiners) {
       writeContent(TEACHERS_FILE, [
@@ -118,28 +173,32 @@ async function start () {
     type: 'checkbox',
     message: 'Which files do you want to generate?',
     choices: [
+      { name: 'Course rooms', value: COURSES_FILE },
+      { name: 'Sections', value: SECTIONS_FILE },
       { name: 'Students enrollments', value: STUDENTS_FILE },
-      { name: 'Teachers (incl. examiners) enrollments', value: TEACHERS_FILE },
-
-      /* Not implemented
-      { name: '(coming in a future) Course rooms', value: COURSES_FILE, disabled: true },
-      { name: '(coming in a future) Sections', value: SECTIONS_FILE, disabled: true }
-      */
+      { name: 'Teachers (incl. examiners) enrollments', value: TEACHERS_FILE }
     ],
     default: []
+  })
+
+  const { doZip } = await inquirer.prompt({
+    name: 'doZip',
+    type: 'confirm',
+    message: 'Do you want to zip all the files?',
+    default: true
   })
 
   const { startDate, endDate } = await inquirer.prompt([
     {
       type: 'datetime',
-      format: ['yyyy', '-', 'mm', '-', 'dd' ],
+      format: ['yyyy', '-', 'mm', '-', 'dd'],
       name: 'startDate',
       initial: new Date('2020-04-14'),
       message: 'Initial date'
     },
     {
       type: 'datetime',
-      format: ['yyyy', '-', 'mm', '-', 'dd' ],
+      format: ['yyyy', '-', 'mm', '-', 'dd'],
       name: 'endDate',
       initial: new Date('2020-04-17'),
       message: 'End date'
@@ -148,10 +207,16 @@ async function start () {
 
   for (const file of outputFiles) {
     writeHeader(file)
-    writeHeader(MISSING_STUDENTS_FILE)
+    if (file === STUDENTS_FILE) {
+      writeHeader(MISSING_STUDENTS_FILE)
+    }
   }
 
-  for (let date = startDate; date <= endDate; date.setDate(date.getDate() + 1)) {
+  for (
+    let date = startDate;
+    date <= endDate;
+    date.setDate(date.getDate() + 1)
+  ) {
     const dateString = date.toISOString().split('T')[0]
     console.log(`Fetching exams for date ${dateString}`)
 
@@ -160,32 +225,77 @@ async function start () {
 
     for (const examination of examinations) {
       const courseCodes = Array.from(
-        new Set(examination.courseCodes.map(courseCode =>
-          courseCode.toUpperCase()
-        ))
+        new Set(
+          examination.courseCodes.map(courseCode => courseCode.toUpperCase())
+        )
       )
 
       if (courseCodes.length > 1) {
-        console.log(`${examination.ladokUID}: has several course codes: ${courseCodes.join(',')}`)
+        console.log(
+          `${
+            examination.ladokUID
+          }: has several course codes: ${courseCodes.join(',')}`
+        )
       }
 
       // All course rooms will be in one "examination room", the first in
       // alphabetical order
       courseCodes.sort()
-      const examinationRoomCode = courseCodes[0]
-      const defaultSectionSisId = `${examinationRoomCode}_${examination.type}_${examination.date}`
-      const funkaSectionSisId = `${examinationRoomCode}_${examination.type}_${examination.date}_FUNKA`
+      const examinationRoomCode = courseCodes.join('-')
+      const courseSisId = examination.ladokUID
+      const courseName = `${examinationRoomCode}_${examination.type}_${examination.date}`
+      //const defaultSectionSisId = `${examinationRoomCode}_${examination.type}_${examination.date}`
+      const defaultSectionSisId = courseSisId
+      //const funkaSectionSisId = `${examinationRoomCode}_${examination.type}_${examination.date}_FUNKA`
+      const funkaSectionSisId = `${courseSisId}_FUNKA`
+
+      console.log(`Creating course and sections for ${courseName}`)
+      if (outputFiles.includes(COURSES_FILE)) {
+        await courses(courseCodes, courseSisId, courseName)
+      }
+
+      if (outputFiles.includes(SECTIONS_FILE)) {
+        await sections(
+          courseCodes,
+          courseSisId,
+          defaultSectionSisId,
+          funkaSectionSisId,
+          courseName
+        )
+      }
 
       console.log(`Enrolling people in ${defaultSectionSisId}...`)
 
       if (outputFiles.includes(STUDENTS_FILE)) {
-        studentsEnrollments(examination.registeredStudents, defaultSectionSisId, funkaSectionSisId)
+        studentsEnrollments(
+          examination.registeredStudents,
+          defaultSectionSisId,
+          funkaSectionSisId
+        )
       }
 
       if (outputFiles.includes(TEACHERS_FILE)) {
-        teachersEnrollments(courseCodes, defaultSectionSisId, funkaSectionSisId)
+        await teachersEnrollments(
+          courseCodes,
+          defaultSectionSisId,
+          funkaSectionSisId
+        )
       }
     }
+  }
+
+  if (doZip) {
+    const zip = new JSZip()
+    for (const file of outputFiles) {
+      zip.file(file, fs.readFileSync(file))
+    }
+    // TODO: Do we want to promisify this?
+    zip
+      .generateNodeStream({ type: 'nodebuffer', streamFiles: true })
+      .pipe(fs.createWriteStream(ZIP_FILE))
+      .on('finish', function () {
+        console.log(`${ZIP_FILE} written to disk`)
+      })
   }
 }
 

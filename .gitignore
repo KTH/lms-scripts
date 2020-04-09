@@ -67,3 +67,4 @@ csv/
 .vscode/
 
 *.csv
+*.zip

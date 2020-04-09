@@ -4,7 +4,9 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node index.js",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "debug": "NODE_ENV=development node --nolazy --inspect-brk=9229 index.js"
   },
   "keywords": [],
   "author": "",
@@ -13,6 +15,8 @@
     "dotenv": "^8.2.0",
     "got": "^10.7.0",
     "inquirer": "^7.1.0",
-    "inquirer-datepicker-prompt": "^0.4.2"
+    "inquirer-datepicker-prompt": "^0.4.2",
+    "jszip": "^3.3.0",
+    "memoizee": "^0.4.14"
   }
 }
