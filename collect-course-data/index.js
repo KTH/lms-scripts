@@ -438,15 +438,36 @@ async function start () {
     process.env.CANVAS_API_URL,
     process.env.CANVAS_ACCESS_TOKEN
   )
-  const courses = canvas.list('/accounts/1/courses', {
-    include: [
-      'account',
-      'total_students',
-      'teachers',
-      'concluded',
-      'syllabus_body'
-    ]
-  })
+  const examinationAccounts = [
+    104,
+    105,
+    106,
+    107,
+    108,
+    109,
+    110,
+    111,
+    112,
+    113,
+    114,
+    115,
+    116
+  ]
+  const courses = []
+  for (const examinationAccount of examinationAccounts) {
+    const subaccountCourses = await canvas
+      .list(`/accounts/${examinationAccount}/courses`, {
+        include: [
+          'account',
+          'total_students',
+          'teachers',
+          'concluded',
+          'syllabus_body'
+        ]
+      })
+      .toArray()
+    courses.push(...subaccountCourses)
+  }
   for await (const course of courses) {
     const courseId = course.id
     if (courseId < process.env.APPEND_FROM_ID) {
