@@ -52,7 +52,8 @@ function writeHeader (file) {
       'short_name',
       'long_name',
       'account_id',
-      'status'
+      'status',
+      'blueprint_course_id'
     ],
 
     [SECTIONS_FILE]: ['course_id', 'section_id', '"name"', 'status'],
@@ -90,7 +91,8 @@ async function courses (courseCodes, courseSisId, courseName) {
     courseName,
     courseName,
     `${schoolCode} - Examinations`,
-    'active'
+    'active',
+    process.env.BLUEPRINT_SIS_ID
   ])
 }
 
@@ -241,13 +243,14 @@ async function start () {
       // All course rooms will be in one "examination room", the first in
       // alphabetical order
       courseCodes.sort()
-      const examinationRoomCode = courseCodes.join('-')
-      const courseSisId = examination.ladokUID
-      const courseName = `${examinationRoomCode}_${examination.type}_${examination.date}`
-      //const defaultSectionSisId = `${examinationRoomCode}_${examination.type}_${examination.date}`
+      const courseCodesAndType = []
+      for (const courseCode of courseCodes) {
+        courseCodesAndType.push(`${courseCode} ${examination.type}`)
+      }
+      const courseName = courseCodesAndType.join('/')
+      const courseSisId = `AKT.${examination.ladokUID}.${examination.date}`
       const defaultSectionSisId = courseSisId
-      //const funkaSectionSisId = `${examinationRoomCode}_${examination.type}_${examination.date}_FUNKA`
-      const funkaSectionSisId = `${courseSisId}_FUNKA`
+      const funkaSectionSisId = `${courseSisId}.FUNKA`
 
       console.log(`Creating course and sections for ${courseName}`)
       if (outputFiles.includes(COURSES_FILE)) {
