@@ -83,6 +83,8 @@ async function courses (courseCodes, courseSisId, courseName) {
   // thus we are choose one subaccount based on course code alphabetic
   // order.
   const body = await getDetailedCourseInfo(courseCodes[0])
+  // TODO: Rumor has it that we might put all examinations in one big account...
+  // Consider that implementation-wise!
   // Note: Doing this maneuver to avoid making two separate requests to Kopps
   const schoolCode = body.course.department.name.split('/')[0]
   // TODO: Decide if short_name and long_name should be something else.
@@ -100,20 +102,20 @@ function sections (
   courseCodes,
   courseSisId,
   defaultSectionSisId,
-  funkaSectionSisId,
-  courseName
+  funkaSectionSisId
 ) {
+  // Note: Used to use the courseName as section name!
   writeContent(SECTIONS_FILE, [
     courseSisId,
     defaultSectionSisId,
-    courseName,
+    'Section 1',
     'active'
   ])
 
   writeContent(SECTIONS_FILE, [
     courseSisId,
     funkaSectionSisId,
-    courseName,
+    'Section 2',
     'active'
   ])
 }
@@ -216,7 +218,7 @@ async function start () {
 
   for (
     let date = startDate;
-    date <= endDate;
+    date <= endDate; // eslint-disable-line
     date.setDate(date.getDate() + 1)
   ) {
     const dateString = date.toISOString().split('T')[0]
@@ -262,8 +264,7 @@ async function start () {
           courseCodes,
           courseSisId,
           defaultSectionSisId,
-          funkaSectionSisId,
-          courseName
+          funkaSectionSisId
         )
       }
 
