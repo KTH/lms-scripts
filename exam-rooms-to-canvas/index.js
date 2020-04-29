@@ -17,6 +17,31 @@ const TEACHERS_FILE = 'enrollments-examiners.csv'
 const MISSING_STUDENTS_FILE = 'students-without-kthid.csv'
 const ZIP_FILE = 'examinations-to-canvas.zip'
 
+const HEADERS = {
+  [COURSES_FILE]: [
+    'course_id',
+    'short_name',
+    'long_name',
+    'account_id',
+    'status',
+    'blueprint_course_id'
+  ],
+
+  [SECTIONS_FILE]: ['course_id', 'section_id', '"name"', 'status'],
+
+  [STUDENTS_FILE]: [
+    'user_id',
+    'role_id',
+    'section_id',
+    'status',
+    'limit_section_privileges'
+  ],
+
+  [TEACHERS_FILE]: ['user_id', 'role_id', 'section_id', 'status'],
+
+  [MISSING_STUDENTS_FILE]: ['section_id', 'ladok_uid']
+}
+
 /** Fetches all examination rounds from the aktivitetstillfällen API */
 async function listExaminations (baseUrl, token, date) {
   const { body } = await got(
@@ -46,65 +71,26 @@ async function getDetailedCourseInfoWithoutCache (courseCode) {
 const getDetailedCourseInfo = memoize(getDetailedCourseInfoWithoutCache)
 
 function writeHeader (file) {
-  const headers = {
-    [COURSES_FILE]: [
-      'course_id',
-      'short_name',
-      'long_name',
-      'account_id',
-      'status',
-      'blueprint_course_id'
-    ],
-
-    [SECTIONS_FILE]: ['course_id', 'section_id', '"name"', 'status'],
-
-    [STUDENTS_FILE]: [
-      'user_id',
-      'role_id',
-      'section_id',
-      'status',
-      'limit_section_privileges'
-    ],
-
-    [TEACHERS_FILE]: ['user_id', 'role_id', 'section_id', 'status'],
-
-    [MISSING_STUDENTS_FILE]: ['section_id', 'ladok_uid']
-  }
-
-  fs.writeFileSync(file, headers[file].join(',') + '\n')
+  fs.writeFileSync(file, HEADERS[file].join(',') + '\n')
 }
 
 function writeContent (file, content) {
   fs.appendFileSync(file, content.join(',') + '\n')
 }
 
-async function courses (courseCodes, courseSisId, courseName) {
-  // Note: We are only adding one instance of each examination room,
-  // thus we are choose one subaccount based on course code alphabetic
-  // order.
-  const body = await getDetailedCourseInfo(courseCodes[0])
-  // TODO: Rumor has it that we might put all examinations in one big account...
-  // Consider that implementation-wise!
-  // Note: Doing this maneuver to avoid making two separate requests to Kopps
-  const schoolCode = body.course.department.name.split('/')[0]
-  // TODO: Decide if short_name and long_name should be something else.
+async function courses (courseSisId, courseName, blueprintSisId) {
+  // TODO: Decide if short_name and long_name should have different values.
   writeContent(COURSES_FILE, [
     courseSisId,
     courseName,
     courseName,
-    `${schoolCode} - Examinations`,
+    `Examinations`,
     'active',
-    process.env.BLUEPRINT_SIS_ID
+    blueprintSisId
   ])
 }
 
-function sections (
-  courseCodes,
-  courseSisId,
-  defaultSectionSisId,
-  funkaSectionSisId
-) {
-  // Note: Used to use the courseName as section name!
+function sections (courseSisId, defaultSectionSisId, funkaSectionSisId) {
   writeContent(SECTIONS_FILE, [
     courseSisId,
     defaultSectionSisId,
@@ -194,20 +180,38 @@ async function start () {
 
   const { startDate, endDate } = await inquirer.prompt([
     {
-      type: 'datetime',
-      format: ['yyyy', '-', 'mm', '-', 'dd'],
       name: 'startDate',
-      initial: new Date('2020-04-14'),
-      message: 'Initial date'
+      type: 'datetime',
+      message: 'Initial date',
+      format: ['yyyy', '-', 'mm', '-', 'dd'],
+      initial: new Date('2020-04-14')
     },
     {
-      type: 'datetime',
-      format: ['yyyy', '-', 'mm', '-', 'dd'],
       name: 'endDate',
-      initial: new Date('2020-04-17'),
-      message: 'End date'
+      type: 'datetime',
+      message: 'End date',
+      format: ['yyyy', '-', 'mm', '-', 'dd'],
+      initial: new Date('2020-04-17')
     }
   ])
+
+  const { useBlueprint } = await inquirer.prompt({
+    name: 'useBlueprint',
+    type: 'confirm',
+    message: 'Do you want to use a Blueprint Course?',
+    default: true
+  })
+
+  let blueprintSisId = ''
+  if (useBlueprint) {
+    blueprintSisId = (
+      await inquirer.prompt({
+        name: 'blueprintSisId',
+        type: 'input',
+        message: 'Enter Blueprint Course SIS ID!'
+      })
+    ).blueprintSisId
+  }
 
   for (const file of outputFiles) {
     writeHeader(file)
@@ -228,44 +232,38 @@ async function start () {
     console.log(`Exams for date ${dateString}: ${examinations.length} found`)
 
     for (const examination of examinations) {
-      const courseCodes = Array.from(
+      const courseCodesAndTypes = Array.from(
         new Set(
-          examination.courseCodes.map(courseCode => courseCode.toUpperCase())
+          examination.courseCodes.map(
+            (courseCode, index) =>
+              `${courseCode.toUpperCase()} ${examination.type[
+                index
+              ].toUpperCase()}`
+          )
         )
       )
 
-      if (courseCodes.length > 1) {
+      if (courseCodesAndTypes.length > 1) {
         console.log(
           `${
             examination.ladokUID
-          }: has several course codes: ${courseCodes.join(',')}`
+          }: has several course codes/types: ${courseCodesAndTypes.join(',')}`
         )
       }
 
-      // All course rooms will be in one "examination room", the first in
-      // alphabetical order
-      courseCodes.sort()
-      const courseCodesAndType = []
-      for (const courseCode of courseCodes) {
-        courseCodesAndType.push(`${courseCode} ${examination.type}`)
-      }
-      const courseName = courseCodesAndType.join('/')
+      courseCodesAndTypes.sort()
+      const courseName = `${courseCodesAndTypes.join('/')}: ${examination.date}`
       const courseSisId = `AKT.${examination.ladokUID}.${examination.date}`
       const defaultSectionSisId = courseSisId
       const funkaSectionSisId = `${courseSisId}.FUNKA`
 
       console.log(`Creating course and sections for ${courseName}`)
       if (outputFiles.includes(COURSES_FILE)) {
-        await courses(courseCodes, courseSisId, courseName)
+        await courses(courseSisId, courseName, blueprintSisId)
       }
 
       if (outputFiles.includes(SECTIONS_FILE)) {
-        await sections(
-          courseCodes,
-          courseSisId,
-          defaultSectionSisId,
-          funkaSectionSisId
-        )
+        await sections(courseSisId, defaultSectionSisId, funkaSectionSisId)
       }
 
       console.log(`Enrolling people in ${defaultSectionSisId}...`)
@@ -280,7 +278,7 @@ async function start () {
 
       if (outputFiles.includes(TEACHERS_FILE)) {
         await teachersEnrollments(
-          courseCodes,
+          courseCodesAndTypes.map(codeAndType => codeAndType.split(' ')[0]),
           defaultSectionSisId,
           funkaSectionSisId
         )
