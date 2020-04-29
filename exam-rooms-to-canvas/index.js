@@ -78,13 +78,13 @@ function writeContent (file, content) {
   fs.appendFileSync(file, content.join(',') + '\n')
 }
 
-async function courses (courseSisId, courseName, blueprintSisId) {
+async function courses (courseSisId, courseName, subAccount, blueprintSisId) {
   // TODO: Decide if short_name and long_name should have different values.
   writeContent(COURSES_FILE, [
     courseSisId,
     courseName,
     courseName,
-    `Examinations`,
+    subAccount,
     'active',
     blueprintSisId
   ])
@@ -171,13 +171,6 @@ async function start () {
     default: []
   })
 
-  const { doZip } = await inquirer.prompt({
-    name: 'doZip',
-    type: 'confirm',
-    message: 'Do you want to zip all the files?',
-    default: true
-  })
-
   const { startDate, endDate } = await inquirer.prompt([
     {
       name: 'startDate',
@@ -194,6 +187,19 @@ async function start () {
       initial: new Date('2020-04-17')
     }
   ])
+
+  let useSchoolSubAccounts = false
+  if (outputFiles.includes(COURSES_FILE)) {
+    useSchoolSubAccounts = (
+      await inquirer.prompt({
+        name: 'useSchoolSubAccounts',
+        type: 'confirm',
+        message:
+          'Do you want to place examination rooms in sub-accounts based on school ownership?',
+        default: true
+      })
+    ).useSchoolSubAccounts
+  }
 
   const { useBlueprint } = await inquirer.prompt({
     name: 'useBlueprint',
@@ -212,6 +218,13 @@ async function start () {
       })
     ).blueprintSisId
   }
+
+  const { doZip } = await inquirer.prompt({
+    name: 'doZip',
+    type: 'confirm',
+    message: 'Do you want to zip all the files?',
+    default: true
+  })
 
   for (const file of outputFiles) {
     writeHeader(file)
@@ -257,16 +270,25 @@ async function start () {
       const defaultSectionSisId = courseSisId
       const funkaSectionSisId = `${courseSisId}.FUNKA`
 
-      console.log(`Creating course and sections for ${courseName}`)
       if (outputFiles.includes(COURSES_FILE)) {
-        await courses(courseSisId, courseName, blueprintSisId)
+        console.log(`Creating course for ${courseName}`)
+        const subAccount = useSchoolSubAccounts
+          ? `${examination.courseOwner} - Examinations`
+          : 'Examinations'
+        await courses(courseSisId, courseName, subAccount, blueprintSisId)
       }
 
       if (outputFiles.includes(SECTIONS_FILE)) {
+        console.log(`Creating sections for ${courseName}`)
         await sections(courseSisId, defaultSectionSisId, funkaSectionSisId)
       }
 
-      console.log(`Enrolling people in ${defaultSectionSisId}...`)
+      if (
+        outputFiles.includes(STUDENTS_FILE) ||
+        outputFiles.includes(TEACHERS_FILE)
+      ) {
+        console.log(`Enrolling people in ${defaultSectionSisId}...`)
+      }
 
       if (outputFiles.includes(STUDENTS_FILE)) {
         studentsEnrollments(
