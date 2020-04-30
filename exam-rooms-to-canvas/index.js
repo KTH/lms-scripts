@@ -284,7 +284,7 @@ async function start () {
       }
 
       if (outputFiles.includes(STUDENTS_FILE)) {
-        console.log(`Enrolling students in ${defaultSectionSisId}...`)
+        console.log(`Writing students of ${defaultSectionSisId} to file...`)
         studentsEnrollments(
           examination.registeredStudents,
           defaultSectionSisId,
@@ -293,7 +293,7 @@ async function start () {
       }
 
       if (outputFiles.includes(TEACHERS_FILE)) {
-        console.log(`Enrolling examiners in ${defaultSectionSisId}...`)
+        console.log(`Writing examiners of ${defaultSectionSisId} to file...`)
         await teachersEnrollments(
           courseCodesAndTypes.map(codeAndType => codeAndType.split(' ')[0]),
           defaultSectionSisId,
