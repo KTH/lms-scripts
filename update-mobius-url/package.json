@@ -1,0 +1,32 @@
+{
+  "name": "update-mobius-url",
+  "version": "1.0.0",
+  "description": "A simple script which uses a predefined list of courses/assignments to update their ExternalToolTagAttributes.",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "debug": "NODE_ENV=development node --nolazy --inspect-brk=9229 index.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/KTH/lms-scripts.git"
+  },
+  "keywords": [
+    "canvas",
+    "mobius",
+    "kth"
+  ],
+  "author": "team e-learning",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/KTH/lms-scripts/issues"
+  },
+  "homepage": "https://github.com/KTH/lms-scripts#readme",
+  "dependencies": {
+    "csv-parse": "^4.9.0",
+    "form-data": "^3.0.0",
+    "got": "^11.0.2",
+    "inquirer": "^7.1.0"
+  }
+}
