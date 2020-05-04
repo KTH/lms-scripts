@@ -191,7 +191,7 @@ async function start () {
   let useSchoolSubAccounts = true
 
   const  useBlueprint = true
-  let blueprintSisId = '' // TODO: set a sis id here
+  let blueprintSisId = 'new_exam_ids_and_api' // TODO: set a sis id here
 
   const { doZip } = await inquirer.prompt({
     name: 'doZip',
