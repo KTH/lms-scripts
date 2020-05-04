@@ -188,36 +188,10 @@ async function start () {
     }
   ])
 
-  let useSchoolSubAccounts = false
-  if (outputFiles.includes(COURSES_FILE)) {
-    useSchoolSubAccounts = (
-      await inquirer.prompt({
-        name: 'useSchoolSubAccounts',
-        type: 'confirm',
-        message:
-          'Do you want to place examination rooms in sub-accounts based on school ownership?',
-        default: true
-      })
-    ).useSchoolSubAccounts
-  }
+  let useSchoolSubAccounts = true
 
-  const { useBlueprint } = await inquirer.prompt({
-    name: 'useBlueprint',
-    type: 'confirm',
-    message: 'Do you want to use a Blueprint Course?',
-    default: true
-  })
-
-  let blueprintSisId = ''
-  if (useBlueprint) {
-    blueprintSisId = (
-      await inquirer.prompt({
-        name: 'blueprintSisId',
-        type: 'input',
-        message: 'Enter Blueprint Course SIS ID!'
-      })
-    ).blueprintSisId
-  }
+  const  useBlueprint = true
+  let blueprintSisId = '' // TODO: set a sis id here
 
   const { doZip } = await inquirer.prompt({
     name: 'doZip',
