@@ -216,30 +216,35 @@ async function start () {
     console.log(`Fetching exams for date ${dateString}`)
 
     const examinations = await listExaminations(baseUrl, token, dateString)
-    console.log(`Exams for date ${dateString}: ${examinations.length} found`)
 
     for (const examination of examinations) {
-      const courseCodesAndTypes = Array.from(
-        new Set(
-          examination.courseCodes.map(
-            (courseCode, index) =>
-              `${courseCode.toUpperCase()} ${examination.type[
-                index
-              ].toUpperCase()}`
-          )
-        )
-      )
+      const courseCodes = [] 
+      examination.aktiviteter.forEach(a => courseCodes.push(...Array.from(new Set(a.courseCodes))) ) 
 
-      if (courseCodesAndTypes.length > 1) {
-        console.log(
-          `${
-            examination.ladokUID
-          }: has several course codes/types: ${courseCodesAndTypes.join(',')}`
-        )
-      }
+      // const courseCodesAndTypes = Array.from(
+      //   new Set(
+      //     examination.courseCodes.map(
+      //       (courseCode, index) =>
+      //       `${courseCode.toUpperCase()} ${examination.type[
+      //         index
+      //       ].toUpperCase()}`
+      //     )
+      //   )
+      // )
+      //
+      // if (courseCodesAndTypes.length > 1) {
+      //   console.log(
+      //     `${
+      //       examination.ladokUID
+      //     }: has several course codes/types: ${courseCodesAndTypes.join(',')}`
+      //   )
+      // }
+      //
+      // courseCodesAndTypes.sort()
+      const courseName = examination.aktiviteter.map(akt => `${akt.courseCodes.join(',')} ${akt.activityCode}`).join(',') + `: ${examination.date}`
+      console.log(courseName)
 
-      courseCodesAndTypes.sort()
-      const courseName = `${courseCodesAndTypes.join('/')}: ${examination.date}`
+      // const courseName = `${courseCodesAndTypes.join('/')}: ${examination.date}`
       const courseSisId = `AKT.${examination.ladokUID}.${examination.date}`
       const defaultSectionSisId = courseSisId
       const funkaSectionSisId = `${courseSisId}.FUNKA`
@@ -282,7 +287,6 @@ async function start () {
     for (const file of outputFiles) {
       zip.file(file, fs.readFileSync(file))
     }
-    // TODO: Do we want to promisify this?
     zip
       .generateNodeStream({ type: 'nodebuffer', streamFiles: true })
       .pipe(fs.createWriteStream(ZIP_FILE))
