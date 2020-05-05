@@ -177,14 +177,14 @@ async function start () {
       type: 'datetime',
       message: 'Initial date',
       format: ['yyyy', '-', 'mm', '-', 'dd'],
-      initial: new Date('2020-04-14')
+      initial: new Date('2020-05-25')
     },
     {
       name: 'endDate',
       type: 'datetime',
       message: 'End date',
       format: ['yyyy', '-', 'mm', '-', 'dd'],
-      initial: new Date('2020-04-17')
+      initial: new Date('2020-06-01')
     }
   ])
 
@@ -264,8 +264,13 @@ async function start () {
 
       if (outputFiles.includes(STUDENTS_FILE)) {
         console.log(`Writing students of ${defaultSectionSisId} to file...`)
+        
+        // Students are per aktivitet/Modul. Let's flatten them to an array of all the students
+        const students = []
+        examination.aktiviteter.forEach(akt => students.push(...akt.registeredStudents))
+        
         studentsEnrollments(
-          examination.registeredStudents,
+          students,
           defaultSectionSisId,
           funkaSectionSisId
         )
@@ -274,7 +279,7 @@ async function start () {
       if (outputFiles.includes(TEACHERS_FILE)) {
         console.log(`Writing examiners of ${defaultSectionSisId} to file...`)
         await teachersEnrollments(
-          courseCodesAndTypes.map(codeAndType => codeAndType.split(' ')[0]),
+          courseCodes,
           defaultSectionSisId,
           funkaSectionSisId
         )
