@@ -188,10 +188,8 @@ async function start () {
     }
   ])
 
-  let useSchoolSubAccounts = true
-
   const  useBlueprint = true
-  let blueprintSisId = 'new_exam_ids_and_api' // TODO: set a sis id here
+  let blueprintSisId = 'exam_bp_2020_p4' // TODO: set a sis id here
 
   const { doZip } = await inquirer.prompt({
     name: 'doZip',
@@ -241,7 +239,7 @@ async function start () {
       // }
       //
       // courseCodesAndTypes.sort()
-      const courseName = examination.aktiviteter.map(akt => `${akt.courseCodes.join(',')} ${akt.activityCode}`).join(',') + `: ${examination.date}`
+      const courseName = examination.aktiviteter.map(akt => `${akt.courseCodes.join(' & ')} ${akt.activityCode}`).join(' & ') + `: ${examination.date}`
       console.log(courseName)
 
       // const courseName = `${courseCodesAndTypes.join('/')}: ${examination.date}`
@@ -251,9 +249,15 @@ async function start () {
 
       if (outputFiles.includes(COURSES_FILE)) {
         console.log(`Creating course for ${courseName}`)
-        const subAccount = useSchoolSubAccounts
-          ? `${examination.courseOwner} - Examinations`
-          : 'Examinations'
+
+        // Verify that this aktivitetstillfälle isn't shared between schools
+        if(new Set(examination.aktiviteter.map(akt => akt.courseOwner) ).size > 1){
+          console.error('More then one school owns this aktivitetstillfälle. This cant be handled.')
+          process.exit()
+        }
+
+        // All aktiviteter has the same owner, we can safelly choose the first one
+        const subAccount = `${examination.aktiviteter[0].courseOwner} - Examinations`
         await courses(courseSisId, courseName, subAccount, blueprintSisId)
       }
 
