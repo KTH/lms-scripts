@@ -17,6 +17,31 @@ const TEACHERS_FILE = 'enrollments-examiners.csv'
 const MISSING_STUDENTS_FILE = 'students-without-kthid.csv'
 const ZIP_FILE = 'examinations-to-canvas.zip'
 
+const HEADERS = {
+  [COURSES_FILE]: [
+    'course_id',
+    'short_name',
+    'long_name',
+    'account_id',
+    'status',
+    'blueprint_course_id'
+  ],
+
+  [SECTIONS_FILE]: ['course_id', 'section_id', '"name"', 'status'],
+
+  [STUDENTS_FILE]: [
+    'user_id',
+    'role_id',
+    'section_id',
+    'status',
+    'limit_section_privileges'
+  ],
+
+  [TEACHERS_FILE]: ['user_id', 'role_id', 'section_id', 'status'],
+
+  [MISSING_STUDENTS_FILE]: ['section_id', 'ladok_uid']
+}
+
 /** Fetches all examination rounds from the aktivitetstillfällen API */
 async function listExaminations (baseUrl, token, date) {
   const { body } = await got(
@@ -46,72 +71,37 @@ async function getDetailedCourseInfoWithoutCache (courseCode) {
 const getDetailedCourseInfo = memoize(getDetailedCourseInfoWithoutCache)
 
 function writeHeader (file) {
-  const headers = {
-    [COURSES_FILE]: [
-      'course_id',
-      'short_name',
-      'long_name',
-      'account_id',
-      'status'
-    ],
-
-    [SECTIONS_FILE]: ['course_id', 'section_id', '"name"', 'status'],
-
-    [STUDENTS_FILE]: [
-      'user_id',
-      'role_id',
-      'section_id',
-      'status',
-      'limit_section_privileges'
-    ],
-
-    [TEACHERS_FILE]: ['user_id', 'role_id', 'section_id', 'status'],
-
-    [MISSING_STUDENTS_FILE]: ['section_id', 'ladok_uid']
-  }
-
-  fs.writeFileSync(file, headers[file].join(',') + '\n')
+  fs.writeFileSync(file, HEADERS[file].join(',') + '\n')
 }
 
 function writeContent (file, content) {
   fs.appendFileSync(file, content.join(',') + '\n')
 }
 
-async function courses (courseCodes, courseSisId, courseName) {
-  // Note: We are only adding one instance of each examination room,
-  // thus we are choose one subaccount based on course code alphabetic
-  // order.
-  const body = await getDetailedCourseInfo(courseCodes[0])
-  // Note: Doing this maneuver to avoid making two separate requests to Kopps
-  const schoolCode = body.course.department.name.split('/')[0]
-  // TODO: Decide if short_name and long_name should be something else.
+async function courses (courseSisId, courseName, subAccount, blueprintSisId) {
+  // TODO: Decide if short_name and long_name should have different values.
   writeContent(COURSES_FILE, [
     courseSisId,
     courseName,
     courseName,
-    `${schoolCode} - Examinations`,
-    'active'
+    subAccount,
+    'active',
+    blueprintSisId
   ])
 }
 
-function sections (
-  courseCodes,
-  courseSisId,
-  defaultSectionSisId,
-  funkaSectionSisId,
-  courseName
-) {
+function sections (courseSisId, defaultSectionSisId, funkaSectionSisId) {
   writeContent(SECTIONS_FILE, [
     courseSisId,
     defaultSectionSisId,
-    courseName,
+    'Section 1',
     'active'
   ])
 
   writeContent(SECTIONS_FILE, [
     courseSisId,
     funkaSectionSisId,
-    courseName,
+    'Section 2',
     'active'
   ])
 }
@@ -181,29 +171,32 @@ async function start () {
     default: []
   })
 
+  const { startDate, endDate } = await inquirer.prompt([
+    {
+      name: 'startDate',
+      type: 'datetime',
+      message: 'Initial date',
+      format: ['yyyy', '-', 'mm', '-', 'dd'],
+      initial: new Date('2020-05-25')
+    },
+    {
+      name: 'endDate',
+      type: 'datetime',
+      message: 'End date',
+      format: ['yyyy', '-', 'mm', '-', 'dd'],
+      initial: new Date('2020-06-01')
+    }
+  ])
+
+  const  useBlueprint = true
+  let blueprintSisId = 'exam_bp_2020_p4' // TODO: set a sis id here
+
   const { doZip } = await inquirer.prompt({
     name: 'doZip',
     type: 'confirm',
     message: 'Do you want to zip all the files?',
     default: true
   })
-
-  const { startDate, endDate } = await inquirer.prompt([
-    {
-      type: 'datetime',
-      format: ['yyyy', '-', 'mm', '-', 'dd'],
-      name: 'startDate',
-      initial: new Date('2020-04-14'),
-      message: 'Initial date'
-    },
-    {
-      type: 'datetime',
-      format: ['yyyy', '-', 'mm', '-', 'dd'],
-      name: 'endDate',
-      initial: new Date('2020-04-17'),
-      message: 'End date'
-    }
-  ])
 
   for (const file of outputFiles) {
     writeHeader(file)
@@ -214,67 +207,81 @@ async function start () {
 
   for (
     let date = startDate;
-    date <= endDate;
+    date <= endDate; // eslint-disable-line
     date.setDate(date.getDate() + 1)
   ) {
     const dateString = date.toISOString().split('T')[0]
     console.log(`Fetching exams for date ${dateString}`)
 
     const examinations = await listExaminations(baseUrl, token, dateString)
-    console.log(`Exams for date ${dateString}: ${examinations.length} found`)
 
     for (const examination of examinations) {
-      const courseCodes = Array.from(
-        new Set(
-          examination.courseCodes.map(courseCode => courseCode.toUpperCase())
-        )
-      )
+      const courseCodes = [] 
+      examination.aktiviteter.forEach(a => courseCodes.push(...Array.from(new Set(a.courseCodes))) ) 
 
-      if (courseCodes.length > 1) {
-        console.log(
-          `${
-            examination.ladokUID
-          }: has several course codes: ${courseCodes.join(',')}`
-        )
-      }
+      // const courseCodesAndTypes = Array.from(
+      //   new Set(
+      //     examination.courseCodes.map(
+      //       (courseCode, index) =>
+      //       `${courseCode.toUpperCase()} ${examination.type[
+      //         index
+      //       ].toUpperCase()}`
+      //     )
+      //   )
+      // )
+      //
+      // if (courseCodesAndTypes.length > 1) {
+      //   console.log(
+      //     `${
+      //       examination.ladokUID
+      //     }: has several course codes/types: ${courseCodesAndTypes.join(',')}`
+      //   )
+      // }
+      //
+      // courseCodesAndTypes.sort()
+      const courseName = examination.aktiviteter.map(akt => `${akt.courseCodes.join(' & ')} ${akt.activityCode}`).join(' & ') + `: ${examination.date}`
+      console.log(courseName)
 
-      // All course rooms will be in one "examination room", the first in
-      // alphabetical order
-      courseCodes.sort()
-      const examinationRoomCode = courseCodes.join('-')
-      const courseSisId = examination.ladokUID
-      const courseName = `${examinationRoomCode}_${examination.type}_${examination.date}`
-      //const defaultSectionSisId = `${examinationRoomCode}_${examination.type}_${examination.date}`
+      // const courseName = `${courseCodesAndTypes.join('/')}: ${examination.date}`
+      const courseSisId = `AKT.${examination.ladokUID}.${examination.date}`
       const defaultSectionSisId = courseSisId
-      //const funkaSectionSisId = `${examinationRoomCode}_${examination.type}_${examination.date}_FUNKA`
-      const funkaSectionSisId = `${courseSisId}_FUNKA`
+      const funkaSectionSisId = `${courseSisId}.FUNKA`
 
-      console.log(`Creating course and sections for ${courseName}`)
       if (outputFiles.includes(COURSES_FILE)) {
-        await courses(courseCodes, courseSisId, courseName)
+        console.log(`Creating course for ${courseName}`)
+
+        // Verify that this aktivitetstillfälle isn't shared between schools
+        if(new Set(examination.aktiviteter.map(akt => akt.courseOwner) ).size > 1){
+          console.error('More then one school owns this aktivitetstillfälle. This cant be handled.')
+          process.exit()
+        }
+
+        // All aktiviteter has the same owner, we can safelly choose the first one
+        const subAccount = `${examination.aktiviteter[0].courseOwner} - Examinations`
+        await courses(courseSisId, courseName, subAccount, blueprintSisId)
       }
 
       if (outputFiles.includes(SECTIONS_FILE)) {
-        await sections(
-          courseCodes,
-          courseSisId,
-          defaultSectionSisId,
-          funkaSectionSisId,
-          courseName
-        )
+        console.log(`Creating sections for ${courseName}`)
+        await sections(courseSisId, defaultSectionSisId, funkaSectionSisId)
       }
 
-      console.log(`Enrolling people in ${defaultSectionSisId}...`)
-
       if (outputFiles.includes(STUDENTS_FILE)) {
+        console.log(`Writing students of ${defaultSectionSisId} to file...`)
+        
+        // Students are per aktivitet/Modul. Let's flatten them to an array of all the students
+        const students = []
+        examination.aktiviteter.forEach(akt => students.push(...akt.registeredStudents))
+        
         studentsEnrollments(
-          examination.registeredStudents,
+          students,
           defaultSectionSisId,
           funkaSectionSisId
         )
       }
 
       if (outputFiles.includes(TEACHERS_FILE)) {
+        console.log(`Writing examiners of ${defaultSectionSisId} to file...`)
         await teachersEnrollments(
           courseCodes,
           defaultSectionSisId,
@@ -289,7 +296,6 @@ async function start () {
     for (const file of outputFiles) {
       zip.file(file, fs.readFileSync(file))
     }
-    // TODO: Do we want to promisify this?
     zip
       .generateNodeStream({ type: 'nodebuffer', streamFiles: true })
       .pipe(fs.createWriteStream(ZIP_FILE))
