@@ -252,12 +252,12 @@ async function start () {
 
         // Verify that this aktivitetstillfälle isn't shared between schools
         if(new Set(examination.aktiviteter.map(akt => akt.courseOwner) ).size > 1){
-          console.error('More then one school owns this aktivitetstillfälle. This cant be handled.')
-          process.exit()
+          console.log('More then one school owns this aktivitetstillfälle. Double check this line in the courses csv file before uploading it to Canvas!'.red)
+	  console.log(JSON.stringify(examination, null, 2))
         }
 
-        // All aktiviteter has the same owner, we can safelly choose the first one
-        const subAccount = `${examination.aktiviteter[0].courseOwner} - Examinations`
+        // Choose the first school. This has to be manually checked if an aktivitetstillfälle is shared between schools, which will be logged if that is the case.
+	const subAccount = `${examination.aktiviteter[0].courseOwner} - Examinations`
         await courses(courseSisId, courseName, subAccount, blueprintSisId)
       }
 

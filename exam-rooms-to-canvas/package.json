@@ -18,5 +18,8 @@
     "inquirer-datepicker-prompt": "^0.4.2",
     "jszip": "^3.3.0",
     "memoizee": "^0.4.14"
+  },
+  "devDependencies": {
+    "colors": "^1.4.0"
   }
 }
