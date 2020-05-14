@@ -1,5 +1,5 @@
 require('dotenv').config()
-
+require('colors')
 const fs = require('fs')
 const got = require('got')
 const memoize = require('memoizee')
@@ -177,14 +177,14 @@ async function start () {
       type: 'datetime',
       message: 'Initial date',
       format: ['yyyy', '-', 'mm', '-', 'dd'],
-      initial: new Date('2020-05-25')
+      initial: new Date('2020-06-02')
     },
     {
       name: 'endDate',
       type: 'datetime',
       message: 'End date',
       format: ['yyyy', '-', 'mm', '-', 'dd'],
-      initial: new Date('2020-06-01')
+      initial: new Date('2020-06-05')
     }
   ])
 
@@ -215,6 +215,7 @@ async function start () {
 
     const examinations = await listExaminations(baseUrl, token, dateString)
 
+    console.log('Handling examinations for one day')
     for (const examination of examinations) {
       process.stdout.write('.')
       const courseCodes = [] 
@@ -232,7 +233,7 @@ async function start () {
         // Verify that this aktivitetstillfälle isn't shared between schools
         if(new Set(examination.aktiviteter.map(akt => akt.courseOwner) ).size > 1){
           console.log('More then one school owns this aktivitetstillfälle. Double check this line in the courses csv file before uploading it to Canvas!'.red)
-	  console.log(JSON.stringify(examination, null, 2))
+	  console.log(examination.ladokUID, examination.aktiviteter.map(akt => `${ akt.activityCode }, ${akt.courseCodes.join(',')}`))
         }
 
         // Choose the first school. This has to be manually checked if an aktivitetstillfälle is shared between schools, which will be logged if that is the case.
@@ -265,6 +266,7 @@ async function start () {
         )
       }
     }
+    console.log('Done with one day')
   }
 
   if (doZip) {
