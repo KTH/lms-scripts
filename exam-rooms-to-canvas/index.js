@@ -216,31 +216,11 @@ async function start () {
     const examinations = await listExaminations(baseUrl, token, dateString)
 
     for (const examination of examinations) {
+      process.stdout.write('.')
       const courseCodes = [] 
       examination.aktiviteter.forEach(a => courseCodes.push(...Array.from(new Set(a.courseCodes))) ) 
 
-      // const courseCodesAndTypes = Array.from(
-      //   new Set(
-      //     examination.courseCodes.map(
-      //       (courseCode, index) =>
-      //       `${courseCode.toUpperCase()} ${examination.type[
-      //         index
-      //       ].toUpperCase()}`
-      //     )
-      //   )
-      // )
-      //
-      // if (courseCodesAndTypes.length > 1) {
-      //   console.log(
-      //     `${
-      //       examination.ladokUID
-      //     }: has several course codes/types: ${courseCodesAndTypes.join(',')}`
-      //   )
-      // }
-      //
-      // courseCodesAndTypes.sort()
-      const courseName = examination.aktiviteter.map(akt => `${akt.courseCodes.join(' & ')} ${akt.activityCode}`).join(' & ') + `: ${examination.date}`
-      console.log(courseName)
+     const courseName = examination.aktiviteter.map(akt => `${akt.courseCodes.join(' & ')} ${akt.activityCode}`).join(' & ') + `: ${examination.date}`
 
       // const courseName = `${courseCodesAndTypes.join('/')}: ${examination.date}`
       const courseSisId = `AKT.${examination.ladokUID}.${examination.date}`
@@ -248,7 +228,6 @@ async function start () {
       const funkaSectionSisId = `${courseSisId}.FUNKA`
 
       if (outputFiles.includes(COURSES_FILE)) {
-        console.log(`Creating course for ${courseName}`)
 
         // Verify that this aktivitetstillfälle isn't shared between schools
         if(new Set(examination.aktiviteter.map(akt => akt.courseOwner) ).size > 1){
@@ -262,12 +241,10 @@ async function start () {
       }
 
       if (outputFiles.includes(SECTIONS_FILE)) {
-        console.log(`Creating sections for ${courseName}`)
         await sections(courseSisId, defaultSectionSisId, funkaSectionSisId)
       }
 
       if (outputFiles.includes(STUDENTS_FILE)) {
-        console.log(`Writing students of ${defaultSectionSisId} to file...`)
         
         // Students are per aktivitet/Modul. Let's flatten them to an array of all the students
         const students = []
@@ -281,7 +258,6 @@ async function start () {
       }
 
       if (outputFiles.includes(TEACHERS_FILE)) {
-        console.log(`Writing examiners of ${defaultSectionSisId} to file...`)
         await teachersEnrollments(
           courseCodes,
           defaultSectionSisId,
