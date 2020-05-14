@@ -233,7 +233,7 @@ async function start () {
         // Verify that this aktivitetstillfälle isn't shared between schools
         if(new Set(examination.aktiviteter.map(akt => akt.courseOwner) ).size > 1){
           console.log('More then one school owns this aktivitetstillfälle. Double check this line in the courses csv file before uploading it to Canvas!'.red)
-	  console.log(examination.ladokUID, examination.aktiviteter.map(akt => `${ akt.activityCode }, ${akt.courseCodes.join(',')}`))
+	  console.log('aktivitetstillfälle: ', examination.ladokUID, examination.aktiviteter.map(akt => `${ akt.activityCode }, ${akt.courseCodes.join(',')}`), examination.aktiviteter.map(akt => akt.courseOwner))
         }
 
         // Choose the first school. This has to be manually checked if an aktivitetstillfälle is shared between schools, which will be logged if that is the case.
