@@ -53,7 +53,7 @@ async function listExaminations (baseUrl, token, date) {
       }
     }
   )
-
+console.log(JSON.stringify(body.aktivitetstillfallen))
   return body.aktivitetstillfallen
 }
 
@@ -283,4 +283,4 @@ async function start () {
   }
 }
 
-start()
+start().catch(e => console.error(e))
