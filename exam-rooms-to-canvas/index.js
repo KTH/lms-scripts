@@ -188,7 +188,7 @@ async function start () {
     }
   ])
 
-  const  useBlueprint = true
+  const useBlueprint = true
   let blueprintSisId = 'exam_bp_2020_p4' // TODO: set a sis id here
 
   const { doZip } = await inquirer.prompt({
@@ -218,10 +218,15 @@ async function start () {
     console.log('Handling examinations for one day')
     for (const examination of examinations) {
       process.stdout.write('.')
-      const courseCodes = [] 
-      examination.aktiviteter.forEach(a => courseCodes.push(...Array.from(new Set(a.courseCodes))) ) 
+      const courseCodes = []
+      examination.aktiviteter.forEach(a =>
+        courseCodes.push(...Array.from(new Set(a.courseCodes)))
+      )
 
-     const courseName = examination.aktiviteter.map(akt => `${akt.courseCodes.join(' & ')} ${akt.activityCode}`).join(' & ') + `: ${examination.date}`
+      const courseName =
+        examination.aktiviteter
+          .map(akt => `${akt.courseCodes.join(' & ')} ${akt.activityCode}`)
+          .join(' & ') + `: ${examination.date}`
 
       // const courseName = `${courseCodesAndTypes.join('/')}: ${examination.date}`
       const courseSisId = `AKT.${examination.ladokUID}.${examination.date}`
@@ -229,15 +234,26 @@ async function start () {
       const funkaSectionSisId = `${courseSisId}.FUNKA`
 
       if (outputFiles.includes(COURSES_FILE)) {
-
         // Verify that this aktivitetstillfälle isn't shared between schools
-        if(new Set(examination.aktiviteter.map(akt => akt.courseOwner) ).size > 1){
-          console.log('More then one school owns this aktivitetstillfälle. Double check this line in the courses csv file before uploading it to Canvas!'.red)
-	  console.log('aktivitetstillfälle: ', examination.ladokUID, examination.aktiviteter.map(akt => `${ akt.activityCode }, ${akt.courseCodes.join(',')}`), examination.aktiviteter.map(akt => akt.courseOwner))
+        if (
+          new Set(examination.aktiviteter.map(akt => akt.courseOwner)).size > 1
+        ) {
+          console.log(
+            'More then one school owns this aktivitetstillfälle. Double check this line in the courses csv file before uploading it to Canvas!'
+              .red
+          )
+          console.log(
+            'aktivitetstillfälle: ',
+            examination.ladokUID,
+            examination.aktiviteter.map(
+              akt => `${akt.activityCode}, ${akt.courseCodes.join(',')}`
+            ),
+            examination.aktiviteter.map(akt => akt.courseOwner)
+          )
         }
 
         // Choose the first school. This has to be manually checked if an aktivitetstillfälle is shared between schools, which will be logged if that is the case.
-	const subAccount = `${examination.aktiviteter[0].courseOwner} - Examinations`
+        const subAccount = `${examination.aktiviteter[0].courseOwner} - Examinations`
         await courses(courseSisId, courseName, subAccount, blueprintSisId)
       }
 
@@ -246,16 +262,13 @@ async function start () {
       }
 
       if (outputFiles.includes(STUDENTS_FILE)) {
-        
         // Students are per aktivitet/Modul. Let's flatten them to an array of all the students
         const students = []
-        examination.aktiviteter.forEach(akt => students.push(...akt.registeredStudents))
-        
-        studentsEnrollments(
-          students,
-          defaultSectionSisId,
-          funkaSectionSisId
+        examination.aktiviteter.forEach(akt =>
+          students.push(...akt.registeredStudents)
         )
+
+        studentsEnrollments(students, defaultSectionSisId, funkaSectionSisId)
       }
 
       if (outputFiles.includes(TEACHERS_FILE)) {
