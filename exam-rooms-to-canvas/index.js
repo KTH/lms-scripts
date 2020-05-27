@@ -90,18 +90,18 @@ async function courses (courseSisId, courseName, subAccount, blueprintSisId) {
   ])
 }
 
-function sections (courseSisId, defaultSectionSisId, funkaSectionSisId) {
+function sections (courseSisId, courseCodes, defaultSectionSisId, funkaSectionSisId) {
   writeContent(SECTIONS_FILE, [
     courseSisId,
     defaultSectionSisId,
-    'Section 1',
+    `${courseCodes.join(' & ')} - Section 1`,
     'active'
   ])
 
   writeContent(SECTIONS_FILE, [
     courseSisId,
     funkaSectionSisId,
-    'Section 2',
+    `${courseCodes.join(' & ')} - Section 2`,
     'active'
   ])
 }
@@ -223,10 +223,7 @@ async function start () {
         courseCodes.push(...Array.from(new Set(a.courseCodes)))
       )
 
-      const courseName =
-        examination.aktiviteter
-          .map(akt => `${akt.courseCodes.join(' & ')} ${akt.activityCode}`)
-          .join(' & ') + `: ${examination.date}`
+      const courseName = `${courseCodes.join(' & ')}: ${examination.date}`
 
       // const courseName = `${courseCodesAndTypes.join('/')}: ${examination.date}`
       const courseSisId = `AKT.${examination.ladokUID}.${examination.date}`
@@ -246,7 +243,7 @@ async function start () {
             'aktivitetstillfälle: ',
             examination.ladokUID,
             examination.aktiviteter.map(
-              akt => `${akt.activityCode}, ${akt.courseCodes.join(',')}`
+              akt => `${akt.activityCode}, ${courseCodes.join(',')}`
             ),
             examination.aktiviteter.map(akt => akt.courseOwner)
           )
@@ -258,7 +255,7 @@ async function start () {
       }
 
       if (outputFiles.includes(SECTIONS_FILE)) {
-        await sections(courseSisId, defaultSectionSisId, funkaSectionSisId)
+        await sections(courseSisId, courseCodes, defaultSectionSisId, funkaSectionSisId)
       }
 
       if (outputFiles.includes(STUDENTS_FILE)) {
