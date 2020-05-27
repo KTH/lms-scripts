@@ -1,6 +1,6 @@
 # Collect course data
 
-This script collects a ton of data from the Canvas LMS and saves it to a csv file using semicolon as separator.
+This script collects a ton of data from the Canvas LMS and saves it to a csv file using semicolon as separator. Beware, this script runs its requests serially and likely takes several days to finish,
 
 ## The environment variables
 
@@ -116,5 +116,4 @@ The output of this script contains the following data.
 
 ## Shortcomings
 
-- The current data set does not in any way reflect which courses are cross-listed. Improvements can and probably should be made to improve the data set to handle this scenario better.
 - No indicator of page view time for courses. The only possible lead found thus far is to create some measurement based on the _user page views_ data: https://canvas.instructure.com/doc/api/users.html#method.page_views.index
