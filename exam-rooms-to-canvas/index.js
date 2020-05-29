@@ -223,9 +223,13 @@ async function start () {
         courseCodes.push(...Array.from(new Set(a.courseCodes)))
       )
 
-      const courseName = `${courseCodes.join(' & ')}: ${examination.date}`
+      // Course name will be something like:
+      // SF1624/SF1625 TEN1 & HL1010/HL1020 TEN2: 2020-05-10
+      const activities = examination.aktiviteter.map(
+        akt => `${akt.courseCodes.join('/')} ${akt.activityCode}`
+      )
 
-      // const courseName = `${courseCodesAndTypes.join('/')}: ${examination.date}`
+      const courseName = `${activities.join(' & ')}: ${examination.date}`
       const courseSisId = `AKT.${examination.ladokUID}.${examination.date}`
       const defaultSectionSisId = courseSisId
       const funkaSectionSisId = `${courseSisId}.FUNKA`
