@@ -44,28 +44,38 @@ const HEADERS = {
 
 /** Fetches all examination rounds from the aktivitetstillfällen API */
 async function listExaminations (baseUrl, token, date) {
-  const { body } = await got(
-    `${baseUrl}/aktivitetstillfallen/students?fromDate=${date}&toDate=${date}`,
-    {
-      responseType: 'json',
-      headers: {
-        canvas_api_token: token
+  try{
+    const { body } = await got(
+      `${baseUrl}/aktivitetstillfallen/students?fromDate=${date}&toDate=${date}`,
+      {
+        responseType: 'json',
+        headers: {
+          canvas_api_token: token
+        }
       }
-    }
-  )
-console.log(JSON.stringify(body.aktivitetstillfallen))
-  return body.aktivitetstillfallen
+    )
+    return body.aktivitetstillfallen
+  }catch(e){
+    console.error('An error occurred when calling akt api', e)
+    process.exit()
+  }
 }
 
 /** Fetches detailed information about a course from the Kopps API */
 async function getDetailedCourseInfoWithoutCache (courseCode) {
-  const { body } = await got(
-    `${process.env.KOPPS_API_URL}/course/${courseCode}/detailedinformation`,
-    {
-      responseType: 'json'
-    }
-  )
-  return body
+  try{
+    const { body } = await got(
+      `${process.env.KOPPS_API_URL}/course/${courseCode}/detailedinformation`,
+      {
+        responseType: 'json'
+      }
+    )
+    return body
+  }catch(e){
+    console.error('An error occurred when calling kopps api', e)
+    process.exit()
+  }
+
 }
 
 const getDetailedCourseInfo = memoize(getDetailedCourseInfoWithoutCache)
@@ -225,8 +235,8 @@ async function start () {
 
       const courseName =
         examination.aktiviteter
-          .map(akt => `${akt.courseCodes.join(' & ')} ${akt.activityCode}`)
-          .join(' & ') + `: ${examination.date}`
+        .map(akt => `${akt.courseCodes.join(' & ')} ${akt.activityCode}`)
+        .join(' & ') + `: ${examination.date}`
 
       // const courseName = `${courseCodesAndTypes.join('/')}: ${examination.date}`
       const courseSisId = `AKT.${examination.ladokUID}.${examination.date}`
@@ -240,7 +250,7 @@ async function start () {
         ) {
           console.log(
             'More then one school owns this aktivitetstillfälle. Double check this line in the courses csv file before uploading it to Canvas!'
-              .red
+            .red
           )
           console.log(
             'aktivitetstillfälle: ',
