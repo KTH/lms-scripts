@@ -44,7 +44,7 @@ const HEADERS = {
 
 /** Fetches all examination rounds from the aktivitetstillfällen API */
 async function listExaminations (baseUrl, token, date) {
-  try{
+  try {
     const { body } = await got(
       `${baseUrl}/aktivitetstillfallen/students?fromDate=${date}&toDate=${date}`,
       {
@@ -55,7 +55,7 @@ async function listExaminations (baseUrl, token, date) {
       }
     )
     return body.aktivitetstillfallen
-  }catch(e){
+  } catch (e) {
     console.error('An error occurred when calling akt api', e)
     process.exit()
   }
@@ -63,7 +63,7 @@ async function listExaminations (baseUrl, token, date) {
 
 /** Fetches detailed information about a course from the Kopps API */
 async function getDetailedCourseInfoWithoutCache (courseCode) {
-  try{
+  try {
     const { body } = await got(
       `${process.env.KOPPS_API_URL}/course/${courseCode}/detailedinformation`,
       {
@@ -71,11 +71,10 @@ async function getDetailedCourseInfoWithoutCache (courseCode) {
       }
     )
     return body
-  }catch(e){
+  } catch (e) {
     console.error('An error occurred when calling kopps api', e)
     process.exit()
   }
-
 }
 
 const getDetailedCourseInfo = memoize(getDetailedCourseInfoWithoutCache)
@@ -235,8 +234,8 @@ async function start () {
 
       const courseName =
         examination.aktiviteter
-        .map(akt => `${akt.courseCodes.join(' & ')} ${akt.activityCode}`)
-        .join(' & ') + `: ${examination.date}`
+          .map(akt => `${akt.courseCodes.join(' & ')} ${akt.activityCode}`)
+          .join(' & ') + `: ${examination.date}`
 
       // const courseName = `${courseCodesAndTypes.join('/')}: ${examination.date}`
       const courseSisId = `AKT.${examination.ladokUID}.${examination.date}`
@@ -250,7 +249,7 @@ async function start () {
         ) {
           console.log(
             'More then one school owns this aktivitetstillfälle. Double check this line in the courses csv file before uploading it to Canvas!'
-            .red
+              .red
           )
           console.log(
             'aktivitetstillfälle: ',
