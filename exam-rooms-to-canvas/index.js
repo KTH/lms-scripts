@@ -44,28 +44,37 @@ const HEADERS = {
 
 /** Fetches all examination rounds from the aktivitetstillfällen API */
 async function listExaminations (baseUrl, token, date) {
-  const { body } = await got(
-    `${baseUrl}/aktivitetstillfallen/students?fromDate=${date}&toDate=${date}`,
-    {
-      responseType: 'json',
-      headers: {
-        canvas_api_token: token
+  try {
+    const { body } = await got(
+      `${baseUrl}/aktivitetstillfallen/students?fromDate=${date}&toDate=${date}`,
+      {
+        responseType: 'json',
+        headers: {
+          canvas_api_token: token
+        }
       }
-    }
-  )
-
-  return body.aktivitetstillfallen
+    )
+    return body.aktivitetstillfallen
+  } catch (e) {
+    console.error('An error occurred when calling akt api', e)
+    process.exit()
+  }
 }
 
 /** Fetches detailed information about a course from the Kopps API */
 async function getDetailedCourseInfoWithoutCache (courseCode) {
-  const { body } = await got(
-    `${process.env.KOPPS_API_URL}/course/${courseCode}/detailedinformation`,
-    {
-      responseType: 'json'
-    }
-  )
-  return body
+  try {
+    const { body } = await got(
+      `${process.env.KOPPS_API_URL}/course/${courseCode}/detailedinformation`,
+      {
+        responseType: 'json'
+      }
+    )
+    return body
+  } catch (e) {
+    console.error('An error occurred when calling kopps api', e)
+    process.exit()
+  }
 }
 
 const getDetailedCourseInfo = memoize(getDetailedCourseInfoWithoutCache)
@@ -297,4 +306,4 @@ async function start () {
   }
 }
 
-start()
+start().catch(e => console.error(e))
