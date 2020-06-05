@@ -25,9 +25,10 @@ const HEADERS = {
     'account_id',
     'status',
     'blueprint_course_id'
+
   ],
 
-  [SECTIONS_FILE]: ['course_id', 'section_id', '"name"', 'status'],
+  [SECTIONS_FILE]: ['course_id', 'section_id', '"name"', 'status', 'integration_id'],
 
   [STUDENTS_FILE]: [
     'user_id',
@@ -54,6 +55,7 @@ async function listExaminations (baseUrl, token, date) {
         }
       }
     )
+    console.log(JSON.stringify(body.aktivitetstillfallen, null, 2))
     return body.aktivitetstillfallen
   }catch(e){
     console.error('An error occurred when calling akt api', e)
@@ -100,19 +102,21 @@ async function courses (courseSisId, courseName, subAccount, blueprintSisId) {
   ])
 }
 
-function sections (courseSisId, defaultSectionSisId, funkaSectionSisId) {
+function sections (courseSisId, defaultSectionSisId, funkaSectionSisId, defaultSectionIntegrationID, funkaSectionIntegrationID) {
   writeContent(SECTIONS_FILE, [
     courseSisId,
     defaultSectionSisId,
     'Section 1',
-    'active'
+    'active',
+    defaultSectionIntegrationID
   ])
 
   writeContent(SECTIONS_FILE, [
     courseSisId,
     funkaSectionSisId,
     'Section 2',
-    'active'
+    'active',
+    funkaSectionIntegrationID
   ])
 }
 
@@ -187,14 +191,14 @@ async function start () {
       type: 'datetime',
       message: 'Initial date',
       format: ['yyyy', '-', 'mm', '-', 'dd'],
-      initial: new Date('2020-06-02')
+      initial: new Date('2020-05-25')
     },
     {
       name: 'endDate',
       type: 'datetime',
       message: 'End date',
       format: ['yyyy', '-', 'mm', '-', 'dd'],
-      initial: new Date('2020-06-05')
+      initial: new Date('2020-06-01')
     }
   ])
 
@@ -268,7 +272,9 @@ async function start () {
       }
 
       if (outputFiles.includes(SECTIONS_FILE)) {
-        await sections(courseSisId, defaultSectionSisId, funkaSectionSisId)
+        const defaultSectionIntegrationID = examination.ladokUID
+        const funkaSectionIntegrationID = `${defaultSectionSisId}_FUNKA`
+        await sections(courseSisId, defaultSectionSisId, funkaSectionSisId, defaultSectionIntegrationID, funkaSectionIntegrationID)
       }
 
       if (outputFiles.includes(STUDENTS_FILE)) {
