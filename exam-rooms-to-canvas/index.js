@@ -273,7 +273,7 @@ async function start () {
 
       if (outputFiles.includes(SECTIONS_FILE)) {
         const defaultSectionIntegrationID = examination.ladokUID
-        const funkaSectionIntegrationID = `${defaultSectionSisId}_FUNKA`
+        const funkaSectionIntegrationID = `${defaultSectionIntegrationID}_FUNKA`
         await sections(courseSisId, defaultSectionSisId, funkaSectionSisId, defaultSectionIntegrationID, funkaSectionIntegrationID)
       }
 
