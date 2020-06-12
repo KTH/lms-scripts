@@ -99,18 +99,23 @@ async function courses (courseSisId, courseName, subAccount, blueprintSisId) {
   ])
 }
 
-function sections (courseSisId, courseCodes, defaultSectionSisId, funkaSectionSisId) {
+function sections (
+  courseSisId,
+  prefix,
+  defaultSectionSisId,
+  funkaSectionSisId
+) {
   writeContent(SECTIONS_FILE, [
     courseSisId,
     defaultSectionSisId,
-    `${courseCodes.join(' & ')} - Section 1`,
+    `${prefix} - Section 1`,
     'active'
   ])
 
   writeContent(SECTIONS_FILE, [
     courseSisId,
     funkaSectionSisId,
-    `${courseCodes.join(' & ')} - Section 2`,
+    `${prefix} - Section 2`,
     'active'
   ])
 }
@@ -234,11 +239,11 @@ async function start () {
 
       // Course name will be something like:
       // SF1624/SF1625 TEN1 & HL1010/HL1020 TEN2: 2020-05-10
-      const activities = examination.aktiviteter.map(
-        akt => `${akt.courseCodes.join('/')} ${akt.activityCode}`
-      )
+      const activities = examination.aktiviteter
+        .map(akt => `${akt.courseCodes.join('/')} ${akt.activityCode}`)
+        .join(' & ')
 
-      const courseName = `${activities.join(' & ')}: ${examination.date}`
+      const courseName = `${activities}: ${examination.date}`
       const courseSisId = `AKT.${examination.ladokUID}.${examination.date}`
       const defaultSectionSisId = courseSisId
       const funkaSectionSisId = `${courseSisId}.FUNKA`
@@ -268,7 +273,12 @@ async function start () {
       }
 
       if (outputFiles.includes(SECTIONS_FILE)) {
-        await sections(courseSisId, courseCodes, defaultSectionSisId, funkaSectionSisId)
+        await sections(
+          courseSisId,
+          activities,
+          defaultSectionSisId,
+          funkaSectionSisId
+        )
       }
 
       if (outputFiles.includes(STUDENTS_FILE)) {
