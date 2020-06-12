@@ -25,9 +25,10 @@ const HEADERS = {
     'account_id',
     'status',
     'blueprint_course_id'
+
   ],
 
-  [SECTIONS_FILE]: ['course_id', 'section_id', '"name"', 'status'],
+  [SECTIONS_FILE]: ['course_id', 'section_id', '"name"', 'status', 'integration_id'],
 
   [STUDENTS_FILE]: [
     'user_id',
@@ -54,6 +55,7 @@ async function listExaminations (baseUrl, token, date) {
         }
       }
     )
+
     return body.aktivitetstillfallen
   } catch (e) {
     console.error('An error occurred when calling akt api', e)
@@ -103,20 +105,24 @@ function sections (
   courseSisId,
   prefix,
   defaultSectionSisId,
-  funkaSectionSisId
+  funkaSectionSisId,
+  defaultSectionIntegrationID,
+  funkaSectionIntegrationID
 ) {
   writeContent(SECTIONS_FILE, [
     courseSisId,
     defaultSectionSisId,
     `${prefix} - Section 1`,
-    'active'
+    'active',
+    defaultSectionIntegrationID
   ])
 
   writeContent(SECTIONS_FILE, [
     courseSisId,
     funkaSectionSisId,
     `${prefix} - Section 2`,
-    'active'
+    'active',
+    funkaSectionIntegrationID
   ])
 }
 
@@ -191,14 +197,14 @@ async function start () {
       type: 'datetime',
       message: 'Initial date',
       format: ['yyyy', '-', 'mm', '-', 'dd'],
-      initial: new Date('2020-06-02')
+      initial: new Date('2020-05-25')
     },
     {
       name: 'endDate',
       type: 'datetime',
       message: 'End date',
       format: ['yyyy', '-', 'mm', '-', 'dd'],
-      initial: new Date('2020-06-05')
+      initial: new Date('2020-06-01')
     }
   ])
 
@@ -273,11 +279,16 @@ async function start () {
       }
 
       if (outputFiles.includes(SECTIONS_FILE)) {
+        const defaultSectionIntegrationID = examination.ladokUID
+        const funkaSectionIntegrationID = `${defaultSectionIntegrationID}_FUNKA`
+
         await sections(
           courseSisId,
           activities,
           defaultSectionSisId,
-          funkaSectionSisId
+          funkaSectionSisId,
+          defaultSectionIntegrationID,
+          funkaSectionIntegrationID
         )
       }
 
