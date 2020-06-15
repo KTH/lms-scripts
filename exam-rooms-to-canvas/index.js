@@ -55,7 +55,7 @@ async function listExaminations (baseUrl, token, date) {
         }
       }
     )
-    console.log(JSON.stringify(body.aktivitetstillfallen, null, 2))
+
     return body.aktivitetstillfallen
   } catch (e) {
     console.error('An error occurred when calling akt api', e)
@@ -101,11 +101,18 @@ async function courses (courseSisId, courseName, subAccount, blueprintSisId) {
   ])
 }
 
-function sections (courseSisId, defaultSectionSisId, funkaSectionSisId, defaultSectionIntegrationID, funkaSectionIntegrationID) {
+function sections (
+  courseSisId,
+  prefix,
+  defaultSectionSisId,
+  funkaSectionSisId,
+  defaultSectionIntegrationID,
+  funkaSectionIntegrationID
+) {
   writeContent(SECTIONS_FILE, [
     courseSisId,
     defaultSectionSisId,
-    'Section 1',
+    `${prefix} - Section 1`,
     'active',
     defaultSectionIntegrationID
   ])
@@ -113,7 +120,7 @@ function sections (courseSisId, defaultSectionSisId, funkaSectionSisId, defaultS
   writeContent(SECTIONS_FILE, [
     courseSisId,
     funkaSectionSisId,
-    'Section 2',
+    `${prefix} - Section 2`,
     'active',
     funkaSectionIntegrationID
   ])
@@ -236,12 +243,13 @@ async function start () {
         courseCodes.push(...Array.from(new Set(a.courseCodes)))
       )
 
-      const courseName =
-        examination.aktiviteter
-          .map(akt => `${akt.courseCodes.join(' & ')} ${akt.activityCode}`)
-          .join(' & ') + `: ${examination.date}`
+      // Course name will be something like:
+      // SF1624/SF1625 TEN1 & HL1010/HL1020 TEN2: 2020-05-10
+      const activities = examination.aktiviteter
+        .map(akt => `${akt.courseCodes.join('/')} ${akt.activityCode}`)
+        .join(' & ')
 
-      // const courseName = `${courseCodesAndTypes.join('/')}: ${examination.date}`
+      const courseName = `${activities}: ${examination.date}`
       const courseSisId = `AKT.${examination.ladokUID}.${examination.date}`
       const defaultSectionSisId = courseSisId
       const funkaSectionSisId = `${courseSisId}.FUNKA`
@@ -259,7 +267,7 @@ async function start () {
             'aktivitetstillfälle: ',
             examination.ladokUID,
             examination.aktiviteter.map(
-              akt => `${akt.activityCode}, ${akt.courseCodes.join(',')}`
+              akt => `${akt.activityCode}, ${courseCodes.join(',')}`
             ),
             examination.aktiviteter.map(akt => akt.courseOwner)
           )
@@ -273,7 +281,15 @@ async function start () {
       if (outputFiles.includes(SECTIONS_FILE)) {
         const defaultSectionIntegrationID = examination.ladokUID
         const funkaSectionIntegrationID = `${defaultSectionIntegrationID}_FUNKA`
-        await sections(courseSisId, defaultSectionSisId, funkaSectionSisId, defaultSectionIntegrationID, funkaSectionIntegrationID)
+
+        await sections(
+          courseSisId,
+          activities,
+          defaultSectionSisId,
+          funkaSectionSisId,
+          defaultSectionIntegrationID,
+          funkaSectionIntegrationID
+        )
       }
 
       if (outputFiles.includes(STUDENTS_FILE)) {
