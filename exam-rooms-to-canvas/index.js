@@ -197,19 +197,19 @@ async function start () {
       type: 'datetime',
       message: 'Initial date',
       format: ['yyyy', '-', 'mm', '-', 'dd'],
-      initial: new Date('2020-05-25')
+      initial: new Date('2020-08-10')
     },
     {
       name: 'endDate',
       type: 'datetime',
       message: 'End date',
       format: ['yyyy', '-', 'mm', '-', 'dd'],
-      initial: new Date('2020-06-01')
+      initial: new Date('2020-08-22')
     }
   ])
 
   const useBlueprint = true
-  let blueprintSisId = 'exam_bp_2020_p4' // TODO: set a sis id here
+  let blueprintSisId = 'exam_bp_2020_p0' // TODO: set a sis id here
 
   const { doZip } = await inquirer.prompt({
     name: 'doZip',
