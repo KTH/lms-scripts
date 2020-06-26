@@ -47,6 +47,23 @@ async function chooseCourse (canvas) {
   return course
 }
 
+async function chooseGradingStandard (canvas, koppsGradingStandard) {
+  const standards = await canvas.list('accounts/1/grading_standards').toArray()
+
+
+  const {chosenStandard} = await inquirer.prompt({
+    name: 'chosenStandard',
+    type: 'list',
+    message: `Choose the grading standard (in kopps it is ${koppsGradingStandard})`,
+    choices: standards.map(s => ({
+      value: s.id,
+      name: s.title
+    }))
+  })
+
+  return chosenStandard
+}
+
 async function start () {
   const canvas = await utils.initCanvas()
   const course = await chooseCourse(canvas)
@@ -61,18 +78,14 @@ async function start () {
     2: 'HT'
   }
 
-  const gradingSchemas = {
-    AF: 889,
-    PF: 609
-  }
-
   const termNumber = `20${year}${termUtils[term]}`
   const examinationSets = Object.values(courseDetails.examinationSets)
-    .sort((a, b) => parseInt(a.startingTerm.term, 10) - parseInt(b.startingTerm.term, 10))
-    .filter(e => parseInt(e.startingTerm.term, 10) <= termNumber)
+  .sort((a, b) => parseInt(a.startingTerm.term, 10) - parseInt(b.startingTerm.term, 10))
+  .filter(e => parseInt(e.startingTerm.term, 10) <= termNumber)
 
   const examinationRounds = examinationSets[examinationSets.length - 1].examinationRounds
   const examinationRound = await chooseLadokModule(examinationRounds)
+  const gradingStandard = await chooseGradingStandard(canvas, examinationRound.gradeScaleCode)
 
     const assignmentSisID = `${course.sis_course_id}_${examinationRound.examCode}`
   //   const assignment = assignments.find(a => a.integration_data.sis_assignment_id === assignmentSisID)
@@ -86,7 +99,7 @@ async function start () {
         submission_types: ['online_upload'],
         grading_type: 'letter_grade',
         points_possible: 10,
-        grading_standard_id: gradingSchemas[examinationRound.gradeScaleCode],
+        grading_standard_id: gradingStandard,
         allowed_attempts: 1,
         integration_id: modulId,
         integration_data: JSON.stringify({
