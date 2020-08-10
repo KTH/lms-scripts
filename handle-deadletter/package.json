@@ -10,8 +10,9 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
-    "amqp10": "^3.6.0",
-    "inquirer": "^5.2.0",
-    "urlencode": "^1.1.0"
+    "@azure/service-bus": "^7.0.0-preview.4",
+    "chalk": "^4.1.0",
+    "dotenv": "^8.2.0",
+    "inquirer": "^5.2.0"
   }
 }
