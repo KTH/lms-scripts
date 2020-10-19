@@ -1,78 +1,79 @@
 require('dotenv').config()
-const Ladok = require('./ladok-api')
+const got = require('got')
 const inquirer = require('inquirer')
 const chalk = require('chalk')
 const organisations = require('./organisations')
+const fs = require('fs')
+inquirer.registerPrompt('autocomplete', require('inquirer-autocomplete-prompt'));
 
-async function addPermission (ladok, anvandareUID) {
-  const SkapaOrganisationsrattighet = organisations.Organisationer.map(org => ({
-    'AnvandareUID': anvandareUID,
-    'Informationsbehorighetsavgransningar': [],
-    'OrganisationUID': org.Uid,
-    'RattighetenAvser': 'HEL_KURS_OCH_MODUL_RESULTAT'
-  }))
-
-  await ladok.requestUrl('/resultat/resultatrattighet/organisation/rapportor', 'POST', {
-    SkapaOrganisationsrattighet
-  })
-}
-
-async function removePermission (ladok, rattighet) {
-  await ladok.requestUrl(`/resultat/resultatrattighet/${rattighet.Uid}`, 'DELETE')
-}
+const ladokGot = got.extend({
+  baseUrl: process.env.LADOK_API_BASEURL,
+  pfx: fs.readFileSync('./certificate.pfx'),
+  // pfx: Buffer.from(process.env.LADOK_API_PFX_BASE64, 'base64'),
+  passphrase: process.env.LADOK_API_PFX_PASSPHRASE,
+  json: true
+})
 
 async function start () {
-  const ladok = Ladok(
-    process.env.LADOK_API_BASEURL,
-    {
-      // pfx: fs.readFileSync('./certificate.pfx'),
-      pfx: Buffer.from(process.env.LADOK_API_PFX_BASE64, 'base64'),
-      passphrase: process.env.LADOK_API_PFX_PASSPHRASE
+  const { body: authenticatedUser } = await ladokGot('kataloginformation/anvandare/autentiserad', {
+    headers: {
+      'Accept': 'application/vnd.ladok-kataloginformation+json'
     }
-  )
+  })
+  console.log(`You are: ${chalk.bold(authenticatedUser.Anvandarnamn)} - UID: ${authenticatedUser.Uid}`)
 
-  console.log(`${chalk.yellow('Caution!')} You are running this script towards ${chalk.bold(process.env.LADOK_API_BASEURL)}`)
-
-  const result = await ladok.test()
-
-  console.log(result.body.Uid)
-  const { anvandareUID } = await inquirer.prompt({
-    message: 'Write the Användare UID. This is the user you want to add behörigheter to (systemanvändaren)',
-    name: 'anvandareUID',
-    type: 'input',
-    default: result.body.Uid
+  const { body: allUsersBody } = await ladokGot('/kataloginformation/anvandare/filtrerade', {
+    headers: {
+      'Accept': 'application/vnd.ladok-kataloginformation+json'
+    }
   })
 
-  while (true) {
-    const { body: rights } = await ladok.requestUrl('/resultat/resultatrattighet/resultatrattighet/rapportor/sok', 'PUT', {
-      'AnvandareUID': anvandareUID,
-      'Limit': 100,
-      'Page': 1,
-      'Medarbetartyp': 'RAPPORTOR'
-    })
+  const allUsers = allUsersBody.Anvandare
+  const { selectedUsername } = await inquirer.prompt({
+    name: 'selectedUsername',
+    message: 'Write the name of the user do you want to add permissions (e.g. "kaj@kth.se")',
+    type: 'autocomplete',
+    source: function (_, input) {
+      if (!input) {
+        return allUsers.map(user => user.Anvandarnamn)
+      }
 
-    const options = [
-      { name: 'Add new permission', value: 'add' },
-      new inquirer.Separator(),
-      ...rights.Resultat.map(r => ({
-        name: 'Delete for org.' + r.Benamning,
-        value: r
-      }))
-    ]
-
-    const { chosenOption } = await inquirer.prompt({
-      type: 'list',
-      message: 'What do you want to do? (Ctrl-C to exit)',
-      name: 'chosenOption',
-      choices: options
-    })
-
-    if (chosenOption === 'add') {
-      await addPermission(ladok, anvandareUID)
-    } else {
-      await removePermission(ladok, chosenOption)
+      return allUsers
+        .map(user => user.Anvandarnamn)
+        .filter(username => username.startsWith(input))
     }
+  })
+  const selectedUser = allUsers.find(user => user.Anvandarnamn === selectedUsername)
+
+  if (!selectedUser) {
+    console.log('User not found')
+    return
   }
+
+  console.log()
+  console.log(`${chalk.yellow('Caution!')} You are running this script towards ${chalk.bold(process.env.LADOK_API_BASEURL)}`)
+  console.log(`You are going to add permissions to the user is ${selectedUser.Anvandarnamn} - UID ${selectedUser.Uid}`)
+  const { answer } = await inquirer.prompt({
+    name: 'answer',
+    type: 'confirm',
+    message: 'Are you sure?'
+  })
+
+  if (answer) {
+    const SkapaOrganisationsrattighet = organisations.Organisationer.map(org => ({
+      'AnvandareUID': selectedUser.Uid,
+      'Informationsbehorighetsavgransningar': [],
+      'OrganisationUID': org.Uid,
+      'RattighetenAvser': 'HEL_KURS_OCH_MODUL_RESULTAT'
+    }))
+
+    await ladokGot.post('/resultat/resultatrattighet/organisation/rapportor', {
+      body: { SkapaOrganisationsrattighet }
+    })
+
+    console.log('Done!!')
+  }
+
 }
 
 start().catch(e => {
