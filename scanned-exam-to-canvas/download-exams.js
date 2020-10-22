@@ -50,7 +50,7 @@ async function getExams (courseCode, examDate) {
     {
       "index": "e_date",
       "value": examDate,
-      "useWilcard": false
+      "useWildcard": false
     }
   ],
   "includeDocumentIndicesesInResponse": true,
