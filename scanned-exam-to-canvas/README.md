@@ -5,7 +5,7 @@ This project is divided in three scripts, each of them doing one task. Run each 
 1. Create one assignment in Canvas where the exams will be uploaded
 
     ```sh
-    node create-assignment.js
+    node create-assignment-examroom.js
     ```
 
 2. Download the exams in a local directory `./exams`
