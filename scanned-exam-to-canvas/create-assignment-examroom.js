@@ -67,6 +67,12 @@ async function chooseGradingStandard (canvas, koppsGradingStandard) {
 async function start () {
   const canvas = await utils.initCanvas()
   const course = await chooseCourse(canvas)
+  const {assignmentName} = await inquirer.prompt({
+    name: 'assignmentName',
+    type: 'string',
+    message: 'Choose name for the assignment',
+    default: 'Salstentamen'
+  })
 
   const gradingStandard = await chooseGradingStandard(canvas)
 
@@ -74,7 +80,7 @@ async function start () {
 
     const body = {
       assignment: {
-        name: `Test salstenta`,
+        name: `${assignmentName}`,
         description: ``,
         submission_types: ['online_upload'],
         grading_type: 'letter_grade',
