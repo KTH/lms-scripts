@@ -68,3 +68,6 @@ csv/
 
 *.csv
 *.zip
+
+*.swp
+*.swo
