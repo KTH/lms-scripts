@@ -111,8 +111,9 @@ async function start () {
 
   const exams = await getExams(courseCode, examDate)
   console.log(exams)
+  const examDateFormatted = `${examDate.getFullYear()}-${examDate.getMonth().toString().padStart(2, '0')}-${examDate.getDate().toString().padStart(2, '0')}`
 
-  await saveExams(courseCode, examDate, exams)
+  await saveExams(courseCode, examDateFormatted, exams)
 }
 
 start()
