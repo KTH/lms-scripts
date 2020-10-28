@@ -34,29 +34,49 @@ async function getCourseCode () {
   return courseCode
 }
 
-async function getExams (courseCode, examDate) {
+async function getExamCode () {
+  const { examCode} = await inquirer.prompt([
+    {
+      type: 'input',
+      name: 'examCode',
+      default: 'TEN1',
+      message: 'Write an exam code',
+    }
+  ])
+
+  return examCode
+}
+
+
+
+async function getExams (courseCode, examDate, examCode) {
   console.log(`Getting the list of exams in ${courseCode} (it may take a while)`)
 
   const { body } = await got('https://tentaapi.ug.kth.se/api/v2.0/windream/search/documents/false', {
     method: 'POST',
     json: true,
     body: {
-  "searchIndiceses": [
-    {
-      "index": "c_code",
-      "value": courseCode,
-      "useWildcard": false
-    },
-    {
-      "index": "e_date",
-      "value": examDate,
-      "useWildcard": false
+      "searchIndiceses": [
+        {
+          "index": "c_code",
+          "value": courseCode,
+          "useWildcard": false
+        },
+        {
+          "index": "e_code",
+          "value": examCode,
+          "useWildcard": false
+        },
+        {
+          "index": "e_date",
+          "value": examDate,
+          "useWildcard": false
+        }
+      ],
+      "includeDocumentIndicesesInResponse": true,
+      "includeSystemIndicesesInResponse": false,
+      "useDatesInSearch": false
     }
-  ],
-  "includeDocumentIndicesesInResponse": true,
-  "includeSystemIndicesesInResponse": false,
-  "useDatesInSearch": false
-}
   })
 
   if(!body || !body.documentSearchResults){
@@ -78,8 +98,8 @@ function getValue (exam, key) {
   return keyValue && keyValue.value
 }
 
-async function saveExams (courseCode, examDate, examObjects) {
-  const dir = `exams/${courseCode}/${examDate}`
+async function saveExams (courseCode, examDate, examCode, examObjects) {
+  const dir = `exams/${courseCode}/${examCode}/${examDate}`
   const exists = util.promisify(fs.exists)
   const mkdir = util.promisify(fs.mkdir)
 
@@ -108,12 +128,13 @@ async function saveExams (courseCode, examDate, examObjects) {
 async function start () {
   const courseCode = await getCourseCode()
   const examDate = await getExamDate()
+  const examCode = await getExamCode()
 
-  const exams = await getExams(courseCode, examDate)
+  const exams = await getExams(courseCode, examDate, examCode)
   console.log(exams)
-  const examDateFormatted = `${examDate.getFullYear()}-${examDate.getMonth().toString().padStart(2, '0')}-${examDate.getDate().toString().padStart(2, '0')}`
+  const examDateFormatted = `${examDate.getFullYear()}-${(examDate.getMonth()+1).toString().padStart(2, '0')}-${examDate.getDate().toString().padStart(2, '0')}`
 
-  await saveExams(courseCode, examDateFormatted, exams)
+  await saveExams(courseCode, examDateFormatted, examCode, exams)
 }
 
 start()
