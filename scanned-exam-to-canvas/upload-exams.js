@@ -114,7 +114,14 @@ async function start () {
   console.log(`Exams found: ${files.length}. Checking enrollments...`)
 
   const kthIds = files.map(file => file.split('-')[0])
-  const { found } = await checkEnrollments(canvas, course, kthIds)
+  const { found, notFound } = await checkEnrollments(canvas, course, kthIds)
+
+  if (notFound.length > 0) {
+    console.log(`There are ${notFound.length} students WITH exam but not present in Canvas`)
+    for (const student of notFound) {
+      console.log('-', student)
+    }
+  }
 
   const { ok } = await inquirer.prompt({
     name: 'ok',
