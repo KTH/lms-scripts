@@ -52,8 +52,7 @@ module.exports.chooseCourse = async function chooseCourse (canvas) {
       course = (await canvas.get(`courses/${courseId}`)).body
 
       if (course.workflow_state !== 'available') {
-        console.error('ERROR. The course must be published')
-        process.exit(1)
+        console.error('Warning. The course is not published')
       }
 
       const { ok } = await inquirer.prompt({
