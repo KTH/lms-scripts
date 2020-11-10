@@ -45,7 +45,7 @@ module.exports.chooseCourse = async function chooseCourse (canvas) {
       name: 'courseId',
       type: 'input',
       message: 'Write the canvas course ID (you can prefix "sis_course_id:" to use the SIS ID)',
-      default: 'sis_course_id:A11IYAVT191',
+      default: '25342'
     })
 
     try {

@@ -85,7 +85,7 @@ async function choosePath () {
     type: 'input',
     name: 'path',
     message: 'Where are the exams?',
-    default: './exams/AF1733/2020-03-10'
+    default: './exams/ME1010/TEN2/2020-10-20/'
   })
 
   return path
@@ -103,6 +103,14 @@ async function checkEnrollments (canvas, course, kthIds) {
   return { found, notFound }
 }
 
+// Returns an array of kth ids
+async function getEmptySlots(canvas, course, assignment){
+  const submissions = await canvas.list(`/courses/${course.id}/assignments/${assignment.id}/submissions`, {include:['user']}).toArray()
+  return submissions
+    .filter(sub => sub.workflow_state === 'unsubmitted')
+    .map(sub => sub.user.sis_user_id)
+}
+
 async function start () {
   const canvas = await utils.initCanvas()
   const course = await utils.chooseCourse(canvas)
@@ -116,6 +124,7 @@ async function start () {
   const kthIds = files.map(file => file.split('-')[0])
   const { found, notFound } = await checkEnrollments(canvas, course, kthIds)
 
+
   if (notFound.length > 0) {
     console.log(`There are ${notFound.length} students WITH exam but not present in Canvas`)
     for (const student of notFound) {
@@ -123,18 +132,29 @@ async function start () {
     }
   }
 
+  const emptySlots  = await getEmptySlots(canvas, course, assignment)
+  const uploadableFiles = files.filter(file => {
+    const kthId = file.split('-')[0]
+    return emptySlots.includes(kthId)
+  })
+
+  console.log(uploadableFiles)
+
   const { ok } = await inquirer.prompt({
     name: 'ok',
     type: 'confirm',
-    message: `We are going to upload ${found.length}/${kthIds.length} exams in course ${course.id}, assignment ${assignment.id}. Continue?`
+    message: `We are going to upload ${uploadableFiles.length}/${kthIds.length} exams in course ${course.id}, assignment ${assignment.id}. Continue?`
   })
 
   if (!ok) {
     return
   }
 
+
+
+
   let i = 0
-  for (const file of files) {
+  for (const file of uploadableFiles) {
     i++
     const kthId = file.split('-')[0]
     const filePath = path.join(__dirname, directoryPath, file)
