@@ -1,5 +1,5 @@
 require('dotenv').config()
-const transferToLadokData = require('./utils/transferToLadokData')
+// const transferToLadokData = require('./utils/transferToLadokData')
 const CanvasApi = require('@kth/canvas-api')
 const got = require('got')
 const path = require('path')
@@ -372,7 +372,7 @@ async function getExternalTools (canvas, courseId) {
 // TODO: Using ; instead of , for now - should I?
 async function start () {
   // Fetch id:s for all Canvas courses which have been exported
-  const transferredCourses = await transferToLadokData.fetchTransferredCourses()
+  // const transferredCourses = await transferToLadokData.fetchTransferredCourses()
 
   // Start out creating folders, cleaning files et.c.
   if (!fs.existsSync(FOLDER_NAME)) {
@@ -409,7 +409,7 @@ async function start () {
       'visibility',
       'kopps_language',
       'canvas_language',
-      'is_transferred_to_ladok',
+      // 'is_transferred_to_ladok',
       'groups',
       'assignments',
       'quiz_assignments',
@@ -504,7 +504,7 @@ async function start () {
       getVisibility(course.is_public, course.is_public_to_auth_users),
       language,
       course.locale || 'default',
-      transferredCourses.includes(courseId)
+      // transferredCourses.includes(courseId)
     ]
 
     // Step 2: gather component data
