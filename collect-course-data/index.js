@@ -378,7 +378,7 @@ async function start () {
   if (!fs.existsSync(FOLDER_NAME)) {
     fs.mkdirSync('output')
   }
-  const outputPath = path.resolve('./output', process.env.OUTPUT_DATA_FILE)
+  const outputPath = path.resolve('./output', "stats-courserooms.csv")
   if (fs.existsSync(outputPath) && !process.env.APPEND_FROM_ID) {
     fs.unlinkSync(outputPath)
   }
