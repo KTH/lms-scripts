@@ -469,6 +469,7 @@ async function start () {
       .toArray()
 
     for await (const course of subaccountCourses) {
+      /*
       const regex = /^AKT\.(\w|-)+\.(\d\d\d\d-\d\d-\d\d)$/
       const min = new Date('2020-05-25T00:00:00Z')
       const max = new Date('2020-06-05T23:59:59Z')
@@ -488,6 +489,8 @@ async function start () {
         console.log(`Added course ${course.sis_course_id}`)
         courses.push(course)
       }
+      */
+     courses.push(course);
 
     }
   }
