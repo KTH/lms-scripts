@@ -468,61 +468,24 @@ async function start () {
       })
       .toArray()
 
+      console.log(`Account ${examinationAccount} has ${subaccountCourses.length} courses`)
+
     for await (const course of subaccountCourses) {
-      /*
-      const regex = /^AKT\.(\w|-)+\.(\d\d\d\d-\d\d-\d\d)$/
-      const min = new Date('2020-05-25T00:00:00Z')
-      const max = new Date('2020-06-05T23:59:59Z')
-
-      if (!course.sis_course_id) {
-        continue
-      }
-
-      if (!regex.test(course.sis_course_id)) {
-        continue
-      }
-
-
-      const date = new Date(`${course.sis_course_id.match(regex)[2]}T00:00:00`)
-
-      if (min <= date && date <= max) {
-        console.log(`Added course ${course.sis_course_id}`)
-        courses.push(course)
-      }
-      */
-     courses.push(course);
-
+      courses.push(course);
     }
   }
 
-  let skip = true
+  console.log(`Found ${courses.length} courses`);
+
+  let i = 0;
+
   for await (const course of courses) {
+    i++;
     const courseId = course.id + ''
 
-    if (skip && process.env.APPEND_FROM_ID && courseId === process.env.APPEND_FROM_ID) {
-      console.debug(`Stop skipping`)
-      skip = false
-    }
-
-    if (skip && process.env.APPEND_FROM_ID && courseId !== process.env.APPEND_FROM_ID) {
-      console.debug(`Skipping ${courseId} / ${course.name} due to append mode.`)
-      continue
-    }
-
-    console.debug(`Processing /courses/${courseId}: ${course.name}`)
-
-    const { courseCode, semester, year, roundId } = parseSisId(
-      course.sis_course_id
-    )
+    console.debug(`${i}/${courses.length}. Processing /courses/${courseId}: ${course.name}`)
 
     // Step 1: gather course data
-    const { educationCycle, language, periods } = await getKOPPSData(
-      courseCode,
-      semester,
-      year,
-      roundId
-    )
-
     const courseAccountName = course.account.name
     const subAccount = getSubAccountType(courseAccountName)
 
@@ -540,10 +503,10 @@ async function start () {
       courseId,
       course.sis_course_id,
       `"${course.name}"`,
-      courseCode,
+      "-",
       getCourseURL(courseId),
       getSchoolName(courseAccountName),
-      educationCycle,
+      "-",
       subAccount,
       sections,
       crossListedSections,
@@ -552,13 +515,13 @@ async function start () {
       course.total_students, // Note: Active and invited "students" (Student, Re-reg student, Ext. student, PhD student, Manually added student, Admitted not registered student).
       isPublished(course.workflow_state),
       pageViews > 0,
-      semester + year,
+      "-",
       course.start_at, // Note: Somewhat speculative. If we can do a perfect mapping with KOPPS, the information from that source is likely better.
-      periods.join(','),
-      year,
+      "",
+      "",
       getLicense(course.license),
       getVisibility(course.is_public, course.is_public_to_auth_users),
-      language,
+      "",
       course.locale || 'default',
       //transferredCourses.includes(courseId)
     ]
