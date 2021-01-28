@@ -35,9 +35,11 @@ async function getExaminations (date) {
   }))
 }
 async function start () {
-  const range = dateRange("2020-04-01", "2021-01-15")
+  console.log("This script gets a list of all examination rooms from 2020-04-01 to 2021-04-01")
+  console.log("then, it creates a file called `exam-list.csv` with such list")
+  const range = dateRange("2020-04-01", "2021-04-01")
 
-  const filePath = path.resolve(__dirname, "exam-list-1.csv")
+  const filePath = path.resolve(__dirname, "exam-list.csv")
   const writer = fs.createWriteStream(filePath)
   const stream = csv.format({ headers: true })
   stream.pipe(writer)
