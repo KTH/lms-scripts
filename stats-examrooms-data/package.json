@@ -12,6 +12,7 @@
   "dependencies": {
     "@kth/canvas-api": "^2.1.2",
     "dotenv": "^8.2.0",
+    "fast-csv": "^4.3.6",
     "got": "^11.8.1"
   }
 }

@@ -40,7 +40,7 @@ async function transformRow (row, next) {
 }
 
 async function start () {
-  const input = path.resolve(__dirname, "exam-list-1.csv")
+  const input = path.resolve(__dirname, "exam-list.csv")
   const output = path.resolve(__dirname, "final-list.csv")
 
   const reader = fs.createReadStream(input)
