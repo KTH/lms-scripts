@@ -1,0 +1,18 @@
+{
+  "name": "external-tools-update",
+  "version": "0.1.0",
+  "description": "Bulk update external tools in Canvas courses",
+  "main": "app.js",
+  "scripts": {
+    "start": "node app.js",
+    "test": "node app.js 2 year 2019"
+  },
+  "author": "Chris",
+  "license": "MIT",
+  "dependencies": {
+    "@kth/canvas-api": "^1.1.1",
+    "dotenv": "^8.0.0",
+    "inquirer": "^7.0.0",
+    "objects-to-csv": "^1.2.1"
+  }
+}
