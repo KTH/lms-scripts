@@ -144,8 +144,8 @@ async function getCourse (config) { //, attachmentList) {
   var eDir = './Export'
   var dir = `/${config.courseId}`
   var aDir = '/Attachments'
-  const courseInfo = await canvas.get(`/courses/${config.courseId}`)
-  const assignments = await canvas.get(`/courses/${config.courseId}/assignments`)
+  const courseInfo = await canvas.get(`courses/${config.courseId}`)
+  const assignments = await canvas.get(`courses/${config.courseId}/assignments`)
   const assIds = getAssignmentDetails(assignments.body)
   handleDirectory(`${eDir}${dir}`)
   handleDirectory(`${eDir}${dir}${aDir}`)
@@ -157,7 +157,7 @@ async function getCourse (config) { //, attachmentList) {
 async function getAssignments (config, assIds, parsedAssignments, fileDownloadList) {
   for (const assignmentId of assIds) {
     try {
-      const assignment = await canvas.get(`/courses/${config.courseId}/assignments/${assignmentId}`)
+      const assignment = await canvas.get(`courses/${config.courseId}/assignments/${assignmentId}`)
       if (assignment.body.workflow_state === 'published') {
         if (assignment.body.submission_types[0] === 'online_upload') {
           var clean = sanitizeHtml(assignment.body.description, {
@@ -195,7 +195,7 @@ async function processFiles (arr) {
   const fileArr = []
   for (const element of arr) {
     try {
-      const file = await canvas.get(`/files/${element}`)
+      const file = await canvas.get(`files/${element}`)
       const dlFile = {}
       dlFile.name = file.body.filename
       dlFile.url = file.body.url
