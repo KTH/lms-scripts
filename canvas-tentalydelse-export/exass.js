@@ -224,50 +224,53 @@ async function processFiles (arr) {
 }
 
 async function downloadAttachmentsAndMakeXml (filesList, dir, aDir, eDir, attachmentList, attachmentDate, courseInfo) {
-  for (const obj of filesList) { // files list is array of objects that contains file info
-    var i = 0
-    if (obj.lock === false) { // some files in Canvas can be locked, which results in no download url, causing an error
-      const downloadStream = got.stream(obj.url) // obj.url is the download url obtained from API call
-      const fileWriterStream = createWriteStream(`${eDir}${dir}${aDir}/${obj.id}_${obj.name}`)
-      // eDir is general Export directory
-      // dir is current course directory
-      // aDir is attachment directory
-      // obj holds file name and id
+  if (filesList.length === 0) {
+    makeXml(courseInfo, attachmentList, attachmentDate, dir, eDir)
+  } else {
+    for (const obj of filesList) { // files list is array of objects that contains file info
+      var i = 0
+      if (obj.lock === false) { // some files in Canvas can be locked, which results in no download url, causing an error
+        const downloadStream = got.stream(obj.url) // obj.url is the download url obtained from API call
+        const fileWriterStream = createWriteStream(`${eDir}${dir}${aDir}/${obj.id}_${obj.name}`)
+        // eDir is general Export directory
+        // dir is current course directory
+        // aDir is attachment directory
+        // obj holds file name and id
 
-      // download using GOT
-      downloadStream
-        .on('error', async (e) => {
-          console.error(`Download failed: ${e.message}`)
-        })
+        // download using GOT
+        downloadStream
+          .on('error', async (e) => {
+            console.error(`Download failed: ${e.message}`)
+          })
 
-      fileWriterStream
-        .on('error', async (e) => {
-          console.error(`Could not write file "${obj.id}_${obj.name}" to system: ${e.message}`)
-        })
-        .on('finish', async () => {
-          console.log(`File "${obj.id}_${obj.name}" downloaded to ${eDir}${dir}${aDir}`)
-          attachmentList.push(`${aDir}/${obj.id}_${obj.name}`)
-          attachmentDate.push(obj.updated)
-          i++
-          if ((i) === (filesList.length)) {
-            console.log(`Completed download of attachments: ${i} of ${filesList.length}`)
-            makeXml(courseInfo, attachmentList, attachmentDate, dir, eDir)
-          }
-        })
-
-      downloadStream.pipe(fileWriterStream)
-    } else { // if file is locked, note it down
-      console.log(`File "${obj.name}" ID: ${obj.id} is locked. Continuing...`)
-      fs.open(`${eDir}${dir}${aDir}/lockedFiles.txt`, 'w', function (e, id) {
-        fs.write(id, `Failed to download file "${obj.name}" with ID: ${obj.id}. Reason: ${obj.lockExp}` + '\n', null, 'utf8', function () {
-          fs.close(id, function () {
-            attachmentList.push(`${aDir}/lockedFiles.txt`)
-            attachmentDate.push(Date.now())
-            makeXml(courseInfo, attachmentList, attachmentDate, dir, eDir)
-            console.log('Lock file is updated.')
+        fileWriterStream
+          .on('error', async (e) => {
+            console.error(`Could not write file "${obj.id}_${obj.name}" to system: ${e.message}`)
+          })
+          .on('finish', async () => {
+            console.log(`File "${obj.id}_${obj.name}" downloaded to ${eDir}${dir}${aDir}`)
+            attachmentList.push(`${aDir}/${obj.id}_${obj.name}`)
+            attachmentDate.push(obj.updated)
+            i++
+            if ((i) === (filesList.length)) {
+              console.log(`Completed download of attachments: ${i} of ${filesList.length}`)
+              makeXml(courseInfo, attachmentList, attachmentDate, dir, eDir)
+            }
+          })
+        downloadStream.pipe(fileWriterStream)
+      } else { // if file is locked, note it down
+        console.log(`File "${obj.name}" ID: ${obj.id} is locked. Continuing...`)
+        fs.open(`${eDir}${dir}${aDir}/lockedFiles.txt`, 'w', function (e, id) {
+          fs.write(id, `Failed to download file "${obj.name}" with ID: ${obj.id}. Reason: ${obj.lockExp}` + '\n', null, 'utf8', function () {
+            fs.close(id, function () {
+              attachmentList.push(`${aDir}/lockedFiles.txt`)
+              attachmentDate.push(Date.now())
+              makeXml(courseInfo, attachmentList, attachmentDate, dir, eDir)
+              console.log('Lock file is updated.')
+            })
           })
         })
-      })
+      }
     }
   }
 }
@@ -282,9 +285,14 @@ async function makeXml (courseInfo, attachmentList, attachmentDate, dir, eDir) {
   const dateTs = convertDate(Date.now(), 'd')
   const kursKodRe = /[A-ZÅÄÖ]{2}\d{4}/
   const tentaKodRe = /_(.*?)_/
-  var kursKod = (kursKodRe.exec(courseInfo.body.sis_course_id))[0]
-  var tentaKod = (tentaKodRe.exec(courseInfo.body.sis_course_id))[1]
-
+  var kursKod = courseInfo.body.course_code
+  var tentaKod = courseInfo.body.sis_course_id
+  if (kursKodRe.exec(courseInfo.body.sis_course_id) !== null) {
+    tentaKod = (tentaKodRe.exec(courseInfo.body.sis_course_id))[1]
+  }
+  if (kursKodRe.exec(courseInfo.body.course_code) !== null) {
+    kursKod = (kursKodRe.exec(courseInfo.body.course_code))[0]
+  }
   // add export date
   kursSpec.elements[0].elements[0].elements[0].elements[0].elements[3].elements[0].elements[0].elements[0].text = `Exported: ${dateTs}`
   // add course code
@@ -312,7 +320,7 @@ async function makeXml (courseInfo, attachmentList, attachmentDate, dir, eDir) {
   kursSpec.elements[0].elements[0].elements[0].elements[0].elements[20].elements[0].elements = tempXmlArr
   // write xml to file
   var writeOptions = { compact: false, ignoreComment: false, spaces: 4 }
-  var kursSpecName = `Kursspecifikation-${kursKod}-${tentaKod}-${dateTs}`
+  var kursSpecName = `Kursspecifikation-${kursKod}-(${tentaKod})-${dateTs}`
   var kursSpecArr = []
   kursSpecArr.push(convert.js2xml(kursSpec, writeOptions))
   saveXML(kursSpecArr, dir, eDir, kursSpecName)
