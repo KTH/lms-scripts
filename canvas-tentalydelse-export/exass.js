@@ -6,6 +6,7 @@ const { createWriteStream } = require('fs')
 const fs = require('fs')
 const got = require('got')
 const convert = require('xml-js')
+const sanitize = require('sanitize-filename')
 
 const token = process.env.CANVAS_API_TOKEN_TEST
 const url = process.env.CANVAS_API_URL_TEST
@@ -16,12 +17,14 @@ const config = {
   courseId: '23019'
 }
 
+// create folders if they don't exist
 function handleDirectory (dir) {
   if (!fs.existsSync(dir)) {
     fs.mkdirSync(dir, { recursive: true }, err => { console.log(`Error handling folders: ${err}`) })
   }
 }
 
+// extract file ids from urls
 function reStripAndReconstruct (re, arr, oarr) {
   arr.forEach(element => {
     try {
@@ -34,10 +37,12 @@ function reStripAndReconstruct (re, arr, oarr) {
   })
 }
 
+// remove duplicate file id entries
 function onlyUnique (value, index, self) {
   return self.indexOf(value) === index
 }
 
+// process the file urls
 function getUniqueFileUrls (string) {
   var urls = extractUrls(string)
   var re = / *\/files\/(\d+)/
@@ -51,6 +56,7 @@ function getUniqueFileUrls (string) {
   }
 }
 
+// save new xml file
 function saveXML (arr, dir, eDir, courseId) {
   try {
     arr.forEach(element => {
@@ -63,7 +69,7 @@ function saveXML (arr, dir, eDir, courseId) {
         fs.write(fd, buffer, 0, buffer.length, null, function (e) {
           if (e) console.error(`could not write file: ${e}`)
           fs.close(fd, function () {
-            console.log(`Successfully wrote "${courseId}.xml" to ${eDir}${dir}.`)
+            console.log(`Successfully wrote "${courseId}.xml" to ${eDir}${dir}/`)
           })
         })
       })
@@ -73,6 +79,7 @@ function saveXML (arr, dir, eDir, courseId) {
   }
 }
 
+// get assignment id from array
 function getAssignmentDetails (arr) {
   var arrOut = []
   arr.forEach(element => {
@@ -81,30 +88,37 @@ function getAssignmentDetails (arr) {
   return arrOut
 }
 
-function createAssignmentObject (id, name, description, dUrls, dnames, updated) {
-  const shortObject = {}
-  var arr = []
-  dnames.forEach(element => {
-    arr.push(element.name)
+// create sort version of assignment object
+function createAssignmentObject (id, name, description, fileObjArr, updated) {
+  const assignmentObj = {}
+  var fileNameList = []
+  var fileIdList = []
+
+  fileObjArr.forEach(element => {
+    fileNameList.push(element.name)
+  })
+  fileObjArr.forEach(element => {
+    fileIdList.push(element.id)
   })
 
-  shortObject.id = id
-  shortObject.name = name.replace(/\//g, '-')
-  shortObject.updated = updated
-  shortObject.description = description
-  shortObject.uniqueUrls = dUrls
-  shortObject.uniqueNames = arr
+  assignmentObj.id = id
+  assignmentObj.name = sanitize(name)
+  assignmentObj.updated = updated
+  assignmentObj.description = description
+  assignmentObj.uniqueUrls = fileIdList
+  assignmentObj.uniqueNames = fileNameList
 
-  return shortObject
+  return assignmentObj
 }
 
+// convert date to readable format
 function convertDate (date, opt) {
   const cDate = new Date(date)
   const localD = cDate.toLocaleDateString('sv')
-  const localT = cDate.toLocaleTimeString('sv')
+  const localT = cDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) // cDate.toLocaleTimeString('sv')
   const local = cDate.toLocaleString('sv')
   if (opt === 't') {
-    return (localT)
+    return (`${localD} ${localT}`)
   } if (opt === 'd') {
     return (localD)
   } else {
@@ -112,21 +126,23 @@ function convertDate (date, opt) {
   }
 }
 
+// create assignment txt files
 async function saveAssignments (parsedAssignments, dir, eDir, attachmentList, attachmentDate) {
   try {
     parsedAssignments.forEach(element => {
-      const path = `${eDir}${dir}/UPPGIFT_${element.id}_${element.name}.txt` // actual path to save file
-      const xmlPath = `${dir}/UPPGIFT_${element.id}_${element.name}.txt` // path for the archive xml file (for batch exports)
+      const sanitizedElementName = sanitize(element.name)
+      const path = `${eDir}${dir}/UPPGIFT_${element.id}_${sanitizedElementName}.txt` // actual path to save file
+      const xmlPath = `UPPGIFT_${element.id}_${sanitize(element.name)}.txt` // path for the archive xml file (for batch exports)
       const assignment = ( // compose assignment text file
         `ASSIGNMENT NAME: ${element.name}`).concat('\n',
-        `LAST UPDATED AT: ${convertDate(element.updated)}`, '\n',
+        `LAST UPDATED AT: ${convertDate(element.updated, 't')}`, '\n',
         '====== ASSIGNMENT DESCRIPTION BEGIN ======', '\n',
         element.description, '\n',
         '====== ASSIGNMENT DESCRIPTION END ======'
       )
       const buffer = Buffer.from(assignment)
       attachmentList.push(xmlPath)
-      attachmentDate.push(Date.now())
+      attachmentDate.push(element.updated)
       fs.open(path, 'w', function (e, fd) {
         if (e) {
           console.error(`Could not open file: ${e}`)
@@ -134,7 +150,7 @@ async function saveAssignments (parsedAssignments, dir, eDir, attachmentList, at
         fs.write(fd, buffer, 0, buffer.length, null, function (e) {
           if (e) console.error(`could not write file: ${e}`)
           fs.close(fd, function () {
-            console.log(`Successfully wrote "${element.id}_${element.name}.txt" to ${eDir}${dir}.`)
+            console.log(`Successfully wrote "${element.id}_${sanitizedElementName}.txt" to ${eDir}${dir}/`)
           })
         })
       })
@@ -144,17 +160,18 @@ async function saveAssignments (parsedAssignments, dir, eDir, attachmentList, at
   }
 }
 
+// process course
 async function getCourse (config) { //, attachmentList) {
   var attachmentList = []
   var attachmentDate = []
   var fileDownloadList = []
   const parsedAssignments = []
-  var eDir = './Export'
-  var dir = `/${config.courseId}`
-  var aDir = '/Attachments'
   const courseInfo = await canvas.get(`courses/${config.courseId}`)
   const assignments = await canvas.get(`courses/${config.courseId}/assignments`)
   const assIds = getAssignmentDetails(assignments.body)
+  var eDir = './Export'
+  var dir = `/${sanitize(courseInfo.body.name)}`
+  var aDir = ''
   handleDirectory(`${eDir}${dir}`)
   handleDirectory(`${eDir}${dir}${aDir}`)
   await getAssignments(config, assIds, parsedAssignments, fileDownloadList)
@@ -162,20 +179,21 @@ async function getCourse (config) { //, attachmentList) {
   await downloadAttachmentsAndMakeXml(fileDownloadList, dir, aDir, eDir, attachmentList, attachmentDate, courseInfo)
 }
 
+// process an assignment
 async function getAssignments (config, assIds, parsedAssignments, fileDownloadList) {
   for (const assignmentId of assIds) {
     try {
       const assignment = await canvas.get(`courses/${config.courseId}/assignments/${assignmentId}`)
       if (assignment.body.workflow_state === 'published') {
         if (assignment.body.submission_types[0] === 'online_upload') {
-          var clean = sanitizeHtml(assignment.body.description, {
+          var sanitizedDescription = sanitizeHtml(assignment.body.description, {
             allowedTags: ['img', 'a', 'em'],
             allowedAttributes: {
               a: ['href'],
               img: ['src', 'alt', 'data-api-endpoint']
             }
           })
-          var fileIdList = getUniqueFileUrls(clean)
+          var fileIdList = getUniqueFileUrls(sanitizedDescription)
           console.log(`Processing Assignment ID:${assignment.body.id}: ${assignment.body.name}`)
           if (fileIdList !== [] && fileIdList !== undefined) { // can be undefined for a number of reasons
             var fileObjArr = await processFiles(fileIdList)
@@ -189,7 +207,7 @@ async function getAssignments (config, assIds, parsedAssignments, fileDownloadLi
           } else {
             fileIdList = []
           }
-          var currentAss = createAssignmentObject(assignment.body.id, assignment.body.name, clean, fileIdList, fileObjArr, assignment.body.updated_at)
+          var currentAss = createAssignmentObject(assignment.body.id, assignment.body.name, sanitizedDescription, fileObjArr, assignment.body.updated_at)
           parsedAssignments.push(currentAss)
         }
       }
@@ -199,6 +217,7 @@ async function getAssignments (config, assIds, parsedAssignments, fileDownloadLi
   }
 }
 
+// process files
 async function processFiles (arr) {
   const fileArr = []
   for (const element of arr) {
@@ -223,6 +242,7 @@ async function processFiles (arr) {
   return fileArr
 }
 
+// download all linked attachments and create the xml file
 async function downloadAttachmentsAndMakeXml (filesList, dir, aDir, eDir, attachmentList, attachmentDate, courseInfo) {
   if (filesList.length === 0) {
     makeXml(courseInfo, attachmentList, attachmentDate, dir, eDir)
@@ -231,7 +251,7 @@ async function downloadAttachmentsAndMakeXml (filesList, dir, aDir, eDir, attach
       var i = 0
       if (obj.lock === false) { // some files in Canvas can be locked, which results in no download url, causing an error
         const downloadStream = got.stream(obj.url) // obj.url is the download url obtained from API call
-        const fileWriterStream = createWriteStream(`${eDir}${dir}${aDir}/${obj.id}_${obj.name}`)
+        const fileWriterStream = createWriteStream(`${eDir}${dir}${aDir}/FILE_${obj.id}_${obj.name}`)
         // eDir is general Export directory
         // dir is current course directory
         // aDir is attachment directory
@@ -248,8 +268,8 @@ async function downloadAttachmentsAndMakeXml (filesList, dir, aDir, eDir, attach
             console.error(`Could not write file "${obj.id}_${obj.name}" to system: ${e.message}`)
           })
           .on('finish', async () => {
-            console.log(`File "${obj.id}_${obj.name}" downloaded to ${eDir}${dir}${aDir}`)
-            attachmentList.push(`${aDir}/${obj.id}_${obj.name}`)
+            console.log(`Successfully downloaded "${obj.id}_${obj.name}" to ${eDir}${dir}${aDir}/`)
+            attachmentList.push(`${obj.id}_${obj.name}`)
             attachmentDate.push(obj.updated)
             i++
             if ((i) === (filesList.length)) {
@@ -275,6 +295,7 @@ async function downloadAttachmentsAndMakeXml (filesList, dir, aDir, eDir, attach
   }
 }
 
+// create the xml file
 async function makeXml (courseInfo, attachmentList, attachmentDate, dir, eDir) {
   // read empty xml, and make it a js object
   var xml = fs.readFileSync('kursSpecEmpty.xml', 'utf8')
@@ -282,7 +303,7 @@ async function makeXml (courseInfo, attachmentList, attachmentDate, dir, eDir) {
   var kursSpec = convert.xml2js(xml, readOptions)
 
   // current timestamp in milliseconds
-  const dateTs = convertDate(Date.now(), 'd')
+  const dateTs = convertDate(Date.now(), 't')
   const kursKodRe = /[A-ZÅÄÖ]{2}\d{4}/
   const tentaKodRe = /_(.*?)_/
   var kursKod = courseInfo.body.course_code
@@ -312,7 +333,7 @@ async function makeXml (courseInfo, attachmentList, attachmentDate, dir, eDir) {
   for (var i = 0; i < attachmentList.length; i++) {
     var tObj = JSON.parse(JSON.stringify(attachmentSnippet)) // copy stencil
     tObj.elements[0].elements[0].elements[0].elements[0].text = attachmentList[i]
-    tObj.elements[3].elements[0].elements[0].elements[0].text = convertDate(attachmentDate[i])
+    tObj.elements[3].elements[0].elements[0].elements[0].text = convertDate(attachmentDate[i], 't')
     tempXmlArr.push(tObj)
   }
 
