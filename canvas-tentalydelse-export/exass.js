@@ -319,7 +319,7 @@ async function downloadAttachmentsAndMakeXml (filesList, dir, aDir, eDir, attach
 async function makeXml (courseInfo, attachmentList, attachmentDate, dir, eDir) {
   // read empty xml, and make it a js object
   const courseId = courseInfo.body.id
-  var xml = fs.readFileSync('kursSpecEmpty.xml', 'utf8')
+  var xml = fs.readFileSync('kursSpecEmpty_2_1.xml', 'utf8')
   var readOptions = { ignoreComment: false, alwaysChildren: true }
   var kursSpec = convert.xml2js(xml, readOptions)
 
@@ -335,33 +335,67 @@ async function makeXml (courseInfo, attachmentList, attachmentDate, dir, eDir) {
   if (kursKodRe.exec(courseInfo.body.course_code) !== null) {
     kursKod = (kursKodRe.exec(courseInfo.body.course_code))[0]
   }
-  // add export date
-  kursSpec.elements[0].elements[0].elements[0].elements[0].elements[3].elements[0].elements[0].elements[0].text = `Exported: ${dateTs}`
-  // add course code
-  kursSpec.elements[0].elements[0].elements[0].elements[0].elements[19].elements[0].elements[0].elements[0].elements[0].elements[0].elements[0].text = kursKod
-  // add course name
-  kursSpec.elements[0].elements[0].elements[0].elements[0].elements[19].elements[0].elements[0].elements[1].elements[0].elements[0].elements[0].text = courseInfo.body.name
-  // add course offering
-  kursSpec.elements[0].elements[0].elements[0].elements[0].elements[19].elements[0].elements[0].elements[2].elements[0].elements[0].elements[0].text = courseInfo.body.sis_course_id
-  // This might be actually an issue, as instead of regular SIS_ID for exam rooms in 2020, we now have LADOK ID there
-  // Might, since it could actually be more meaningful.
 
-  // save part of xml object as stencil
-  const attachmentSnippet = kursSpec.elements[0].elements[0].elements[0].elements[0].elements[20].elements[0].elements[0]
-  var tempXmlArr = []
-
-  // make an xml snippet for each attachment entry using stencil and save to array
-  for (var i = 0; i < attachmentList.length; i++) {
-    var tObj = JSON.parse(JSON.stringify(attachmentSnippet)) // copy stencil
-    tObj.elements[0].elements[0].elements[0].elements[0].text = attachmentList[i]
-    tObj.elements[3].elements[0].elements[0].elements[0].text = convertDate(attachmentDate[i], 't')
-    tempXmlArr.push(tObj)
+  // add export date, script info
+  kursSpec.elements[1].elements[6].elements[0] = {
+    type: 'text',
+    text: `Exported: ${dateTs}`
+  }
+  kursSpec.elements[1].elements[20].elements[0] = {
+    type: 'text',
+    text: 'lms-scripts/archive-canvas-assignments'
+  }
+  kursSpec.elements[1].elements[22].elements[0] = {
+    type: 'text',
+    text: '0.0.1(alpha)'
   }
 
-  // inject combined snippets into xml file
-  kursSpec.elements[0].elements[0].elements[0].elements[0].elements[20].elements[0].elements = tempXmlArr
+  // add course information
+  // add course code
+  kursSpec.elements[1].elements[37].elements[0].elements[0] = {
+    type: 'text',
+    text: kursKod
+  }
+  // add course name
+  kursSpec.elements[1].elements[37].elements[2].elements[0] = {
+    type: 'text',
+    text: courseInfo.body.name
+  }
+  // add course offering
+  kursSpec.elements[1].elements[37].elements[4].elements[0] = {
+    type: 'text',
+    text: courseInfo.body.sis_course_id
+  }
+  // add course activity
+  kursSpec.elements[1].elements[37].elements[6].elements[0] = {
+    type: 'text',
+    text: '' // left blank for now
+  }
+  // Instead of regular SIS_ID for exam rooms in 2020, we now have LADOK ID.
+  // Might be more meaningful in the future.
+
+  const attachmentSnippet = JSON.parse(JSON.stringify(kursSpec.elements[1].elements[38])) // move attachment section of xml to variable
+  kursSpec.elements[1].elements.splice(38, 1) // remove attachment section from xml
+
+  for (var i = 0; i < attachmentList.length; i++) {
+    var tObj = JSON.parse(JSON.stringify(attachmentSnippet)) // copy stencil
+
+    tObj.elements[0].elements[0] = { // assign file name to field
+      type: 'text',
+      text: attachmentList[i]
+    }
+    tObj.elements[6].elements[0] = { // assign file modified date to field
+      type: 'text',
+      // spec says 'format 2001-12-17T09:30:47' but it's not any known standard
+      // I'm putting in UTC to see if it works for them
+      text: attachmentDate[i]
+    }
+
+    kursSpec.elements[1].elements.push(tObj) // push attachment to xml (it's ok since it's at the end of the array)
+  }
+
   // write xml to file
-  var writeOptions = { compact: false, ignoreComment: false, spaces: 4 }
+  var writeOptions = { compact: false, ignoreComment: false, spaces: 4, fullTagEmptyElement: true }
   var kursSpecName = `Kursspecifikation-${kursKod}-(${tentaKod})-${dateTs}`
   var kursSpecArr = []
   kursSpecArr.push(convert.js2xml(kursSpec, writeOptions))
