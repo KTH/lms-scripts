@@ -17,7 +17,7 @@ const canvas = Canvas(url, token)
 const config = {
   account: '', // for later
   courseId: '23019',
-  list: [23019, 23022, 23025, 23027, 23031, 23033, 23034, 23126]
+  list: [23019, 23022, 23025, 23027, 23031, 23033, 23034, 23126, 24167]
 }
 
 // create folders if they don't exist
@@ -94,23 +94,23 @@ function getAssignmentDetails (arr) {
 
 // create sort version of assignment object
 function createAssignmentObject (id, name, description, fileObjArr, updated) {
-  const assignmentObj = {}
-  var fileNameList = []
-  var fileIdList = []
+  const assignmentObj = {
+    id: id,
+    name: sanitize(name),
+    updated: updated,
+    description: description,
+    fileList: {
+      ids: [],
+      names: []
+    }
+  }
 
   fileObjArr.forEach(element => {
-    fileNameList.push(element.name)
+    assignmentObj.fileList.names.push(element.name)
   })
   fileObjArr.forEach(element => {
-    fileIdList.push(element.id)
+    assignmentObj.fileList.ids.push(element.id)
   })
-
-  assignmentObj.id = id
-  assignmentObj.name = sanitize(name)
-  assignmentObj.updated = updated
-  assignmentObj.description = description
-  assignmentObj.uniqueUrls = fileIdList
-  assignmentObj.uniqueNames = fileNameList
 
   return assignmentObj
 }
@@ -121,12 +121,27 @@ function convertDate (date, opt) {
   const localD = cDate.toLocaleDateString('sv')
   const localT = cDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) // cDate.toLocaleTimeString('sv')
   const local = cDate.toLocaleString('sv')
-  if (opt === 't') {
+  const iso = cDate.toISOString()
+  if (opt === 'dt') {
     return (`${localD} ${localT}`)
   } if (opt === 'd') {
     return (localD)
+  } if (opt === 'i') {
+    return (iso)
   } else {
     return (local)
+  }
+}
+
+// check if files are downloaded and/or added to locked files list
+function ifFilesDoneMakeXML (i, j, filesListLength, courseId, courseInfo, attachmentList, attachmentDate, dir, eDir) {
+  if (i + j === filesListLength) {
+    if (j > 0) { // if there are any locked files add them to attachment list
+      attachmentList.push('lockedFiles.txt')
+      attachmentDate.push(convertDate(Date.now(), 'i'))
+    }
+    console.log(`- CID: ${courseId} - ALL FILES DONE. Downloaded: ${i} of ${filesListLength} files. Locked or missing: ${j}`)
+    makeXml(courseInfo, attachmentList, attachmentDate, dir, eDir)
   }
 }
 
@@ -136,13 +151,16 @@ async function saveAssignments (courseId, parsedAssignments, dir, eDir, attachme
     parsedAssignments.forEach(element => {
       const sanitizedElementName = sanitize(element.name)
       const path = `${eDir}${dir}/UPPGIFT_${element.id}_${sanitizedElementName}.txt` // actual path to save file
-      const xmlPath = `UPPGIFT_${element.id}_${sanitize(element.name)}.txt` // path for the archive xml file (for batch exports)
+      const xmlPath = `UPPGIFT_${element.id}_${sanitizedElementName}.txt` // path for the archive xml file (for batch exports)
       const assignment = ( // compose assignment text file
         `ASSIGNMENT NAME: ${element.name}`).concat('\n',
-        `LAST UPDATED AT: ${convertDate(element.updated, 't')}`, '\n',
+        `LAST UPDATED AT: ${convertDate(element.updated, 'dt')}`, '\n',
         '====== ASSIGNMENT DESCRIPTION BEGIN ======', '\n',
         element.description, '\n',
-        '====== ASSIGNMENT DESCRIPTION END ======'
+        '====== ASSIGNMENT DESCRIPTION END ======', '\n',
+        'Canvas File included [ordered list]:', '\n',
+        `IDs: ${element.fileList.ids}`, '\n',
+        `Names: ${element.fileList.names}`
       )
       const buffer = Buffer.from(assignment)
       attachmentList.push(xmlPath)
@@ -165,7 +183,7 @@ async function saveAssignments (courseId, parsedAssignments, dir, eDir, attachme
 }
 
 // process course
-async function getCourse (courseId) { //, attachmentList) {
+async function getCourse (courseId) {
   console.info(`@ CID: ${courseId} - BEGIN`)
   var attachmentList = []
   var attachmentDate = []
@@ -228,30 +246,31 @@ async function processFiles (courseId, arr) {
   for (const element of arr) {
     try {
       const file = await canvas.get(`files/${element}`)
-      const dlFile = {}
+      const dlFile = {
+        name: file.body.filename,
+        url: file.body.url,
+        lock: file.body.locked,
+        lockExp: 'none given by Canvas',
+        id: element,
+        updated: file.body.updated_at
+      }
 
-      dlFile.name = file.body.filename
-      dlFile.url = file.body.url
-      dlFile.lock = file.body.locked
-      if (file.body.lock_explanation === undefined) { // if it's not locked, this is undefined
-        dlFile.lockExp = 'none'
-      } else {
+      if (file.body.lock_explanation !== undefined) { // if it's not locked, this is undefined
         dlFile.lockExp = file.body.lock_explanation
       }
-      dlFile.id = element
-      dlFile.updated = (file.body.updated_at)
 
       fileArr.push(dlFile)
     } catch (e) {
       console.error(`- CID: ${courseId} - PF ERROR: ${element}: ${e.message}. Continuing...`)
-      // const failFile = {}
 
-      // failFile.name = 'none'
-      // failFile.lock = true
-      // failFile.lockExp = 'e.message'
-      // failFile.id = element
+      const failFile = {
+        name: 'unknown',
+        lock: true,
+        lockExp: e.message,
+        id: element
+      }
 
-      // fileArr.push(failFile)
+      fileArr.push(failFile)
     }
   }
   return fileArr
@@ -263,9 +282,21 @@ async function downloadAttachmentsAndMakeXml (filesList, dir, aDir, eDir, attach
   if (filesList.length === 0) {
     makeXml(courseInfo, attachmentList, attachmentDate, dir, eDir)
   } else {
+    const lockFilePath = `${eDir}${dir}${aDir}/lockedFiles.txt`
+    if (fs.existsSync(lockFilePath)) {
+      fs.open(lockFilePath, 'w', function (e, id) {
+        fs.write(id, '', null, 'utf8', function () {
+          fs.close(id, function () {
+            console.log(`- CID: ${courseId} - Lock file cleared before re-writing.`)
+          })
+        })
+      })
+    }
     for (const obj of filesList) { // files list is array of objects that contains file info
       try {
         var i = 0
+        var j = 0
+
         if (obj.lock === false) { // some files in Canvas can be locked, which results in no download url, causing an error
           const downloadStream = got.stream(obj.url) // obj.url is the download url obtained from API call
           const fileWriterStream = createWriteStream(`${eDir}${dir}${aDir}/FILE_${obj.id}_${obj.name}`)
@@ -289,24 +320,18 @@ async function downloadAttachmentsAndMakeXml (filesList, dir, aDir, eDir, attach
               attachmentList.push(`${obj.id}_${obj.name}`)
               attachmentDate.push(obj.updated)
               i++
-              if ((i) === (filesList.length)) {
-                console.log(`- CID: ${courseId} - ALL DL OK: ${i} of ${filesList.length}`)
-                makeXml(courseInfo, attachmentList, attachmentDate, dir, eDir)
-              }
+              ifFilesDoneMakeXML(i, j, filesList.length, courseId, courseInfo, attachmentList, attachmentDate, dir, eDir)
             })
           downloadStream.pipe(fileWriterStream)
-        } else { // if file is locked, note it down
-          console.info(`- CID: ${courseId} - FILE LOCK: "${obj.name}" FILE ID: ${obj.id}. Continuing...`)
-          fs.open(`${eDir}${dir}${aDir}/lockedFiles.txt`, 'w', function (e, id) {
-            fs.write(id, `- Failed to download file "${obj.name}" with ID: ${obj.id}. Reason: ${obj.lockExp}` + '\n', null, 'utf8', function () {
-              fs.close(id, function () {
-                attachmentList.push(`${aDir}/lockedFiles.txt`)
-                attachmentDate.push(Date.now())
-                makeXml(courseInfo, attachmentList, attachmentDate, dir, eDir)
-                console.log(`- CID: ${courseId} - Lock file is updated.`)
-              })
-            })
+        } else { // if file is locked, or missing, note it down
+          const fileMessage = `Failed to download file '${obj.name}' with ID: ${obj.id}. Reason: ${obj.lockExp}\n`
+          fs.appendFile(lockFilePath, fileMessage, (err) => {
+            if (err) throw err
+            j++
+            ifFilesDoneMakeXML(i, j, filesList.length, courseId, courseInfo, attachmentList, attachmentDate, dir, eDir)
           })
+          console.info(`- CID: ${courseId} - FILE LOCK: "${obj.name}" FILE ID: ${obj.id}. Continuing...`)
+          ifFilesDoneMakeXML(i, j, filesList.length, courseId, courseInfo, attachmentList, attachmentDate, dir, eDir)
         }
       } catch (e) {
         console.error(e)
@@ -399,7 +424,7 @@ async function makeXml (courseInfo, attachmentList, attachmentDate, dir, eDir) {
   var kursSpecName = `Kursspecifikation-${kursKod}-(${tentaKod})-${dateTs}`
   var kursSpecArr = []
   kursSpecArr.push(convert.js2xml(kursSpec, writeOptions))
-  saveXML(courseId, kursSpecArr, dir, eDir, kursSpecName)
+  saveXML(courseId, kursSpecArr, dir, eDir, sanitize(kursSpecName))
 }
 
 async function getCoursesFromList (list) {
