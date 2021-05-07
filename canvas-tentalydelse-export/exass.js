@@ -368,7 +368,7 @@ async function makeXml (courseInfo, attachmentList, attachmentDate, dir, eDir) {
   }
   kursSpec.elements[1].elements[20].elements[0] = {
     type: 'text',
-    text: 'lms-scripts/archive-canvas-assignments'
+    text: 'lms-scripts/canvas-tentalydelse-export'
   }
   kursSpec.elements[1].elements[22].elements[0] = {
     type: 'text',
