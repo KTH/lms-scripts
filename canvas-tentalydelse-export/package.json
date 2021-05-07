@@ -5,16 +5,19 @@
   "main": "app.js",
   "scripts": {
     "start": "node app.js",
-    "test": "standard && node app.js"
+    "test": "standard",
+    "debug": "NODE_ENV=development node --nolazy --inspect-brk=9229 app.js"
   },
   "author": "Chris",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/kstarzecki/external-tools-update.git"
+  },
   "dependencies": {
     "@kth/canvas-api": "^1.1.1",
-    "cli-progress": "^3.1.0",
     "dotenv": "^8.0.0",
-    "inquirer": "^7.0.0",
-    "objects-to-csv": "^1.2.1"
+    "inquirer": "^7.0.0"
   },
   "devDependencies": {
     "standard": "^14.1.0"
