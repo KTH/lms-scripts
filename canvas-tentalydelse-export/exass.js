@@ -5,7 +5,6 @@ const extractUrls = require('extract-urls')
 const { createWriteStream } = require('fs')
 const fs = require('fs')
 const got = require('got')
-
 const convert = require('xml-js')
 
 const token = process.env.CANVAS_API_TOKEN_TEST
@@ -16,10 +15,6 @@ const config = {
   account: '', // for later
   courseId: '23019'
 }
-
-const parsedAssignments = []
-var attachmentInfo = []
-var filesList = []
 
 function handleDirectory (dir) {
   if (!fs.existsSync(dir)) {
@@ -47,32 +42,19 @@ function getUniqueFileUrls (string) {
   var urls = extractUrls(string)
   var re = / *\/files\/(\d+)/
   var oarr = []
-  reStripAndReconstruct(re, urls, oarr)
-  var unique = oarr.filter(onlyUnique)
-  return unique
+  if (typeof urls !== 'undefined') {
+    reStripAndReconstruct(re, urls, oarr)
+    var unique = oarr.filter(onlyUnique)
+    return unique
+  } else {
+    return []
+  }
 }
 
-function createAssignmentObject (id, name, description, urls, dnames) {
-  const shortObject = {}
-  var arr = []
-
-  dnames.forEach(element => {
-    arr.push(element.name)
-  })
-
-  shortObject.id = id
-  shortObject.name = name
-  shortObject.description = description
-  shortObject.uniqueUrls = urls
-  shortObject.uniqueNames = arr
-
-  return shortObject
-}
-
-function saveXML (arr, dir, courseId) {
+function saveXML (arr, dir, eDir, courseId) {
   try {
     arr.forEach(element => {
-      const path = `${dir}/${courseId}.xml`
+      const path = `${eDir}${dir}/${courseId}.xml`
       const buffer = Buffer.from(element, 'utf-8')
       fs.open(path, 'w', function (e, fd) {
         if (e) {
@@ -81,36 +63,13 @@ function saveXML (arr, dir, courseId) {
         fs.write(fd, buffer, 0, buffer.length, null, function (e) {
           if (e) console.error(`could not write file: ${e}`)
           fs.close(fd, function () {
-            console.log(`Successfully wrote "${courseId}.xml" to ${dir}.`)
+            console.log(`Successfully wrote "${courseId}.xml" to ${eDir}${dir}.`)
           })
         })
       })
     })
   } catch (e) {
     console.error('CAUGHT AN ERROR XML: ' + e + '. Continuing...')
-  }
-}
-
-async function saveAssignments (arr, dir, arrF) {
-  try {
-    arr.forEach(element => {
-      const path = `${dir}/${element.id}_${element.name}.txt`
-      const buffer = Buffer.from(element.description)
-      arrF.push(path)
-      fs.open(path, 'w', function (e, fd) {
-        if (e) {
-          console.error(`Could not open file: ${e}`)
-        }
-        fs.write(fd, buffer, 0, buffer.length, null, function (e) {
-          if (e) console.error(`could not write file: ${e}`)
-          fs.close(fd, function () {
-            console.log(`Successfully wrote "${element.id}_${element.name}.txt" to ${dir}.`)
-          })
-        })
-      })
-    })
-  } catch (e) {
-    console.error('CAUGHT AN ERROR SAVE: ' + e + '. Continuing...')
   }
 }
 
@@ -122,72 +81,152 @@ function getAssignmentDetails (arr) {
   return arrOut
 }
 
-async function getCourse (config, attachmentInfo) {
-  var dir = `./${config.courseId}`
-  var aDir = `./${config.courseId}/Attachments`
+function createAssignmentObject (id, name, description, dUrls, dnames) {
+  const shortObject = {}
+  var arr = []
+  dnames.forEach(element => {
+    arr.push(element.name)
+  })
+
+  shortObject.id = id
+  shortObject.name = name.replace(/\//g, '-')
+  shortObject.description = description
+  shortObject.uniqueUrls = dUrls
+  shortObject.uniqueNames = arr
+
+  return shortObject
+}
+
+function convertDate (date, opt) {
+  const cDate = new Date(date)
+  const localD = cDate.toLocaleDateString('sv')
+  const localT = cDate.toLocaleTimeString('sv')
+  const local = cDate.toLocaleString('sv')
+  if (opt === 't') {
+    return (localT)
+  } if (opt === 'd') {
+    return (localD)
+  } else {
+    return (local)
+  }
+}
+
+async function saveAssignments (parsedAssignments, dir, eDir, attachmentList, attachmentDate) {
+  try {
+    parsedAssignments.forEach(element => {
+      const path = `${eDir}${dir}/${element.id}_${element.name}.txt`
+      const alPath = `${dir}/${element.id}_${element.name}.txt`
+      const buffer = Buffer.from(element.description)
+      attachmentList.push(alPath)
+      attachmentDate.push(Date.now())
+      fs.open(path, 'w', function (e, fd) {
+        if (e) {
+          console.error(`Could not open file: ${e}`)
+        }
+        fs.write(fd, buffer, 0, buffer.length, null, function (e) {
+          if (e) console.error(`could not write file: ${e}`)
+          fs.close(fd, function () {
+            console.log(`Successfully wrote "${element.id}_${element.name}.txt" to ${eDir}${dir}.`)
+          })
+        })
+      })
+    })
+  } catch (e) {
+    console.error('CAUGHT AN ERROR SAVE: ' + e + '. Continuing...')
+  }
+}
+
+async function getCourse (config) { //, attachmentList) {
+  var attachmentList = []
+  var attachmentDate = []
+  var fileDownloadList = []
+  const parsedAssignments = []
+  var eDir = './Export'
+  var dir = `/${config.courseId}`
+  var aDir = '/Attachments'
   const courseInfo = await canvas.get(`/courses/${config.courseId}`)
   const assignments = await canvas.get(`/courses/${config.courseId}/assignments`)
   const assIds = getAssignmentDetails(assignments.body)
-  handleDirectory(dir)
-  handleDirectory(aDir)
-  await getAssignments(config, assIds, parsedAssignments, filesList, aDir)
-  await saveAssignments(parsedAssignments, dir, attachmentInfo)
-  await downloadAttachments(filesList, aDir, attachmentInfo)
-  await makeXml(courseInfo, attachmentInfo, downloadAttachments)
+  handleDirectory(`${eDir}${dir}`)
+  handleDirectory(`${eDir}${dir}${aDir}`)
+  await getAssignments(config, assIds, parsedAssignments, fileDownloadList)
+  await saveAssignments(parsedAssignments, dir, eDir, attachmentList, attachmentDate)
+  await downloadAttachmentsAndMakeXml(fileDownloadList, dir, aDir, eDir, attachmentList, attachmentDate, courseInfo)
 }
 
-async function getAssignments (config, arrIn, arrOut, arrF, aDir) {
-  for (const assignmentId of arrIn) {
+async function getAssignments (config, assIds, parsedAssignments, fileDownloadList) {
+  for (const assignmentId of assIds) {
     try {
       const assignment = await canvas.get(`/courses/${config.courseId}/assignments/${assignmentId}`)
-      var clean = sanitizeHtml(assignment.body.description, {
-        allowedTags: ['img', 'a', 'em'],
-        allowedAttributes: {
-          a: ['href'],
-          img: ['src', 'alt', 'data-api-endpoint']
+      if (assignment.body.workflow_state === 'published') {
+        if (assignment.body.submission_types[0] === 'online_upload') {
+          var clean = sanitizeHtml(assignment.body.description, {
+            allowedTags: ['img', 'a', 'em'],
+            allowedAttributes: {
+              a: ['href'],
+              img: ['src', 'alt', 'data-api-endpoint']
+            }
+          })
+          var fileIdList = getUniqueFileUrls(clean)
+          console.log(`Processing Assignment ID:${assignment.body.id}: ${assignment.body.name}`)
+          if (fileIdList !== [] && fileIdList !== undefined) { // can be undefined for a number of reasons
+            var fileObjArr = await processFiles(fileIdList)
+            if (fileObjArr !== [] && fileObjArr !== undefined) { // can be undefined for a number of reasons
+              fileObjArr.forEach(file => {
+                fileDownloadList.push(file)
+              })
+            } else {
+              fileObjArr = []
+            }
+          } else {
+            fileIdList = []
+          }
+          var currentAss = createAssignmentObject(assignment.body.id, assignment.body.name, clean, fileIdList, fileObjArr)
+          parsedAssignments.push(currentAss)
         }
-      })
-      var dlist = getUniqueFileUrls(clean)
-      console.log(`Processing Assignment ID:${assignment.body.id}: ${assignment.body.name}`)
-      var fileArr = await processFiles(dlist, aDir)
-      arrOut.push(createAssignmentObject(assignment.body.id, assignment.body.name, clean, dlist, fileArr))
-      fileArr.forEach(element => {
-        arrF.push(element)
-      })
+      }
     } catch (e) {
-      console.error('CAUGHT AN ERROR GET: ' + assignmentId + e + '. Continuing...')
+      console.error('CAUGHT AN ERROR GET: ' + assignmentId + ' ' + e + fileObjArr + '. Continuing...')
     }
   }
 }
 
-async function processFiles (arr, aDir) {
+async function processFiles (arr) {
   const fileArr = []
   for (const element of arr) {
-    const file = await canvas.get(`/files/${element}`)
-    const dlFile = {}
-
-    dlFile.name = file.body.filename
-    dlFile.url = file.body.url
-    dlFile.lock = file.body.locked
-    if (file.body.lock_explanation === undefined) {
-      dlFile.lockExp = 'none'
-    } else {
-      dlFile.lockExp = file.body.lock_explanation
+    try {
+      const file = await canvas.get(`/files/${element}`)
+      const dlFile = {}
+      dlFile.name = file.body.filename
+      dlFile.url = file.body.url
+      dlFile.lock = file.body.locked
+      if (file.body.lock_explanation === undefined) { // if it's not locked, this is undefined
+        dlFile.lockExp = 'none'
+      } else {
+        dlFile.lockExp = file.body.lock_explanation
+      }
+      dlFile.id = element
+      dlFile.updated = (file.body.updated_at)
+      fileArr.push(dlFile)
+    } catch (e) {
+      console.error('CAUGHT AN ERROR PF: ' + e + '. Continuing...')
     }
-    dlFile.id = element
-    fileArr.push(dlFile)
   }
   return fileArr
 }
 
-async function downloadAttachments (filesList, aDir, attachmentInfo) {
-  // console.log(filesList)
-  for (const obj of filesList) {
-    // console.log(obj.url)
-    if (obj.lock === false) {
-      const downloadStream = got.stream(obj.url)
-      const fileWriterStream = createWriteStream(`${aDir}/${obj.id}_${obj.name}`)
+async function downloadAttachmentsAndMakeXml (filesList, dir, aDir, eDir, attachmentList, attachmentDate, courseInfo) {
+  for (const obj of filesList) { // files list is array of objects that contains file info
+    var i = 0
+    if (obj.lock === false) { // some files in Canvas can be locked, which results in no download url, causing an error
+      const downloadStream = got.stream(obj.url) // obj.url is the download url obtained from API call
+      const fileWriterStream = createWriteStream(`${eDir}${dir}${aDir}/${obj.id}_${obj.name}`)
+      // eDir is general Export directory
+      // dir is current course directory
+      // aDir is attachment directory
+      // obj holds file name and id
 
+      // download using GOT
       downloadStream
         .on('error', async (e) => {
           console.error(`Download failed: ${e.message}`)
@@ -198,17 +237,25 @@ async function downloadAttachments (filesList, aDir, attachmentInfo) {
           console.error(`Could not write file "${obj.id}_${obj.name}" to system: ${e.message}`)
         })
         .on('finish', async () => {
-          console.log(`File "${obj.id}_${obj.name}" downloaded to ${aDir}`)
-          attachmentInfo.push(`${aDir}/${obj.id}_${obj.name}`)
-          // console.log(attachmentInfo)
+          console.log(`File "${obj.id}_${obj.name}" downloaded to ${eDir}${dir}${aDir}`)
+          attachmentList.push(`${aDir}/${obj.id}_${obj.name}`)
+          attachmentDate.push(obj.updated)
+          i++
+          if ((i) === (filesList.length)) {
+            console.log(`Completed download of attachments: ${i} of ${filesList.length}`)
+            makeXml(courseInfo, attachmentList, attachmentDate, dir, eDir)
+          }
         })
 
       downloadStream.pipe(fileWriterStream)
-    } else {
+    } else { // if file is locked, note it down
       console.log(`File "${obj.name}" ID: ${obj.id} is locked. Continuing...`)
-      fs.open(`${aDir}/lockedFiles.txt`, 'w', function (e, id) {
+      fs.open(`${eDir}${dir}${aDir}/lockedFiles.txt`, 'w', function (e, id) {
         fs.write(id, `Failed to download file "${obj.name}" with ID: ${obj.id}. Reason: ${obj.lockExp}` + '\n', null, 'utf8', function () {
           fs.close(id, function () {
+            attachmentList.push(`${aDir}/lockedFiles.txt`)
+            attachmentDate.push(Date.now())
+            makeXml(courseInfo, attachmentList, attachmentDate, dir, eDir)
             console.log('Lock file is updated.')
           })
         })
@@ -217,74 +264,52 @@ async function downloadAttachments (filesList, aDir, attachmentInfo) {
   }
 }
 
-async function makeXml (courseInfo, attachmentInfo) {
-  // console.log(courseInfo.body.course_code)
-  // console.log(courseInfo.body.name)
-  // console.log(courseInfo.body.sis_course_id)
-  // below is a hot potato
-  var xml = fs.readFileSync('example.xml', 'utf8')
-  var options = { ignoreComment: false, alwaysChildren: true }
-  var kursSpec = convert.xml2js(xml, options)
+async function makeXml (courseInfo, attachmentList, attachmentDate, dir, eDir) {
+  // read empty xml, and make it a js object
+  var xml = fs.readFileSync('kursSpecEmpty.xml', 'utf8')
+  var readOptions = { ignoreComment: false, alwaysChildren: true }
+  var kursSpec = convert.xml2js(xml, readOptions)
 
-  function IntTwoChars (i) {
-    return (`0${i}`).slice(-2)
-  }
   // current timestamp in milliseconds
-  const dateTs = new Date(Date.now())
-  const dd = IntTwoChars(dateTs.getDate())
-  const mm = IntTwoChars(dateTs.getMonth() + 1)
-  const yyyy = dateTs.getFullYear()
-  const dateString = `Exported: ${yyyy}-${mm}-${dd}`
-  kursSpec.elements[0].elements[0].elements[0].elements[0].elements[3].elements[0].elements[0].elements[0].text = dateString
-  kursSpec.elements[0].elements[0].elements[0].elements[0].elements[19].elements[0].elements[0].elements[0].elements[0].elements[0].elements[0].text = courseInfo.body.course_code
+  const dateTs = convertDate(Date.now(), 'd')
+  const kursKodRe = /[A-ZÅÄÖ]{2}\d{4}/
+  const tentaKodRe = /_(.*?)_/
+  var kursKod = (kursKodRe.exec(courseInfo.body.sis_course_id))[0]
+  var tentaKod = (tentaKodRe.exec(courseInfo.body.sis_course_id))[1]
+
+  // add export date
+  kursSpec.elements[0].elements[0].elements[0].elements[0].elements[3].elements[0].elements[0].elements[0].text = `Exported: ${dateTs}`
+  // add course code
+  kursSpec.elements[0].elements[0].elements[0].elements[0].elements[19].elements[0].elements[0].elements[0].elements[0].elements[0].elements[0].text = kursKod
+  // add course name
   kursSpec.elements[0].elements[0].elements[0].elements[0].elements[19].elements[0].elements[0].elements[1].elements[0].elements[0].elements[0].text = courseInfo.body.name
+  // add course offering
   kursSpec.elements[0].elements[0].elements[0].elements[0].elements[19].elements[0].elements[0].elements[2].elements[0].elements[0].elements[0].text = courseInfo.body.sis_course_id
 
-  // course details
-  // console.log(kursSpec.elements[0].elements[0].elements[0].elements[0].elements[3].attributes.name) // date and time
-  // console.log(kursSpec.elements[0].elements[0].elements[0].elements[0].elements[3].elements[0].elements[0].elements[0].text) // date and time string
-  //
-  // console.log(kursSpec.elements[0].elements[0].elements[0].elements[0].elements[19].attributes.name) // kurs
-  // console.log(kursSpec.elements[0].elements[0].elements[0].elements[0].elements[19].elements[0].elements[0].elements) // kurs obj
-  // console.log(kursSpec.elements[0].elements[0].elements[0].elements[0].elements[19].elements[0].elements[0].elements[0].elements[0].elements[0].elements[0].text)
-  // console.log(kursSpec.elements[0].elements[0].elements[0].elements[0].elements[19].elements[0].elements[0].elements[1].elements[0].elements[0].elements[0].text)
-  // console.log(kursSpec.elements[0].elements[0].elements[0].elements[0].elements[19].elements[0].elements[0].elements[2].elements[0].elements[0].elements[0].text)
-  //
-  // console.log(kursSpec.elements[0].elements[0].elements[0].elements[0].elements[20].elements[0].elements[0].elements[0].attributes.name) // file name
-  // // console.log(kursSpec.elements[0].elements[0].elements[0].elements[0].elements[20].elements[0].elements[0].elements[0].elements[0].elements[0])
-  // console.log(kursSpec.elements[0].elements[0].elements[0].elements[0].elements[20].elements[0].elements[0].elements[0].elements[0].elements[0].elements[0].text) // file name falue
-  // //
-  // console.log(kursSpec.elements[0].elements[0].elements[0].elements[0].elements[20].elements[0].elements[0].elements[1].attributes.name) // description
-  // // console.log(kursSpec.elements[0].elements[0].elements[0].elements[0].elements[20].elements[0].elements[0].elements[0].elements[0].elements[0])
-  // console.log(kursSpec.elements[0].elements[0].elements[0].elements[0].elements[20].elements[0].elements[0].elements[1].elements[0].elements[0].elements[0].text) // description value
-  // //
-  // console.log(kursSpec.elements[0].elements[0].elements[0].elements[0].elements[20].elements[0].elements[0].elements[2].attributes.name) // bev
-  // // console.log(kursSpec.elements[0].elements[0].elements[0].elements[0].elements[20].elements[0].elements[0].elements[0].elements[0].elements[0])
-  // console.log(kursSpec.elements[0].elements[0].elements[0].elements[0].elements[20].elements[0].elements[0].elements[2].elements[0].elements[0].elements[0].text) // bev val
-  // //
-  // console.log(kursSpec.elements[0].elements[0].elements[0].elements[0].elements[20].elements[0].elements[0].elements[3].attributes.name) // time
-  // // console.log(kursSpec.elements[0].elements[0].elements[0].elements[0].elements[20].elements[0].elements[0].elements[0].elements[0].elements[0])
-  // console.log(kursSpec.elements[0].elements[0].elements[0].elements[0].elements[20].elements[0].elements[0].elements[3].elements[0].elements[0].elements[0].text) // time value
-  const attachment = kursSpec.elements[0].elements[0].elements[0].elements[0].elements[20].elements[0].elements[0]
-  var temparr = []
+  // save part of xml object as stencil
+  const attachmentSnippet = kursSpec.elements[0].elements[0].elements[0].elements[0].elements[20].elements[0].elements[0]
+  var tempXmlArr = []
 
-  var test1 = attachment
+  // make an xml snippet for each attachment entry using stencil and save to array
+  for (var i = 0; i < attachmentList.length; i++) {
+    var tObj = JSON.parse(JSON.stringify(attachmentSnippet)) // copy stencil
+    tObj.elements[0].elements[0].elements[0].elements[0].text = attachmentList[i]
+    tObj.elements[3].elements[0].elements[0].elements[0].text = convertDate(attachmentDate[i])
+    tempXmlArr.push(tObj)
+  }
 
-  // console.log(attachmentInfo)
-
-  test1.elements[0].elements[0].elements[0].elements[0].text = attachmentInfo[0]
-  temparr.push(test1)
-  // console.log(JSON.stringify(temparr, null, 4))
-  kursSpec.elements[0].elements[0].elements[0].elements[0].elements[20].elements[0].elements = temparr
-
-  var options2 = { compact: false, ignoreComment: false, spaces: 4 }
+  // inject combined snippets into xml file
+  kursSpec.elements[0].elements[0].elements[0].elements[0].elements[20].elements[0].elements = tempXmlArr
+  // write xml to file
+  var writeOptions = { compact: false, ignoreComment: false, spaces: 4 }
+  var kursSpecName = `Kursspecifikation-${kursKod}-${tentaKod}-${dateTs}`
   var kursSpecArr = []
-  kursSpecArr.push(convert.js2xml(kursSpec, options2))
-  saveXML(kursSpecArr, './', 123)
+  kursSpecArr.push(convert.js2xml(kursSpec, writeOptions))
+  saveXML(kursSpecArr, dir, eDir, kursSpecName)
 }
 
 function start () {
-  getCourse(config, attachmentInfo) // main function
+  getCourse(config) //, attachmentList) // main function
 }
 
 start()
