@@ -1,12 +1,12 @@
 {
-  "name": "external-tools-update",
-  "version": "0.1.0",
-  "description": "Bulk update external tools in Canvas courses",
-  "main": "app.js",
+  "name": "canvas-tentalydelse-export",
+  "version": "0.0.1",
+  "description": "Export assignment descriptions from canvas examination courses for archive purposes",
+  "main": "exass.js",
   "scripts": {
-    "start": "node app.js",
+    "start": "node exass.js",
     "test": "standard",
-    "debug": "NODE_ENV=development node --nolazy --inspect-brk=9229 app.js"
+    "debug": "NODE_ENV=development node --nolazy --inspect-brk=9229 exass.js"
   },
   "author": "Chris",
   "license": "MIT",
@@ -30,6 +30,6 @@
     "xml-js": "^1.6.11"
   },
   "devDependencies": {
-    "standard": "^14.3.4"
+    "standard": "^10.0.3"
   }
 }
