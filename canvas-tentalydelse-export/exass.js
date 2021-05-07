@@ -81,7 +81,7 @@ function getAssignmentDetails (arr) {
   return arrOut
 }
 
-function createAssignmentObject (id, name, description, dUrls, dnames) {
+function createAssignmentObject (id, name, description, dUrls, dnames, updated) {
   const shortObject = {}
   var arr = []
   dnames.forEach(element => {
@@ -90,6 +90,7 @@ function createAssignmentObject (id, name, description, dUrls, dnames) {
 
   shortObject.id = id
   shortObject.name = name.replace(/\//g, '-')
+  shortObject.updated = updated
   shortObject.description = description
   shortObject.uniqueUrls = dUrls
   shortObject.uniqueNames = arr
@@ -114,10 +115,17 @@ function convertDate (date, opt) {
 async function saveAssignments (parsedAssignments, dir, eDir, attachmentList, attachmentDate) {
   try {
     parsedAssignments.forEach(element => {
-      const path = `${eDir}${dir}/${element.id}_${element.name}.txt`
-      const alPath = `${dir}/${element.id}_${element.name}.txt`
-      const buffer = Buffer.from(element.description)
-      attachmentList.push(alPath)
+      const path = `${eDir}${dir}/UPPGIFT_${element.id}_${element.name}.txt` // actual path to save file
+      const xmlPath = `${dir}/UPPGIFT_${element.id}_${element.name}.txt` // path for the archive xml file (for batch exports)
+      const assignment = ( // compose assignment text file
+        `ASSIGNMENT NAME: ${element.name}`).concat('\n',
+        `LAST UPDATED AT: ${convertDate(element.updated)}`, '\n',
+        '====== ASSIGNMENT DESCRIPTION BEGIN ======', '\n',
+        element.description, '\n',
+        '====== ASSIGNMENT DESCRIPTION END ======'
+      )
+      const buffer = Buffer.from(assignment)
+      attachmentList.push(xmlPath)
       attachmentDate.push(Date.now())
       fs.open(path, 'w', function (e, fd) {
         if (e) {
@@ -181,7 +189,7 @@ async function getAssignments (config, assIds, parsedAssignments, fileDownloadLi
           } else {
             fileIdList = []
           }
-          var currentAss = createAssignmentObject(assignment.body.id, assignment.body.name, clean, fileIdList, fileObjArr)
+          var currentAss = createAssignmentObject(assignment.body.id, assignment.body.name, clean, fileIdList, fileObjArr, assignment.body.updated_at)
           parsedAssignments.push(currentAss)
         }
       }
@@ -309,7 +317,7 @@ async function makeXml (courseInfo, attachmentList, attachmentDate, dir, eDir) {
 }
 
 function start () {
-  getCourse(config) //, attachmentList) // main function
+  getCourse(config) // main function
 }
 
 start()
