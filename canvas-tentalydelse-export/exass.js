@@ -19,14 +19,7 @@ const config = {
 
 const parsedAssignments = []
 var attachmentInfo = []
-var assIds = []
-
-// var xml = fs.readFile('./example.xml', 'utf8', function (err, data) {
-//   if (err) {
-//     return console.log(err)
-//   }
-//   // console.log(data)
-// })
+var filesList = []
 
 function handleDirectory (dir) {
   if (!fs.existsSync(dir)) {
@@ -41,7 +34,7 @@ function reStripAndReconstruct (re, arr, oarr) {
         oarr.push(re.exec(element)[1])
       }
     } catch (e) {
-      console.error('CAUGHT AN ERROR: ' + e + '. Continuing...')
+      console.error('CAUGHT AN ERROR DIR: ' + e + '. Continuing...')
     }
   })
 }
@@ -61,38 +54,19 @@ function getUniqueFileUrls (string) {
 
 function createAssignmentObject (id, name, description, urls, dnames) {
   const shortObject = {}
+  var arr = []
+
+  dnames.forEach(element => {
+    arr.push(element.name)
+  })
 
   shortObject.id = id
   shortObject.name = name
   shortObject.description = description
   shortObject.uniqueUrls = urls
-  shortObject.uniqueNames = dnames
+  shortObject.uniqueNames = arr
 
   return shortObject
-}
-
-async function saveAssignments (arr, dir, arrF, courseInfo) {
-  try {
-    arr.forEach(element => {
-      const path = `${dir}/${element.id}_${element.name}.txt`
-      arrF.push(path)
-      const buffer = Buffer.from(element.description)
-      fs.open(path, 'w', function (e, fd) {
-        if (e) {
-          console.error(`Could not open file: ${e}`)
-        }
-        fs.write(fd, buffer, 0, buffer.length, null, function (e) {
-          if (e) console.error(`could not write file: ${e}`)
-          fs.close(fd, function () {
-            console.log(`Successfully wrote "${element.id}_${element.name}.txt" to ${dir}.`)
-          })
-        })
-      })
-    })
-  } catch (e) {
-    console.error('CAUGHT AN ERROR: ' + e + '. Continuing...')
-  }
-  makeXml(courseInfo, attachmentInfo)
 }
 
 function saveXML (arr, dir, courseId) {
@@ -113,7 +87,30 @@ function saveXML (arr, dir, courseId) {
       })
     })
   } catch (e) {
-    console.error('CAUGHT AN ERROR: ' + e + '. Continuing...')
+    console.error('CAUGHT AN ERROR XML: ' + e + '. Continuing...')
+  }
+}
+
+async function saveAssignments (arr, dir, arrF) {
+  try {
+    arr.forEach(element => {
+      const path = `${dir}/${element.id}_${element.name}.txt`
+      const buffer = Buffer.from(element.description)
+      arrF.push(path)
+      fs.open(path, 'w', function (e, fd) {
+        if (e) {
+          console.error(`Could not open file: ${e}`)
+        }
+        fs.write(fd, buffer, 0, buffer.length, null, function (e) {
+          if (e) console.error(`could not write file: ${e}`)
+          fs.close(fd, function () {
+            console.log(`Successfully wrote "${element.id}_${element.name}.txt" to ${dir}.`)
+          })
+        })
+      })
+    })
+  } catch (e) {
+    console.error('CAUGHT AN ERROR SAVE: ' + e + '. Continuing...')
   }
 }
 
@@ -129,19 +126,17 @@ async function getCourse (config, attachmentInfo) {
   var dir = `./${config.courseId}`
   var aDir = `./${config.courseId}/Attachments`
   const courseInfo = await canvas.get(`/courses/${config.courseId}`)
+  const assignments = await canvas.get(`/courses/${config.courseId}/assignments`)
+  const assIds = getAssignmentDetails(assignments.body)
   handleDirectory(dir)
   handleDirectory(aDir)
-  await getAssignmentList(config)
-  await getAssignment(config, assIds, parsedAssignments, aDir, courseInfo)
-  await saveAssignments(parsedAssignments, dir, attachmentInfo, courseInfo)
+  await getAssignments(config, assIds, parsedAssignments, filesList, aDir)
+  await saveAssignments(parsedAssignments, dir, attachmentInfo)
+  await downloadAttachments(filesList, aDir, attachmentInfo)
+  await makeXml(courseInfo, attachmentInfo, downloadAttachments)
 }
 
-async function getAssignmentList (config) {
-  const assignments = await canvas.get(`/courses/${config.courseId}/assignments`)
-  assIds = getAssignmentDetails(assignments.body)
-}
-
-async function getAssignment (config, arrIn, arrOut, aDir, courseInfo) {
+async function getAssignments (config, arrIn, arrOut, arrF, aDir) {
   for (const assignmentId of arrIn) {
     try {
       const assignment = await canvas.get(`/courses/${config.courseId}/assignments/${assignmentId}`)
@@ -154,60 +149,75 @@ async function getAssignment (config, arrIn, arrOut, aDir, courseInfo) {
       })
       var dlist = getUniqueFileUrls(clean)
       console.log(`Processing Assignment ID:${assignment.body.id}: ${assignment.body.name}`)
-      var dnames = await processFiles(dlist, aDir)
-      arrOut.push(createAssignmentObject(assignment.body.id, assignment.body.name, clean, dlist, dnames))
+      var fileArr = await processFiles(dlist, aDir)
+      arrOut.push(createAssignmentObject(assignment.body.id, assignment.body.name, clean, dlist, fileArr))
+      fileArr.forEach(element => {
+        arrF.push(element)
+      })
     } catch (e) {
-      console.error('CAUGHT AN ERROR: ' + e + '. Continuing...')
+      console.error('CAUGHT AN ERROR GET: ' + assignmentId + e + '. Continuing...')
     }
   }
-  makeXml(courseInfo, attachmentInfo)
 }
 
 async function processFiles (arr, aDir) {
+  const fileArr = []
   for (const element of arr) {
     const file = await canvas.get(`/files/${element}`)
-    const dname = file.body.filename
-    const durl = file.body.url
-    const dlock = file.body.locked
-    const dlockExp = file.body.lock_explanation
-    const did = element
-    await downloadFile(dname, durl, dlock, dlockExp, did, aDir, attachmentInfo)
+    const dlFile = {}
+
+    dlFile.name = file.body.filename
+    dlFile.url = file.body.url
+    dlFile.lock = file.body.locked
+    if (file.body.lock_explanation === undefined) {
+      dlFile.lockExp = 'none'
+    } else {
+      dlFile.lockExp = file.body.lock_explanation
+    }
+    dlFile.id = element
+    fileArr.push(dlFile)
   }
+  return fileArr
 }
 
-async function downloadFile (dname, durl, dlock, dlockExp, did, aDir, arrF) {
-  if (dlock === false) {
-    const downloadStream = got.stream(durl)
-    const fileWriterStream = createWriteStream(`${aDir}/${did}_${dname}`)
+async function downloadAttachments (filesList, aDir, attachmentInfo) {
+  // console.log(filesList)
+  for (const obj of filesList) {
+    // console.log(obj.url)
+    if (obj.lock === false) {
+      const downloadStream = got.stream(obj.url)
+      const fileWriterStream = createWriteStream(`${aDir}/${obj.id}_${obj.name}`)
 
-    await downloadStream
-      .on('error', (e) => {
-        console.error(`Download failed: ${e.message}`)
-      })
+      downloadStream
+        .on('error', async (e) => {
+          console.error(`Download failed: ${e.message}`)
+        })
 
-    await fileWriterStream
-      .on('error', (e) => {
-        console.error(`Could not write file "${did}_${dname}" to system: ${e.message}`)
-      })
-      .on('finish', () => {
-        console.log(`File "${did}_${dname}" downloaded to ${aDir}`)
-        arrF.push(`${aDir}/${did}_${dname}`)
-      })
+      fileWriterStream
+        .on('error', async (e) => {
+          console.error(`Could not write file "${obj.id}_${obj.name}" to system: ${e.message}`)
+        })
+        .on('finish', async () => {
+          console.log(`File "${obj.id}_${obj.name}" downloaded to ${aDir}`)
+          attachmentInfo.push(`${aDir}/${obj.id}_${obj.name}`)
+          // console.log(attachmentInfo)
+        })
 
-    await downloadStream.pipe(fileWriterStream)
-  } else {
-    console.log(`File "${dname}" ID: ${did} is locked. Continuing...`)
-    fs.open(`${aDir}/lockedFiles.txt`, 'w', function (e, id) {
-      fs.write(id, `Failed to download file "${dname}" with ID: ${did}. Reason: ${dlockExp}` + '\n', null, 'utf8', function () {
-        fs.close(id, function () {
-          console.log('Lock file is updated.')
+      downloadStream.pipe(fileWriterStream)
+    } else {
+      console.log(`File "${obj.name}" ID: ${obj.id} is locked. Continuing...`)
+      fs.open(`${aDir}/lockedFiles.txt`, 'w', function (e, id) {
+        fs.write(id, `Failed to download file "${obj.name}" with ID: ${obj.id}. Reason: ${obj.lockExp}` + '\n', null, 'utf8', function () {
+          fs.close(id, function () {
+            console.log('Lock file is updated.')
+          })
         })
       })
-    })
+    }
   }
 }
 
-function makeXml (courseInfo, attachmentInfo) {
+async function makeXml (courseInfo, attachmentInfo) {
   // console.log(courseInfo.body.course_code)
   // console.log(courseInfo.body.name)
   // console.log(courseInfo.body.sis_course_id)
@@ -257,11 +267,12 @@ function makeXml (courseInfo, attachmentInfo) {
   // console.log(kursSpec.elements[0].elements[0].elements[0].elements[0].elements[20].elements[0].elements[0].elements[3].elements[0].elements[0].elements[0].text) // time value
   const attachment = kursSpec.elements[0].elements[0].elements[0].elements[0].elements[20].elements[0].elements[0]
   var temparr = []
+
   var test1 = attachment
 
-  console.log(attachmentInfo)
+  // console.log(attachmentInfo)
 
-  test1.elements[0].elements[0].elements[0].elements[0].text = 'FILENAME TESTTESTTESTTEST'
+  test1.elements[0].elements[0].elements[0].elements[0].text = attachmentInfo[0]
   temparr.push(test1)
   // console.log(JSON.stringify(temparr, null, 4))
   kursSpec.elements[0].elements[0].elements[0].elements[0].elements[20].elements[0].elements = temparr
