@@ -5,7 +5,7 @@
   "main": "app.js",
   "scripts": {
     "start": "node app.js",
-    "test": "node app.js 2 year 2019"
+    "test": "standard && node app.js"
   },
   "author": "Chris",
   "license": "MIT",
@@ -15,5 +15,8 @@
     "dotenv": "^8.0.0",
     "inquirer": "^7.0.0",
     "objects-to-csv": "^1.2.1"
+  },
+  "devDependencies": {
+    "standard": "^14.1.0"
   }
 }
