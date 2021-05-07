@@ -293,6 +293,8 @@ async function makeXml (courseInfo, attachmentList, attachmentDate, dir, eDir) {
   kursSpec.elements[0].elements[0].elements[0].elements[0].elements[19].elements[0].elements[0].elements[1].elements[0].elements[0].elements[0].text = courseInfo.body.name
   // add course offering
   kursSpec.elements[0].elements[0].elements[0].elements[0].elements[19].elements[0].elements[0].elements[2].elements[0].elements[0].elements[0].text = courseInfo.body.sis_course_id
+  // This might be actually an issue, as instead of regular SIS_ID for exam rooms in 2020, we now have LADOK ID there
+  // Might, since it could actually be more meaningful.
 
   // save part of xml object as stencil
   const attachmentSnippet = kursSpec.elements[0].elements[0].elements[0].elements[0].elements[20].elements[0].elements[0]
