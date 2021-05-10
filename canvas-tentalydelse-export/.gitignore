@@ -1,0 +1,9 @@
+node_modules/
+Export/
+.env
+.vscode
+*.csv
+*.jpg
+*.jpeg
+*.pdf
+*.txt
