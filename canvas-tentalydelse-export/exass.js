@@ -7,7 +7,10 @@ const fs = require('fs')
 const got = require('got')
 const convert = require('xml-js')
 const sanitize = require('sanitize-filename')
+const replaceSpecialCharacters = require('replace-special-characters')
 
+// const token = process.env.CANVAS_API_TOKEN
+// const url = process.env.CANVAS_API_URL
 const token = process.env.CANVAS_API_TOKEN_TEST
 const url = process.env.CANVAS_API_URL_TEST
 const canvas = Canvas(url, token)
@@ -149,7 +152,7 @@ function ifFilesDoneMakeXML (i, j, filesListLength, courseId, courseInfo, attach
 async function saveAssignments (courseId, parsedAssignments, dir, eDir, attachmentList, attachmentDate) {
   try {
     parsedAssignments.forEach(element => {
-      const sanitizedElementName = sanitize(element.name)
+      const sanitizedElementName = replaceSpecialCharacters(sanitize(element.name))
       const path = `${eDir}${dir}/UPPGIFT_${element.id}_${sanitizedElementName}.txt` // actual path to save file
       const xmlPath = `UPPGIFT_${element.id}_${sanitizedElementName}.txt` // path for the archive xml file (for batch exports)
       const assignment = ( // compose assignment text file
@@ -296,41 +299,58 @@ async function downloadAttachmentsAndMakeXml (filesList, dir, aDir, eDir, attach
       try {
         var i = 0
         var j = 0
+        const normalizedName = replaceSpecialCharacters(obj.name) // remove special characters like å, ä, ö
 
         if (obj.lock === false) { // some files in Canvas can be locked, which results in no download url, causing an error
-          const downloadStream = got.stream(obj.url) // obj.url is the download url obtained from API call
-          const fileWriterStream = createWriteStream(`${eDir}${dir}${aDir}/FILE_${obj.id}_${obj.name}`)
-          // eDir is general Export directory
-          // dir is current course directory
-          // aDir is attachment directory
-          // obj holds file name and id
+          const dlFromCanvas = function (retryCount = 0) { // added retry
+            const downloadStream = got.stream(obj.url) // obj.url is the download url obtained from API call
+            downloadStream.retryCount = retryCount
+            const filepath = `${eDir}${dir}${aDir}/FILE_${obj.id}_${normalizedName}`
+            const fileWriterStream = createWriteStream(filepath)
+            // eDir is general Export directory
+            // dir is current course directory
+            // aDir is attachment directory
+            // obj holds file name and id
 
-          // download using GOT
-          downloadStream
-            .on('error', async (e) => {
-              console.error(`- CID: ${courseId} - ERROR DL: ${e.message}`)
-            })
+            // download using GOT
+            downloadStream
+              .on('error', async (e) => {
+                console.error(`- CID: ${courseId} - ERROR DL: ${e.message}, Retry count: ${downloadStream.retryCount}`)
+                if (fileWriterStream) { // on fail, destroy fileWriteStream and remove file, update the lock file
+                  fileWriterStream.destroy()
+                }
+                fs.unlinkSync(filepath)
+                const fileMessage = `Failed to download file 'FILE_${obj.id}_${normalizedName}' with ID: ${obj.id}. Reason: ${e.message}, Retry count: ${downloadStream.retryCount}\n`
+                fs.appendFile(lockFilePath, fileMessage, (err) => {
+                  if (err) throw err
+                  j++
+                  ifFilesDoneMakeXML(i, j, filesList.length, courseId, courseInfo, attachmentList, attachmentDate, dir, eDir)
+                })
+              })
+              .once('retry', dlFromCanvas) // on retry -> retry!
 
-          fileWriterStream
-            .on('error', async (e) => {
-              console.error(`- CID: ${courseId} - ERROR DL WRITE: "${obj.id}_${obj.name}" to system: ${e.message}`)
-            })
-            .on('finish', async () => {
-              console.log(`- CID: ${courseId} - DOWNLOAD OK: ${eDir}${dir}${aDir}/${obj.id}_${obj.name}`)
-              attachmentList.push(`${obj.id}_${obj.name}`)
-              attachmentDate.push(obj.updated)
-              i++
-              ifFilesDoneMakeXML(i, j, filesList.length, courseId, courseInfo, attachmentList, attachmentDate, dir, eDir)
-            })
-          downloadStream.pipe(fileWriterStream)
+            fileWriterStream
+              .on('error', async (e) => {
+                console.error(`- CID: ${courseId} - ERROR DL WRITE: "${obj.id}_${normalizedName}" to system: ${e.message}`)
+              })
+              .on('finish', async () => {
+                console.log(`- CID: ${courseId} - DOWNLOAD OK: ${filepath}`)
+                attachmentList.push(`FILE_${obj.id}_${normalizedName}`)
+                attachmentDate.push(obj.updated)
+                i++
+                ifFilesDoneMakeXML(i, j, filesList.length, courseId, courseInfo, attachmentList, attachmentDate, dir, eDir)
+              })
+            downloadStream.pipe(fileWriterStream)
+          }
+          dlFromCanvas()
         } else { // if file is locked, or missing, note it down
-          const fileMessage = `Failed to download file '${obj.name}' with ID: ${obj.id}. Reason: ${obj.lockExp}\n`
+          const fileMessage = `Failed to download file '${normalizedName}' with ID: ${obj.id}. Reason: ${obj.lockExp}\n`
           fs.appendFile(lockFilePath, fileMessage, (err) => {
             if (err) throw err
             j++
-            ifFilesDoneMakeXML(i, j, filesList.length, courseId, courseInfo, attachmentList, attachmentDate, dir, eDir)
+            ifFilesDoneMakeXML(i, j, filesList.length, courseId, courseInfo, attachmentList, attachmentDate, dir, eDir) // if I don't put this here, xml is not made if there are no files to download. To be fixed?
           })
-          console.info(`- CID: ${courseId} - FILE LOCK: "${obj.name}" FILE ID: ${obj.id}. Continuing...`)
+          console.info(`- CID: ${courseId} - FILE LOCK: "${normalizedName}" FILE ID: ${obj.id}. Continuing...`)
           ifFilesDoneMakeXML(i, j, filesList.length, courseId, courseInfo, attachmentList, attachmentDate, dir, eDir)
         }
       } catch (e) {
