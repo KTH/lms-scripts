@@ -196,7 +196,7 @@ async function getCourse (courseId) {
   const assignments = await canvas.get(`courses/${courseId}/assignments`)
   const assIds = getAssignmentDetails(assignments.body)
   var eDir = './Export'
-  var dir = `/${sanitize(courseInfo.body.name)}`
+  var dir = `/${replaceSpecialCharacters(sanitize(courseInfo.body.name))}`
   var aDir = ''
   handleDirectory(`${eDir}${dir}`)
   handleDirectory(`${eDir}${dir}${aDir}`)
