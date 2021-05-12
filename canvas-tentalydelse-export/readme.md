@@ -24,6 +24,6 @@ Canvas attachments cannot be downloaded directly, so for each file, a separate c
 
 For files that are removed from Canvas (404) I decided to create a similar object called `failFile`.
 
-Both `dlFile` and `failFile` are then pushed together into `fileArr` array, that get’s passed on to download function `downloadAttachmentsAndMakeXml()`. Due to asynchronous nature of the download, and few possible outcomes from the function, ‘pre-flight check’ function `downloadAttachmentsAndMakeXml()` can be called from a few places.
+Both `dlFile` and `failFile` are then pushed together into `fileArr` array, that get’s passed on to download function `downloadAttachmentsAndMakeXml()`. Due to asynchronous nature of the download, and few possible outcomes from the function, ‘pre-flight check’ function `ifFilesDoneMakeXML()` can be called from a few places.
 
 If all files are accounted for, we can proceed to `makeXml()` which takes provided archive XML stencil, slices it up, and inserts course data, along with all the successfully downloaded attachments and assignment export files created in the export. Files that failed to download are gathered together in a `lockedFIles.txt` file, with Canvas File ID and reason for being listed there.
