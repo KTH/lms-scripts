@@ -266,7 +266,7 @@ async function getAssignments (courseId, assIds, parsedAssignments, fileDownload
                     img: ['src', 'alt', 'data-api-endpoint']
                   }
                 }),
-                answers: quizQuestionAnswersArr
+                answers: quizQuestionAnswersArr.join(', ')
               }
               var processedQuestionString = (
                 `Question Name: ${processedQuestion.name}`).concat('\n',
