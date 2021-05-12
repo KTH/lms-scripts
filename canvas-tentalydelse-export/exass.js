@@ -15,6 +15,7 @@ const token = process.env.CANVAS_API_TOKEN_TEST
 const url = process.env.CANVAS_API_URL_TEST
 const canvas = Canvas(url, token)
 
+// https://www.npmjs.com/package/stripchar ?
 // https://www.npmjs.com/package/bee-queue ?
 
 const config = {
@@ -96,11 +97,12 @@ function getAssignmentDetails (arr) {
 }
 
 // create sort version of assignment object
-function createAssignmentObject (id, name, description, fileObjArr, updated) {
+function createAssignmentObject (id, name, description, fileObjArr, updated, type) {
   const assignmentObj = {
     id: id,
     name: sanitize(name),
     updated: updated,
+    type: type,
     description: description,
     fileList: {
       ids: [],
@@ -153,8 +155,15 @@ async function saveAssignments (courseId, parsedAssignments, dir, eDir, attachme
   try {
     parsedAssignments.forEach(element => {
       const sanitizedElementName = replaceSpecialCharacters(sanitize(element.name))
-      const path = `${eDir}${dir}/UPPGIFT_${element.id}_${sanitizedElementName}.txt` // actual path to save file
-      const xmlPath = `UPPGIFT_${element.id}_${sanitizedElementName}.txt` // path for the archive xml file (for batch exports)
+      var prefix = ''
+      if (element.type === 'online_upload') {
+        prefix = 'UPPGIFT_'
+      }
+      if (element.type === 'online_quiz') {
+        prefix = 'QUIZ_'
+      }
+      const path = `${eDir}${dir}/${prefix}${element.id}_${sanitizedElementName}.txt` // actual path to save file
+      const xmlPath = `${prefix}${element.id}_${sanitizedElementName}.txt` // path for the archive xml file (for batch exports)
       const assignment = ( // compose assignment text file
         `ASSIGNMENT NAME: ${element.name}`).concat('\n',
         `LAST UPDATED AT: ${convertDate(element.updated, 'dt')}`, '\n',
@@ -175,7 +184,7 @@ async function saveAssignments (courseId, parsedAssignments, dir, eDir, attachme
         fs.write(fd, buffer, 0, buffer.length, null, function (e) {
           if (e) console.error(`- CID: ${courseId} could not write file: ${e}`)
           fs.close(fd, function () {
-            console.info(`- CID: ${courseId} - SAVE OK: ${eDir}${dir}/${element.id}_${sanitizedElementName}.txt`)
+            console.info(`- CID: ${courseId} - SAVE OK: ${eDir}${dir}/${prefix}${element.id}_${sanitizedElementName}.txt`)
           })
         })
       })
@@ -196,7 +205,7 @@ async function getCourse (courseId) {
   const assignments = await canvas.get(`courses/${courseId}/assignments`)
   const assIds = getAssignmentDetails(assignments.body)
   var eDir = './Export'
-  var dir = `/${sanitize(courseInfo.body.name)}`
+  var dir = `/${replaceSpecialCharacters(sanitize(courseInfo.body.name))}`
   var aDir = ''
   handleDirectory(`${eDir}${dir}`)
   handleDirectory(`${eDir}${dir}${aDir}`)
@@ -210,31 +219,85 @@ async function getAssignments (courseId, assIds, parsedAssignments, fileDownload
   for (const assignmentId of assIds) {
     try {
       const assignment = await canvas.get(`courses/${courseId}/assignments/${assignmentId}`)
-      if (assignment.body.workflow_state === 'published') {
-        if (assignment.body.submission_types[0] === 'online_upload') {
-          var sanitizedDescription = sanitizeHtml(assignment.body.description, {
-            allowedTags: ['img', 'a', 'em'],
-            allowedAttributes: {
-              a: ['href'],
-              img: ['src', 'alt', 'data-api-endpoint']
-            }
-          })
-          var fileIdList = getUniqueFileUrls(sanitizedDescription)
-          console.log(`- CID: ${courseId} - Getting Assignment ID: ${assignment.body.id}: ${assignment.body.name}`)
-          if (fileIdList !== [] && fileIdList !== undefined) { // can be undefined for a number of reasons
-            var fileObjArr = await processFiles(courseId, fileIdList)
-            if (fileObjArr !== [] && fileObjArr !== undefined) { // can be undefined for a number of reasons
-              fileObjArr.forEach(file => {
-                fileDownloadList.push(file)
-              })
+      if (assignment.body.workflow_state === 'published') { // if published
+        if (assignment.body.submission_types.includes('online_upload') || assignment.body.is_quiz_assignment) { // if upload or classic quiz
+          if (assignment.body.submission_types.includes('online_upload')) { // for upload
+            var sanitizedDescription = sanitizeHtml(assignment.body.description, {
+              allowedTags: ['img', 'a', 'em'],
+              allowedAttributes: {
+                a: ['href'],
+                img: ['src', 'alt', 'data-api-endpoint']
+              }
+            })
+            var fileIdList = getUniqueFileUrls(sanitizedDescription)
+            console.log(`- CID: ${courseId} - Getting Assignment ID: ${assignment.body.id}: ${assignment.body.name}`)
+            if (fileIdList !== [] && fileIdList !== undefined) { // can be undefined for a number of reasons
+              var fileObjArr = await processFiles(courseId, fileIdList)
+              if (fileObjArr !== [] && fileObjArr !== undefined) { // can be undefined for a number of reasons
+                fileObjArr.forEach(file => {
+                  fileDownloadList.push(file)
+                })
+              } else {
+                fileObjArr = []
+              }
             } else {
-              fileObjArr = []
+              fileIdList = []
             }
-          } else {
-            fileIdList = []
+            var currentAss = createAssignmentObject(assignment.body.id, assignment.body.name, sanitizedDescription, fileObjArr, assignment.body.updated_at, 'online_upload')
+            parsedAssignments.push(currentAss)
+          } else { // for classic quiz
+            const quizId = assignment.body.quiz_id
+            console.log(`- CID: ${courseId} - Getting Quiz - Assignment ID: ${assignment.body.id}: ${assignment.body.name} Quiz ID: ${quizId}`)
+            const quizQuestionsArr = []
+            const quizQuestions = await canvas.get(`courses/${courseId}/quizzes/${quizId}/questions`)
+
+            for (const quizQuestion of quizQuestions.body) {
+              const quizQuestionAnswersArr = []
+              for (const quizAnswers of quizQuestion.answers) {
+                quizQuestionAnswersArr.push((`'${quizAnswers.text}'`).concat(` with weight:${quizAnswers.weight}`))
+              }
+              const processedQuestion = {
+                name: quizQuestion.question_name,
+                type: quizQuestion.question_type,
+                text: sanitizeHtml(quizQuestion.question_text, {
+                  allowedTags: ['img', 'a', 'em'],
+                  allowedAttributes: {
+                    a: ['href'],
+                    img: ['src', 'alt', 'data-api-endpoint']
+                  }
+                }),
+                answers: quizQuestionAnswersArr
+              }
+              var processedQuestionString = (
+                `Question Name: ${processedQuestion.name}`).concat('\n',
+                `Quiz Question Type: ${processedQuestion.type}`, '\n',
+                '------ QUIZ QUESTION TEXT BEGIN ------', '\n',
+                processedQuestion.text, '\n',
+                '------ QUIZ QUESTION TEXT END ------', '\n',
+                `Possible Answers: ${processedQuestion.answers}`, '\n'
+                )
+              quizQuestionsArr.push(processedQuestionString)
+            }
+
+            var quizQuestionsString = quizQuestionsArr.join('\n')
+            var qFileIdList = getUniqueFileUrls(quizQuestionsString)
+            console.log(`- CID: ${courseId} - Getting Assignment ID: ${assignment.body.id}: ${assignment.body.name}`)
+            if (qFileIdList !== [] && qFileIdList !== undefined) { // can be undefined for a number of reasons
+              var qFileObjArr = await processFiles(courseId, qFileIdList)
+              if (qFileObjArr !== [] && qFileObjArr !== undefined) { // can be undefined for a number of reasons
+                qFileObjArr.forEach(file => {
+                  fileDownloadList.push(file)
+                })
+              } else {
+                qFileObjArr = []
+              }
+            } else {
+              qFileIdList = []
+            }
+            var currentQuiz = createAssignmentObject(assignment.body.id, assignment.body.name, quizQuestionsString, qFileObjArr, assignment.body.updated_at, 'online_quiz')
+            parsedAssignments.push(currentQuiz)
+            // console.log(currentQuiz)
           }
-          var currentAss = createAssignmentObject(assignment.body.id, assignment.body.name, sanitizedDescription, fileObjArr, assignment.body.updated_at)
-          parsedAssignments.push(currentAss)
         }
       }
     } catch (e) {
