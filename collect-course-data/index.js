@@ -450,6 +450,15 @@ async function start () {
     ]
   })
   for await (const course of courses) {
+    if (
+      course.sis_course_id &&
+      process.env.MATCH_SIS_ID &&
+      !course.sis_course_id.match(process.env.MATCH_SIS_ID)
+    ) {
+      console.debug('sis id doesnt match', process.env.MATCH_SIS_ID, 'skipping.')
+      continue
+    }
+
     const courseId = course.id
     if (courseId < process.env.APPEND_FROM_ID) {
       console.debug(`Skipping ${course.name} due to append mode.`)
