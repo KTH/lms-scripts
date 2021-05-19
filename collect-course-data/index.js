@@ -1,4 +1,6 @@
 require('dotenv').config()
+require('@kth/reqvars').check()
+
 // const transferToLadokData = require('./utils/transferToLadokData')
 const CanvasApi = require('@kth/canvas-api')
 const got = require('got')
@@ -564,6 +566,7 @@ async function start () {
       .concat(participationData)
     fs.appendFileSync(outputPath, `${outputData.join(';')}\n`)
   }
+  console.log('Done.')
 }
 
 start()
