@@ -459,6 +459,11 @@ async function start () {
       continue
     }
 
+    if(!course.sis_course_id){
+      console.log('Skipping course without sis_course_id', course.name)
+      continue
+    }
+
     const courseId = course.id
     if (courseId < process.env.APPEND_FROM_ID) {
       console.debug(`Skipping ${course.name} due to append mode.`)
