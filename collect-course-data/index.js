@@ -455,7 +455,7 @@ async function start () {
       process.env.MATCH_SIS_ID &&
       !course.sis_course_id.match(process.env.MATCH_SIS_ID)
     ) {
-      console.debug('sis id doesnt match', process.env.MATCH_SIS_ID, 'skipping.')
+      console.debug(`sis id doesnt match${process.env.MATCH_SIS_ID} (${course.sis_course_id}), skipping`)
       continue
     }
 
