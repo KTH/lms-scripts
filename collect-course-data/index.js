@@ -447,7 +447,9 @@ async function start () {
       'teachers',
       'concluded',
       'syllabus_body'
-    ]
+    ],
+    per_page: 100,
+    page: 100
   })
   for await (const course of courses) {
     if (
@@ -455,12 +457,18 @@ async function start () {
       process.env.MATCH_SIS_ID &&
       !course.sis_course_id.match(process.env.MATCH_SIS_ID)
     ) {
-      console.debug(`sis id doesnt match${process.env.MATCH_SIS_ID} (${course.sis_course_id}), skipping`)
+      console.debug(
+        `sis id doesnt match ${process.env.MATCH_SIS_ID} (${course.sis_course_id}, ${course.id}), skipping`
+      )
       continue
     }
 
-    if(!course.sis_course_id){
-      console.log('Skipping course without sis_course_id', course.name)
+    if (!course.sis_course_id) {
+      console.log(
+        'Skipping course without sis_course_id',
+        course.name,
+        course.id
+      )
       continue
     }
 
