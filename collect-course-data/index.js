@@ -448,8 +448,8 @@ async function start () {
       'concluded',
       'syllabus_body'
     ],
-    per_page: 100,
-    page: 100
+    per_page: process.env.PER_PAGE,
+    page: process.env.PAGE
   })
   for await (const course of courses) {
     if (
