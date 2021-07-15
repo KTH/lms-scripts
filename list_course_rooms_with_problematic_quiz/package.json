@@ -1,0 +1,15 @@
+{
+  "name": "list_course_rooms_with_problematic_quiz",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@kth/canvas-api": "^3.1.1",
+    "dotenv": "^10.0.0"
+  }
+}
