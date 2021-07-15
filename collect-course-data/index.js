@@ -232,21 +232,28 @@ async function getAssignmentData (canvas, courseId) {
     assignment => assignment.is_quiz_lti_assignment
   )
 
-  const assignmentSubmissions = (
-    await canvas
-      .list(`courses/${courseId}/students/submissions`, {
-        'student_ids[]': 'all',
-        assignment_ids: publishedAssignments.map(assignment => assignment.id),
-        workflow_state: ['graded', 'submitted', 'pending_review']
-      })
-      .toArray()
-  ).length
+  let submissionsCount = 0
+  try {
+    submissionsCount = (
+      await canvas
+        .list(`courses/${courseId}/students/submissions`, {
+          'student_ids[]': 'all',
+          assignment_ids: publishedAssignments.map(assignment => assignment.id),
+          workflow_state: ['graded', 'submitted', 'pending_review']
+        })
+        .toArray()
+    ).length
+  } catch (e) {
+    console.warn(
+      'An error occured when trying to get submissions. Using 0 submissions for this course room.'
+    )
+  }
 
   return {
     assignments: publishedAssignments.length,
     quizAssignments: publishedQuizAssignments.length,
     ltiAssignments: publishedLTIAssignments.length,
-    assignmentSubmissions
+    assignmentSubmissions: submissionsCount
   }
 }
 
@@ -448,8 +455,8 @@ async function start () {
       'concluded',
       'syllabus_body'
     ],
-    per_page: 100,
-    page: 100
+    per_page: process.env.PER_PAGE,
+    page: process.env.PAGE
   })
   for await (const course of courses) {
     if (
