@@ -522,14 +522,14 @@ async function start () {
       subAccount,
       sections,
       crossListedSections,
-      sectionIds.join(','),
+      `"${sectionIds.join(',')}"`,
       course.teachers.length, // Note: (Teacher, Course Responsible, Examiner, Ext. teacher, Course admin).
       course.total_students, // Note: Active and invited "students" (Student, Re-reg student, Ext. student, PhD student, Manually added student, Admitted not registered student).
       isPublished(course.workflow_state),
       pageViews > 0,
       semester + year,
       course.start_at, // Note: Somewhat speculative. If we can do a perfect mapping with KOPPS, the information from that source is likely better.
-      periods.join(','),
+      `"${periods.join(',')}"`,
       year,
       getLicense(course.license),
       getVisibility(course.is_public, course.is_public_to_auth_users),
