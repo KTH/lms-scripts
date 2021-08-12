@@ -1,4 +1,6 @@
 require('dotenv').config()
+require('@kth/reqvars').check()
+
 // const transferToLadokData = require('./utils/transferToLadokData')
 const CanvasApi = require('@kth/canvas-api')
 const got = require('got')
@@ -123,7 +125,7 @@ function getSubAccountType (accountName) {
 
 async function getSectionData (canvas, courseId) {
   const sectionsResponse = await canvas
-    .list(`/courses/${courseId}/sections`)
+    .list(`courses/${courseId}/sections`)
     .toArray()
 
   const sections = sectionsResponse.length
@@ -157,7 +159,7 @@ function isPublished (state) {
 async function getStudentSummary (canvas, courseId) {
   try {
     const students = canvas.list(
-      `/courses/${courseId}/analytics/student_summaries`
+      `courses/${courseId}/analytics/student_summaries`
     )
     let pageViews = 0
     let numberOfStudents = 0
@@ -212,14 +214,14 @@ function getVisibility (isPublic, isPublicToAuthUsers) {
 
 async function getGroupData (canvas, courseId) {
   const groupsWithMembers = (
-    await canvas.list(`/courses/${courseId}/groups`).toArray()
+    await canvas.list(`courses/${courseId}/groups`).toArray()
   ).filter(group => group.members_count > 0)
   return groupsWithMembers.length
 }
 
 async function getAssignmentData (canvas, courseId) {
   const publishedAssignments = (
-    await canvas.list(`/courses/${courseId}/assignments`).toArray()
+    await canvas.list(`courses/${courseId}/assignments`).toArray()
   ).filter(assignment => assignment.published)
 
   const publishedQuizAssignments = publishedAssignments.filter(
@@ -230,26 +232,33 @@ async function getAssignmentData (canvas, courseId) {
     assignment => assignment.is_quiz_lti_assignment
   )
 
-  const assignmentSubmissions = (
-    await canvas
-      .list(`/courses/${courseId}/students/submissions`, {
-        'student_ids[]': 'all',
-        assignment_ids: publishedAssignments.map(assignment => assignment.id),
-        workflow_state: ['graded', 'submitted', 'pending_review']
-      })
-      .toArray()
-  ).length
+  let submissionsCount = 0
+  try {
+    submissionsCount = (
+      await canvas
+        .list(`courses/${courseId}/students/submissions`, {
+          'student_ids[]': 'all',
+          assignment_ids: publishedAssignments.map(assignment => assignment.id),
+          workflow_state: ['graded', 'submitted', 'pending_review']
+        })
+        .toArray()
+    ).length
+  } catch (e) {
+    console.warn(
+      'An error occured when trying to get submissions. Using 0 submissions for this course room.'
+    )
+  }
 
   return {
     assignments: publishedAssignments.length,
     quizAssignments: publishedQuizAssignments.length,
     ltiAssignments: publishedLTIAssignments.length,
-    assignmentSubmissions
+    assignmentSubmissions: submissionsCount
   }
 }
 
 async function getDiscussionData (canvas, courseId) {
-  const topics = canvas.list(`/courses/${courseId}/discussion_topics`)
+  const topics = canvas.list(`courses/${courseId}/discussion_topics`)
 
   let discussions = 0
   let posts = 0
@@ -257,7 +266,7 @@ async function getDiscussionData (canvas, courseId) {
     discussions++
 
     const entries = canvas.list(
-      `/courses/${courseId}/discussion_topics/${topic.id}/entries`
+      `courses/${courseId}/discussion_topics/${topic.id}/entries`
     )
     for await (entry of entries) {
       posts++
@@ -265,7 +274,7 @@ async function getDiscussionData (canvas, courseId) {
         posts += (
           await canvas
             .list(
-              `/courses/${courseId}/discussion_topics/${topic.id}/entries/${entry.id}/replies`
+              `courses/${courseId}/discussion_topics/${topic.id}/entries/${entry.id}/replies`
             )
             .toArray()
         ).length
@@ -281,7 +290,7 @@ async function getDiscussionData (canvas, courseId) {
 async function getPages (canvas, courseId) {
   return (
     await canvas
-      .list(`/courses/${courseId}/pages`, { published: true })
+      .list(`courses/${courseId}/pages`, { published: true })
       .toArray()
   ).length
 }
@@ -289,21 +298,21 @@ async function getPages (canvas, courseId) {
 async function getFiles (canvas, courseId) {
   return (
     await canvas
-      .list(`/courses/${courseId}/files`, { 'only[]': 'names' })
+      .list(`courses/${courseId}/files`, { 'only[]': 'names' })
       .toArray()
   ).length
 }
 
 async function hasOutcomes (canvas, courseId) {
   return (
-    await canvas.list(`/courses/${courseId}/outcome_group_links`).toArray()
+    await canvas.list(`courses/${courseId}/outcome_group_links`).toArray()
   ).length
     ? true
     : false
 }
 
 async function getQuizData (canvas, courseId) {
-  const quizzesResponse = canvas.list(`/courses/${courseId}/quizzes`)
+  const quizzesResponse = canvas.list(`courses/${courseId}/quizzes`)
 
   let quizzes = 0
   let quizSubmissions = 0
@@ -311,7 +320,7 @@ async function getQuizData (canvas, courseId) {
     if (quiz.published) {
       quizzes++
       const submissionsResponse = await canvas.get(
-        `/courses/${courseId}/quizzes/${quiz.id}/submissions`
+        `courses/${courseId}/quizzes/${quiz.id}/submissions`
       )
       for (submission of submissionsResponse.body.quiz_submissions) {
         if (
@@ -328,7 +337,7 @@ async function getQuizData (canvas, courseId) {
 }
 
 async function getModuleData (canvas, courseId) {
-  const modulesResponse = canvas.list(`/courses/${courseId}/modules`)
+  const modulesResponse = canvas.list(`courses/${courseId}/modules`)
 
   let modules = 0
   let moduleItems = 0
@@ -336,7 +345,7 @@ async function getModuleData (canvas, courseId) {
     if (mod.published) {
       modules++
       const itemsResponse = canvas.list(
-        `/courses/${courseId}/modules/${mod.id}/items`
+        `courses/${courseId}/modules/${mod.id}/items`
       )
       for await (item of itemsResponse) {
         if (item.published) {
@@ -350,7 +359,7 @@ async function getModuleData (canvas, courseId) {
 }
 
 async function getConferences (canvas, courseId) {
-  return (await canvas.get(`/courses/${courseId}/conferences`)).body.conferences
+  return (await canvas.get(`courses/${courseId}/conferences`)).body.conferences
     .length
 }
 
@@ -359,7 +368,7 @@ async function getExternalTools (canvas, courseId) {
   let redirects = 0
 
   const externalTools = await canvas
-    .list(`/courses/${courseId}/external_tools`)
+    .list(`courses/${courseId}/external_tools`)
     .toArray()
 
   ltis = externalTools.length
@@ -378,7 +387,7 @@ async function start () {
   if (!fs.existsSync(FOLDER_NAME)) {
     fs.mkdirSync('output')
   }
-  const outputPath = path.resolve('./output', "stats-courserooms.csv")
+  const outputPath = path.resolve('./output', 'stats-courserooms.csv')
   if (fs.existsSync(outputPath) && !process.env.APPEND_FROM_ID) {
     fs.unlinkSync(outputPath)
   }
@@ -438,16 +447,38 @@ async function start () {
     process.env.CANVAS_API_URL,
     process.env.CANVAS_ACCESS_TOKEN
   )
-  const courses = canvas.list('/accounts/1/courses', {
+  const courses = canvas.list('accounts/1/courses', {
     include: [
       'account',
       'total_students',
       'teachers',
       'concluded',
       'syllabus_body'
-    ]
+    ],
+    per_page: process.env.PER_PAGE,
+    page: process.env.PAGE
   })
   for await (const course of courses) {
+    if (
+      course.sis_course_id &&
+      process.env.MATCH_SIS_ID &&
+      !course.sis_course_id.match(process.env.MATCH_SIS_ID)
+    ) {
+      console.debug(
+        `sis id doesnt match ${process.env.MATCH_SIS_ID} (${course.sis_course_id}, ${course.id}), skipping`
+      )
+      continue
+    }
+
+    if (!course.sis_course_id) {
+      console.log(
+        'Skipping course without sis_course_id',
+        course.name,
+        course.id
+      )
+      continue
+    }
+
     const courseId = course.id
     if (courseId < process.env.APPEND_FROM_ID) {
       console.debug(`Skipping ${course.name} due to append mode.`)
@@ -491,19 +522,19 @@ async function start () {
       subAccount,
       sections,
       crossListedSections,
-      sectionIds.join(','),
+      `"${sectionIds.join(',')}"`,
       course.teachers.length, // Note: (Teacher, Course Responsible, Examiner, Ext. teacher, Course admin).
       course.total_students, // Note: Active and invited "students" (Student, Re-reg student, Ext. student, PhD student, Manually added student, Admitted not registered student).
       isPublished(course.workflow_state),
       pageViews > 0,
       semester + year,
       course.start_at, // Note: Somewhat speculative. If we can do a perfect mapping with KOPPS, the information from that source is likely better.
-      periods.join(','),
+      `"${periods.join(',')}"`,
       year,
       getLicense(course.license),
       getVisibility(course.is_public, course.is_public_to_auth_users),
       language,
-      course.locale || 'default',
+      course.locale || 'default'
       // transferredCourses.includes(courseId)
     ]
 
@@ -564,6 +595,7 @@ async function start () {
       .concat(participationData)
     fs.appendFileSync(outputPath, `${outputData.join(';')}\n`)
   }
+  console.log('Done.')
 }
 
 start()

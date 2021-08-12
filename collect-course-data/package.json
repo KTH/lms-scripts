@@ -30,6 +30,7 @@
   },
   "dependencies": {
     "@kth/canvas-api": "^2.1.0",
+    "@kth/reqvars": "^2.0.1",
     "dotenv": "^8.2.0",
     "got": "^10.6.0",
     "mongodb": "^3.5.3",

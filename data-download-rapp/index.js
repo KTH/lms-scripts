@@ -75,7 +75,7 @@ async function start () {
 
     writeStatsContent([
       course.id,
-      course.sis_course_id,
+    `"${course.sis_course_id}"`,
       course.workflow_state,
       course.total_students,
 
