@@ -2,11 +2,11 @@ require('dotenv').config()
 const CanvasApi = require('@kth/canvas-api')
 const fs = require('fs')
 
-const canvas = CanvasApi('https://kth.instructure.com/api/v1', process.env.CANVAS_API_TOKEN)
+const canvas = new CanvasApi('https://kth.instructure.com/api/v1', process.env.CANVAS_API_TOKEN)
 
 async function getAnalytics (course) {
   try {
-    const activity = await canvas.list(`/courses/${course.id}/analytics/activity`).toArray()
+    const activity = await canvas.list(`courses/${course.id}/analytics/activity`).toArray()
 
     return activity
       .reduce(
@@ -22,7 +22,7 @@ async function getAnalytics (course) {
 }
 
 async function getDetails (course) {
-  const assignments = await canvas.list(`/courses/${course.id}/assignments`).toArray()
+  const assignments = await canvas.list(`courses/${course.id}/assignments`).toArray()
 
   return {
     assignments: assignments.length
@@ -34,7 +34,6 @@ async function getGradeChanges(course, startTime) {
     start_time: startTime
   })
 
-  console.log(auditLog.events)
 
   return auditLog.events.map(event => event.created_at)
 }
@@ -66,7 +65,7 @@ async function start () {
     'course_id'
   ].join(",") + "\n")
 
-  const courses = canvas.list(`/accounts/56/courses`, {include: 'total_students'})
+  const courses = canvas.list(`accounts/56/courses`, {include: 'total_students'})
 
   for await (const course of courses) {
     const analytics = await getAnalytics(course)
