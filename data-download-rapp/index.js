@@ -29,14 +29,22 @@ async function getDetails (course) {
   }
 }
 
+async function getGradeChanges(course, startTime) {
+  const {body: auditLog} = await canvas.get(`audit/grade_change/courses/${course.id}`, {
+    start_time: startTime
+  })
+
+  console.log(auditLog.events)
+
+  return auditLog.events.map(event => event.created_at)
+}
+
 async function start () {
+  console.log('Writing to /tmp/stats.csv and /tmp/audit-public.csv')
+  const writeStatsContent = content => fs.appendFileSync('/tmp/stats.csv', content.join(',') + '\n')
+  const writeAuditContent = content => fs.appendFileSync('/tmp/audit-public.csv', content.join(',') + '\n')
 
-  console.log('Writing to /tmp/stats.csv')
-  const filePath = '/tmp/stats.csv'
-  const writeHeaders = headers => fs.writeFileSync(filePath, headers.join(',') + '\n')
-  const writeContent = content => fs.appendFileSync(filePath, content.join(',') + '\n')
-
-  writeHeaders([
+  fs.writeFileSync("/tmp/stats.csv", [
     'course_id',
     'course_sis_id',
     'workflow_state',
@@ -51,15 +59,21 @@ async function start () {
     'views',
 
     'assignments'
-  ])
+  ].join(",") + "\n")
+
+  fs.writeFileSync("/tmp/audit-public.csv", [
+    'date',
+    'course_id'
+  ].join(",") + "\n")
 
   const courses = canvas.list(`/accounts/56/courses`, {include: 'total_students'})
 
   for await (const course of courses) {
     const analytics = await getAnalytics(course)
     const details = await getDetails(course)
+    const gradeChanges = await getGradeChanges(course, "2020-08-01T00:00:00")
 
-    writeContent([
+    writeStatsContent([
       course.id,
       course.sis_course_id,
       course.workflow_state,
@@ -75,6 +89,13 @@ async function start () {
 
       details.assignments
     ])
+
+    for (const gradeChange of gradeChanges) {
+      writeAuditContent([
+        gradeChange,
+        course.id
+      ])
+    }
   }
 }
 
