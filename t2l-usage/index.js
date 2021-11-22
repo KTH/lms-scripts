@@ -12,7 +12,8 @@ async function run() {
     const outputPath = './output.csv'
     const headers = [
       'date',
-      'course'
+      'course',
+      'user'
     ]
 
     fs.writeFileSync(outputPath, `${headers.join(';')}\n`)
@@ -30,7 +31,8 @@ async function run() {
     await r1.forEach(r => {
       const out = [
         new Date(r.transfer_timestamp).toISOString(),
-        r.from_course_id
+        r.from_course_id,
+        r.user_canvas_id,
       ]
 
       fs.appendFileSync(outputPath, `${out.join(';')}\n`)
@@ -40,7 +42,8 @@ async function run() {
       try {
         const out = [
           new Date(r.timestamp).toISOString(),
-          r.course
+          r.course?.id || r.course,
+          r.user?.id || r.requester?.userId,
         ]
 
         fs.appendFileSync(outputPath, `${out.join(';')}\n`)
