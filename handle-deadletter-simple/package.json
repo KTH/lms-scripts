@@ -11,7 +11,7 @@
   "license": "MIT",
   "dependencies": {
     "amqp10": "^3.6.0",
-    "inquirer": "^5.2.0",
+    "inquirer": "^8.2.0",
     "urlencode": "^1.1.0"
   }
 }
