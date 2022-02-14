@@ -1,4 +1,5 @@
 require('dotenv').config()
+require("@kth/reqvars").check();
 const got = require('got')
 const inquirer = require('inquirer')
 const chalk = require('chalk')
@@ -8,8 +9,8 @@ inquirer.registerPrompt('autocomplete', require('inquirer-autocomplete-prompt'))
 
 const ladokGot = got.extend({
   baseUrl: process.env.LADOK_API_BASEURL,
-  pfx: fs.readFileSync('./certificate.pfx'),
-  // pfx: Buffer.from(process.env.LADOK_API_PFX_BASE64, 'base64'),
+  // pfx: fs.readFileSync('./certificate.pfx'),
+  pfx: Buffer.from(process.env.LADOK_API_PFX_BASE64, 'base64'),
   passphrase: process.env.LADOK_API_PFX_PASSPHRASE,
   json: true
 })
