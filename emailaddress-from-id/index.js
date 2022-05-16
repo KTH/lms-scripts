@@ -14,23 +14,13 @@ fs.createReadStream(path.resolve(__dirname, 'users.csv'))
     // pipe the parsed input into a csv formatter
     .pipe(csv.format({ headers: true }))
     // Using the transform function from the formatting stream
-    .transform((row, next) => {
-      next(null, row)
-
-        // User.findById(row.id, (err, user) => {
-        //     if (err) {
-        //         return next(err);
-        //     }
-        //     return next(null, {
-        //         id: row.id,
-        //         firstName: row.first_name,
-        //         lastName: row.last_name,
-        //         address: row.address,
-        //         // properties from user
-        //         isVerified: user.isVerified,
-        //         hasLoggedIn: user.hasLoggedIn,
-        //         age: user.age,
-        //     });
-        // });
+  .transform(async (row, next) => {
+    try{
+      const {body:user} = await canvasApi.get(`users/${row.canvasId}`)
+      next(null, {...row,email:user.email})
+    }catch(e){
+      next(null,row)
+        // Ignore errors
+      }
     })
     .pipe(out)
