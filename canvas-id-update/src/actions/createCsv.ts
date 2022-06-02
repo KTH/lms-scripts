@@ -1,4 +1,3 @@
-import got from "got";
 import { getCourseRounds } from "./kopps";
 
 const log = console;
