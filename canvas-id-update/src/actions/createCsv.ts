@@ -24,8 +24,16 @@ const TERMS_TO_IMPORT = [
   "20232"
 ];
 
+function createFolder(folderPath: string) {
+  try {
+    fs.statSync(folderPath);
+  } catch (err) {
+    // Folder doesn't exist, create
+    fs.mkdirSync(folderPath, { recursive: true });
+  }
+}
 
-function createCsvSerializer(name) {
+function createCsvSerializer(name: string) {
   const writer = fs.createWriteStream(name);
   const serializer = csv.format({ headers: true });
   serializer.pipe(writer);
@@ -44,6 +52,8 @@ function createSisCourseId({ courseCode, startTerm, roundId }) {
 
 (async function run() {
   const outpPath = path.resolve(process.cwd(), OUTP_DIR);
+  createFolder(outpPath);
+  
   const courseCsv = createCsvSerializer(`${outpPath}/courseChangeSisId.csv`);
   const sectionCsv = createCsvSerializer(`${outpPath}/sectionChangeSisId.csv`);
 
