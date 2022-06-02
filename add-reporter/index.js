@@ -1,4 +1,5 @@
 require('dotenv').config()
+require("@kth/reqvars").check();
 const got = require('got')
 const inquirer = require('inquirer')
 const chalk = require('chalk')

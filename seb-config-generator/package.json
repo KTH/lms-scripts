@@ -1,0 +1,7 @@
+{
+  "dependencies": {
+    "fs": "^0.0.1-security",
+    "inquirer": "^8.2.2",
+    "xml-js": "^1.6.11"
+  }
+}
