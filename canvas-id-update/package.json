@@ -12,6 +12,7 @@
   "dependencies": {
     "@swc/core": "^1.2.165",
     "dotenv": "^16.0.0",
+    "fast-csv": "^4.3.6",
     "got": "^11.0.0",
     "ts-node": "^10.7.0",
     "yargs": "^17.5.1"
