@@ -63,9 +63,8 @@ const cli = yargs(hideBin(process.argv))
         csvFile
       });
       break;
-    case "help":
     default:
-      console.log(cli.help());
+      console.log("Try 'cli help' for instructions.");
   }
 
 })();
