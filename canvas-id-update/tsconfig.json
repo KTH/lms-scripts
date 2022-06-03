@@ -1,7 +1,8 @@
 {
-    "compilerOptions": {
-      "isolatedModules": true,
-      "resolveJsonModule": true,
-      "esModuleInterop": true
-    }
+  "compilerOptions": {
+    "isolatedModules": true,
+    "resolveJsonModule": true,
+    "esModuleInterop": true,
+    "downlevelIteration": true
   }
+}
