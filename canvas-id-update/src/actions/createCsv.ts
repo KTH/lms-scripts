@@ -3,8 +3,6 @@ import fs from "node:fs";
 import path from "node:path";
 import { getCourseRounds } from "./kopps";
 
-const log = console;
-const OUTP_DIR = "outp";
 const TERMS_TO_IMPORT = [
   "20161",
   "20162",
@@ -50,8 +48,8 @@ function createSisCourseId({ courseCode, startTerm, roundId }) {
   return `${courseCode}${term}${shortYear}${roundId}`;
 }
 
-(async function run() {
-  const outpDirPath = path.resolve(process.cwd(), OUTP_DIR);
+export default async function run({ outpDir }) {
+  const outpDirPath = path.resolve(process.cwd(), outpDir);
   createFolder(outpDirPath);
   
   const courseCsv = createCsvSerializer(`${outpDirPath}/courseChangeSisId.csv`);
@@ -93,6 +91,6 @@ function createSisCourseId({ courseCode, startTerm, roundId }) {
   courseCsv.end();
   sectionCsv.end();
   skippedCsv.end();
-})();
+};
 
 

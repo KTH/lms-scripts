@@ -1,50 +1,67 @@
 import yargs from "yargs";
-import { hideBin } from 'yargs/helpers'
+import { hideBin } from 'yargs/helpers';
+import packageJson from '../package.json';
+import createCvs from "./actions/createCsv";
+import auditCourses from "./actions/auditCourses";
 
-yargs(hideBin(process.argv))
+const cli = yargs(hideBin(process.argv))
   .usage('canvasIdUpdate <command>')
   .demand(1, 'must provide a valid command')
-  .option('dry-run', {
-    default: false,
-    describe: `Perform a dry run`,
-    type: 'boolean'
+  // .option('dry-run', {
+  //   default: false,
+  //   describe: `Perform a dry run`,
+  //   type: 'boolean'
+  // })
+  .option('outDir', {
+    demand: false,
+    describe: 'directory for output',
+    type: 'string',
+    default: 'outp'
   })
-  .command('snapshot', 'create a snapshopt', (yargs) => {
-    yargs.option('table', {
-      alias: 't',
-      demand: true,
-      describe: 'table to snapshot',
-      type: 'string'
-    })
-      .help('help')
-  })
-  .command('revert', 'revert to given snapshot', (yargs) => {
-    yargs.option('table', {
-      alias: 't',
-      demand: true,
-      describe: 'table to snapshot',
-      type: 'string'
-    })
-      .option('file', {
-        alias: 'f',
+  .command('create-csv', 'Create the sis-id change files')
+  .command('audit-courses', 'Check generated courses file against report', (yargs) => {
+    yargs
+      .option('reportFile', {
         demand: true,
-        describe: 'file containing snapshot',
+        describe: 'path to the course report file from Canvas',
         type: 'string'
-      });
-  })
-  .command('update', 'perform id update based on given snapshot', (yargs) => {
-    yargs.option('table', {
-      alias: 't',
-      demand: true,
-      describe: 'table to update',
-      type: 'string'
-    })
-      .option('file', {
-        alias: 'f',
+      })
+      .option('csvFile', {
         demand: true,
-        describe: 'file containing snapshot',
+        describe: 'path to the generated course csv file',
         type: 'string'
-      });
+      })
   })
   .help('help')
+  .version("CLI v." + packageJson.version);
 
+(async function () {
+  const argv = cli.parse(process.argv.slice(2));
+  const command = argv._[0];
+
+  const {
+    outDir,
+  } = argv;
+  switch (command) {
+    case "create-csv":
+      await createCvs({
+        outpDir: outDir
+      });
+      break;
+    case "audit-courses":
+      const {
+        reportFile,
+        csvFile
+      } = argv;
+      await auditCourses({
+        outpDir: outDir,
+        reportFile,
+        csvFile
+      });
+      break;
+    case "help":
+    default:
+      console.log(cli.help());
+  }
+
+})();

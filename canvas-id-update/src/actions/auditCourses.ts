@@ -2,12 +2,11 @@ import { parse } from "fast-csv";
 import fs from "node:fs";
 import path from "node:path";
 
-const OUTP_DIR = path.resolve(process.cwd(), "outp");
-const INPUT_DIR = path.resolve(process.cwd(), "provisioning-old");
 const COURSE_IDS = new Map();
 
-async function populateCourseIds() {
-  const courseProvisioningFile = path.join(INPUT_DIR, "courses.csv");
+async function populateCourseIds(reportFile) {
+
+  const courseProvisioningFile = path.resolve(process.cwd(), reportFile);
 
   return new Promise((resolve) => {
     fs.createReadStream(courseProvisioningFile)
@@ -22,8 +21,8 @@ async function populateCourseIds() {
   });
 }
 
-async function checkIds() {
-  const changeCourseSisIdFile = path.join(OUTP_DIR, "courseChangeSisId.csv");
+async function checkIds(csvFile) {
+  const changeCourseSisIdFile = path.resolve(process.cwd(), csvFile);
 
   return new Promise((resolve) => {
     fs.createReadStream(changeCourseSisIdFile)
@@ -38,9 +37,9 @@ async function checkIds() {
   });
 }
 
-async function run() {
-  await populateCourseIds();
-  await checkIds();
+export default async function run({ outpDir, reportFile, csvFile }) {
+  await populateCourseIds(reportFile);
+  await checkIds(csvFile);
 
   for (const [id, willBeChanged] of COURSE_IDS) {
     if (!willBeChanged) {
@@ -50,5 +49,3 @@ async function run() {
     }
   }
 }
-
-run();

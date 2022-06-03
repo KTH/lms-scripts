@@ -1,0 +1,10 @@
+#!/bin/sh
+BASEDIR=$(dirname "$0")
+if [ ! -d "$BASEDIR/node_modules" ];
+then
+  echo "Installing required packages to run command"
+  (cd $BASEDIR; npm i)
+fi
+
+# Run command using ts-node
+(cd $BASEDIR; npx ts-node --transpile-only src/index.ts "$@")
