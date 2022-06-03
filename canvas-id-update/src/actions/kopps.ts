@@ -42,7 +42,8 @@ export async function getCourseRounds(term) {
 
   if (cleanCourseRounds.length < courseRounds.length) {
     log.warn(
-      `Response from KOPPS: Found ${courseRounds.length - cleanCourseRounds.length
+      `Response from KOPPS: Found ${
+        courseRounds.length - cleanCourseRounds.length
       } course rounds without the properties [state, first_period, offering_id, first_semester, course_code]. They will be ignored`
     );
   }
