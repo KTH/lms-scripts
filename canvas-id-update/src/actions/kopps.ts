@@ -50,25 +50,23 @@ export async function getCourseRounds(term) {
 
   log.debug(`KOPPS: cleanCourseRounds: ${cleanCourseRounds.length}`);
 
-  return cleanCourseRounds
-    .filter((c) => c.state === "Godkänt" || c.state === "Fullsatt")
-    .map((c) => ({
-      courseCode: c.course_code,
-      firstYearsemester: c.first_yearsemester,
-      roundId: c.offering_id,
-      shortName: c.short_name,
-      language: c.language,
-      schoolCode: c.school_code,
-      ladokUid: c.course_round_applications[0].ladok_uid,
-      title: {
-        sv: c.course_name,
-        en: c.course_name_en,
-      },
-      startTerm: c.first_yearsemester,
-      offeredSemesters: c.offered_semesters.map((offered) => ({
-        semester: offered.semester,
-        startDate: offered.start_date,
-        endDate: offered.end_date,
-      })),
-    }));
+  return cleanCourseRounds.map((c) => ({
+    courseCode: c.course_code,
+    firstYearsemester: c.first_yearsemester,
+    roundId: c.offering_id,
+    shortName: c.short_name,
+    language: c.language,
+    schoolCode: c.school_code,
+    ladokUid: c.course_round_applications[0].ladok_uid,
+    title: {
+      sv: c.course_name,
+      en: c.course_name_en,
+    },
+    startTerm: c.first_yearsemester,
+    offeredSemesters: c.offered_semesters.map((offered) => ({
+      semester: offered.semester,
+      startDate: offered.start_date,
+      endDate: offered.end_date,
+    })),
+  }));
 }
