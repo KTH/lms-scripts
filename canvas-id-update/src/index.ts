@@ -5,7 +5,7 @@ import createCvs from "./actions/createCsv";
 import auditCourses from "./actions/auditCourses";
 
 const cli = yargs(hideBin(process.argv))
-  .usage('canvasIdUpdate <command>')
+  .usage('cli <command> [options]')
   .demand(1, 'must provide a valid command')
   // .option('dry-run', {
   //   default: false,
@@ -18,9 +18,13 @@ const cli = yargs(hideBin(process.argv))
     type: 'string',
     default: 'outp'
   })
-  .command('create-csv', 'Create the sis-id change files')
+  .command('create-csv', 'Create the sis-id change files', (yargs) => {
+    yargs
+      .version(false);
+  })
   .command('audit-courses', 'Check generated courses file against report', (yargs) => {
     yargs
+      .version(false)
       .option('reportFile', {
         demand: true,
         describe: 'path to the course report file from Canvas',
