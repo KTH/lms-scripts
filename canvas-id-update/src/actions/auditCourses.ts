@@ -39,14 +39,40 @@ async function checkIds(csvFile) {
 }
 
 export default async function run({ outpDir, reportFile, csvFile }) {
+  const outpDirPath = path.resolve(process.cwd(), outpDir);
+  createFolder(outpDirPath);
+
+  const missingCsv = createCsvSerializer(`${outpDirPath}/coursesMissingInKopps.csv`);
+
+
   await populateCourseIds(reportFile);
   await checkIds(csvFile);
 
   for (const [id, willBeChanged] of COURSE_IDS) {
     if (!willBeChanged) {
-      if (id.length < 15) {
-        console.log(id);
-      }
+      if (shouldBeExcluded(id)) continue;
+      
+      missingCsv.write({ id });
     }
   }
+  missingCsv.end();
+}
+
+function shouldBeExcluded(id): boolean {
+  // Skip tentarum
+  if (id.startsWith("AKT.")) {
+    return true;
+  }
+
+  // Skip RAPP-rum
+  if (id.startsWith("RAPP_")) {
+    return true;
+  }
+
+  // Skip old tentarum id format
+  if (/^\w{6,7}_\w{4}_\d{4}-\d{2}-\d{2}$/.test(id)) {
+    return true;
+  }
+
+  return false;
 }
