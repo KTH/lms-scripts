@@ -51,17 +51,26 @@ function createSisCourseId({ courseCode, startTerm, roundId }) {
 }
 
 (async function run() {
-  const outpPath = path.resolve(process.cwd(), OUTP_DIR);
-  createFolder(outpPath);
+  const outpDirPath = path.resolve(process.cwd(), OUTP_DIR);
+  createFolder(outpDirPath);
   
-  const courseCsv = createCsvSerializer(`${outpPath}/courseChangeSisId.csv`);
-  const sectionCsv = createCsvSerializer(`${outpPath}/sectionChangeSisId.csv`);
+  const courseCsv = createCsvSerializer(`${outpDirPath}/courseChangeSisId.csv`);
+  const sectionCsv = createCsvSerializer(`${outpDirPath}/sectionChangeSisId.csv`);
+  const skippedCsv = createCsvSerializer(`${outpDirPath}/skippedChangeSisId.csv`);
 
   for (const term of TERMS_TO_IMPORT) {
     const courseRounds = await getCourseRounds(term);
     for (const row of courseRounds) {
 
       // TODO: In early courses, the LADOK UID is missing in Kopps. How do we want to handle this?
+      if (!row.ladokUid) {
+        const outpRow = {
+          ...row,
+          sis_id: createSisCourseId(row)
+        }
+        skippedCsv.write(outpRow);
+        continue;
+      }
 
       const newRow = {
         old_id: createSisCourseId(row),
@@ -83,6 +92,7 @@ function createSisCourseId({ courseCode, startTerm, roundId }) {
 
   courseCsv.end();
   sectionCsv.end();
+  skippedCsv.end();
 })();
 
 
