@@ -1,7 +1,6 @@
-import * as csv from "fast-csv";
-import fs from "node:fs";
 import path from "node:path";
 import { getCourseRounds } from "./kopps";
+import { createFolder, createCsvSerializer } from "./utils";
 
 const TERMS_TO_IMPORT = [
   "20161",
@@ -22,21 +21,7 @@ const TERMS_TO_IMPORT = [
   "20232"
 ];
 
-function createFolder(folderPath: string) {
-  try {
-    fs.statSync(folderPath);
-  } catch (err) {
-    // Folder doesn't exist, create
-    fs.mkdirSync(folderPath, { recursive: true });
-  }
-}
 
-function createCsvSerializer(name: string) {
-  const writer = fs.createWriteStream(name);
-  const serializer = csv.format({ headers: true });
-  serializer.pipe(writer);
-  return serializer;
-}
 
 const termLookup = { VT: 1, HT: 2, 1: "VT", 2: "HT" };
 

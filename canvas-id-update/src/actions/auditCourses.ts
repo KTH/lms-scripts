@@ -1,6 +1,7 @@
 import { parse } from "fast-csv";
 import fs from "node:fs";
 import path from "node:path";
+import { createFolder, createCsvSerializer } from "./utils";
 
 const COURSE_IDS = new Map();
 
