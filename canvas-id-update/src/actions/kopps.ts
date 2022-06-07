@@ -7,8 +7,29 @@ class KoppsError extends Error {
   code: number;
 }
 
+export interface KoppsRound {
+  courseCode: string;
+  firstYearsemester: string;
+  roundId: string;
+  shortName: string;
+  language: string;
+  schoolCode: string;
+  ladokUid: string;
+  applicationCode: string;
+  title: {
+    sv: string;
+    en: string;
+  };
+  startTerm: string;
+  offeredSemesters: {
+    semester: string;
+    startDate: string;
+    endDate: string;
+  }[];
+}
+
 /** Singleton object wrapping API calls to Kopps. */
-export async function getCourseRounds(term) {
+export async function getCourseRounds(term): Promise<KoppsRound[]> {
   let courseRounds = [];
   try {
     log.debug(`Reaching Kopps endpoint /courses/offerings for ${term}`);
@@ -51,6 +72,7 @@ export async function getCourseRounds(term) {
   log.debug(`KOPPS: cleanCourseRounds: ${cleanCourseRounds.length}`);
 
   return cleanCourseRounds.map((c) => ({
+    
     courseCode: c.course_code,
     firstYearsemester: c.first_yearsemester,
     roundId: c.offering_id,
@@ -58,6 +80,8 @@ export async function getCourseRounds(term) {
     language: c.language,
     schoolCode: c.school_code,
     ladokUid: c.course_round_applications[0].ladok_uid,
+    applicationCode:
+        c.course_round_applications[0].course_round_application_code,
     title: {
       sv: c.course_name,
       en: c.course_name_en,

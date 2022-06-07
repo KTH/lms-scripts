@@ -1,6 +1,8 @@
 import path from "path";
 import { getCourseRounds } from "./kopps";
-import { createCsvSerializer, createFolder, createSisCourseId, TERMS_TO_IMPORT } from "./utils";
+import { createAccountId, createCsvSerializer, createEndDate, createFolder, createLongName, createShortName, createSisCourseId, createStartDate, TERMS_TO_IMPORT } from "./utils";
+
+
 
 export default async function run({ outpDir }) {
     const outpDirPath = path.resolve(process.cwd(), outpDir);
@@ -21,7 +23,16 @@ export default async function run({ outpDir }) {
             skippedCsv.write(outpRow);
             continue;
           }
-
+          courseCsv.write({
+            course_id: row.ladokUid,
+            short_name: createShortName(row),
+            long_name: createLongName(row),
+            start_date: createStartDate(row),
+            end_date: createEndDate(row),
+            account_id: createAccountId(row),
+            integration_id: undefined,
+            status: "active",
+          })
       }
     }
   
