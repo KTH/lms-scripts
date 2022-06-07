@@ -18,6 +18,12 @@ export default async function run({ outpDir }) {
   const skippedCsv = createCsvSerializer(
     `${outpDirPath}/skippedChangeSisId.csv`
   );
+  const revertCourseCsv = createCsvSerializer(
+    `${outpDirPath}/revertCourseChangeSisId.csv`
+  );
+  const revertSectionCsv = createCsvSerializer(
+    `${outpDirPath}/revertSectionChangeSisId.csv`
+  );
 
   for (const term of TERMS_TO_IMPORT) {
     const courseRounds = await getCourseRounds(term);
@@ -46,10 +52,29 @@ export default async function run({ outpDir }) {
         ...newRow,
         type: "section",
       });
+
+      // Files to allow easy revert of ID change
+      const revertRow = {
+        old_id: row.ladokUid,
+        new_id: createSisCourseId(row),
+        new_integration_id: row.ladokUid,
+      };
+
+      revertCourseCsv.write({
+        ...revertRow,
+        type: "course",
+      });
+
+      revertSectionCsv.write({
+        ...revertRow,
+        type: "section",
+      });
     }
   }
 
   courseCsv.end();
   sectionCsv.end();
   skippedCsv.end();
+  revertCourseCsv.end();
+  revertSectionCsv.end();
 }
