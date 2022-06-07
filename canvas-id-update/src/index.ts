@@ -1,7 +1,7 @@
 import yargs from "yargs";
 import { hideBin } from 'yargs/helpers';
 import packageJson from '../package.json';
-import createCvs from "./actions/createCsv";
+import createCvs from "./actions/createCsvForIdChange";
 import auditCourses from "./actions/auditCourses";
 
 const cli = yargs(hideBin(process.argv))
@@ -18,7 +18,7 @@ const cli = yargs(hideBin(process.argv))
     type: 'string',
     default: 'outp'
   })
-  .command('create-csv', 'Create the sis-id change files', (yargs) => {
+  .command('create-csv-for-id-change', 'Create the sis-id change files', (yargs) => {
     yargs
       .version(false);
   })
@@ -47,7 +47,7 @@ const cli = yargs(hideBin(process.argv))
     outDir,
   } = argv;
   switch (command) {
-    case "create-csv":
+    case "create-csv-for-id-change":
       await createCvs({
         outpDir: outDir
       });
