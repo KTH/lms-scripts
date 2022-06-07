@@ -1,7 +1,8 @@
 import yargs from "yargs";
 import { hideBin } from 'yargs/helpers';
 import packageJson from '../package.json';
-import createCvs from "./actions/createCsvForIdChange";
+import createCsvForIdChange from "./actions/createCsvForIdChange";
+import createCsvForNameChange from "./actions/createCsvForNameChange";
 import auditCourses from "./actions/auditCourses";
 
 const cli = yargs(hideBin(process.argv))
@@ -19,6 +20,10 @@ const cli = yargs(hideBin(process.argv))
     default: 'outp'
   })
   .command('create-csv-for-id-change', 'Create the sis-id change files', (yargs) => {
+    yargs
+      .version(false);
+  })
+  .command('create-csv-for-name-change', 'Create the sis-id change files', (yargs) => {
     yargs
       .version(false);
   })
@@ -48,11 +53,16 @@ const cli = yargs(hideBin(process.argv))
   } = argv;
   switch (command) {
     case "create-csv-for-id-change":
-      await createCvs({
+      await createCsvForIdChange({
         outpDir: outDir
       });
       break;
-    case "audit-courses":
+    case "create-csv-for-name-change":
+        await createCsvForNameChange({
+          outpDir: outDir
+        });
+        break;
+      case "audit-courses":
       const {
         reportFile,
         csvFile

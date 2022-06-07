@@ -1,37 +1,11 @@
 import path from "node:path";
 import { getCourseRounds } from "./kopps";
-import { createFolder, createCsvSerializer } from "./utils";
-
-const TERMS_TO_IMPORT = [
-  "20161",
-  "20162",
-  "20171",
-  "20172",
-  "20181",
-  "20182",
-  "20191",
-  "20192",
-  "20201",
-  "20202",
-  "20211",
-  "20212",
-  "20221",
-  "20222",
-  "20231",
-  "20232"
-];
+import { createFolder, createCsvSerializer, TERMS_TO_IMPORT, createSisCourseId } from "./utils";
 
 
 
-const termLookup = { VT: 1, HT: 2, 1: "VT", 2: "HT" };
 
-function createSisCourseId({ courseCode, startTerm, roundId }) {
-  const termNum = startTerm[4];
-  const shortYear = `${startTerm[2]}${startTerm[3]}`;
-  const term = termLookup[termNum];
 
-  return `${courseCode}${term}${shortYear}${roundId}`;
-}
 
 export default async function run({ outpDir }) {
   const outpDirPath = path.resolve(process.cwd(), outpDir);
@@ -45,7 +19,6 @@ export default async function run({ outpDir }) {
     const courseRounds = await getCourseRounds(term);
     for (const row of courseRounds) {
 
-      // TODO: In early courses, the LADOK UID is missing in Kopps. How do we want to handle this?
       if (!row.ladokUid) {
         const outpRow = {
           ...row,
