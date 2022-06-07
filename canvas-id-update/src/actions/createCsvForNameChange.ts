@@ -7,11 +7,11 @@ import { createAccountId, createCsvSerializer, createEndDate, createFolder, crea
 export default async function run({ outpDir }) {
     const outpDirPath = path.resolve(process.cwd(), outpDir);
     createFolder(outpDirPath);
-    
+
     const courseCsv = createCsvSerializer(`${outpDirPath}/courseChangeName.csv`);
     const sectionCsv = createCsvSerializer(`${outpDirPath}/sectionChangeName.csv`);
     const skippedCsv = createCsvSerializer(`${outpDirPath}/skippedChangeName.csv`);
-  
+
     for (const term of TERMS_TO_IMPORT) {
       const courseRounds = await getCourseRounds(term);
       for (const row of courseRounds) {
@@ -35,7 +35,7 @@ export default async function run({ outpDir }) {
           })
       }
     }
-  
+
     courseCsv.end();
     sectionCsv.end();
     skippedCsv.end();
