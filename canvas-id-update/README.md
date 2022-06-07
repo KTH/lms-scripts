@@ -1,6 +1,6 @@
 ## Examples
 ```sh
-# 1. Download SIS-report (courses) from Canvas
+# 1. Download provisioning report from Canvas, content:courses and sections, include deleted, from Canvas
 
 # 2. Create the CSV-file
 $ ./cli create-csv
