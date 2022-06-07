@@ -45,6 +45,14 @@ export default async function run({ outpDir }) {
         integration_id: undefined,
         status: "active",
       });
+
+      sectionCsv.write({
+        section_id: row.ladokUid,
+        course_id: row.ladokUid,
+        integration_id: undefined,
+        name: createShortName(row),
+        status: "active",
+      });
     }
   }
 
