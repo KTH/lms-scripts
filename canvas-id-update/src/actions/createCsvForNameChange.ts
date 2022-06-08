@@ -12,7 +12,7 @@ import {
   TERMS_TO_IMPORT,
 } from "./utils";
 
-export default async function run({ outpDir }) {
+export default async function run({ outpDir, reportFile }) {
   const outpDirPath = path.resolve(process.cwd(), outpDir);
   createFolder(outpDirPath);
 

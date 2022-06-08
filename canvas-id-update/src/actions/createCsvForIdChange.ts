@@ -5,9 +5,10 @@ import {
   createCsvSerializer,
   TERMS_TO_IMPORT,
   createSisCourseId,
+  createCourseLookup,
 } from "./utils";
 
-export default async function run({ outpDir }) {
+export default async function run({ outpDir, reportFile }) {
   const outpDirPath = path.resolve(process.cwd(), outpDir);
   createFolder(outpDirPath);
 
@@ -24,6 +25,10 @@ export default async function run({ outpDir }) {
   const revertSectionCsv = createCsvSerializer(
     `${outpDirPath}/revertSectionChangeSisId.csv`
   );
+
+  const coursesInCanvas = await createCourseLookup({reportFile})
+  console.log(coursesInCanvas)
+  return
 
   for (const term of TERMS_TO_IMPORT) {
     const courseRounds = await getCourseRounds(term);

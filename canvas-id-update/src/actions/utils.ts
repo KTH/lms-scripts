@@ -1,7 +1,7 @@
 import { KoppsRound } from "./kopps";
 import * as csv from "fast-csv";
 import fs from "node:fs";
-
+import path from "node:path";
 export function createFolder(folderPath: string) {
   try {
     fs.statSync(folderPath);
@@ -38,6 +38,23 @@ export const TERMS_TO_IMPORT = [
   "20231",
   "20232"
 ];
+
+export function createCourseLookup({reportFile}): Promise<Map<string,{course_id, status, integration_id}>>{
+  const reportFilePath = path.resolve(process.cwd(), reportFile);
+  const result = new Map()
+
+  return new Promise((resolve) => {
+    fs.createReadStream(reportFilePath)
+      .pipe(csv.parse({ headers: true }))
+      .on("error", (error) => console.error(error))
+      .on("data", ({course_id, status, integration_id}) => {
+        if (!result.has(course_id)) {
+          result.set(course_id, {course_id, status, integration_id});
+        }
+      })
+      .on("end", ()=> resolve(result));
+  });
+}
 
 export function createSisCourseId({ courseCode, startTerm, roundId }) {
   const termNum = startTerm[4];

@@ -21,19 +21,29 @@ const cli = yargs(hideBin(process.argv))
   })
   .command('create-csv-for-id-change', 'Create the sis-id change files', (yargs) => {
     yargs
-      .version(false);
+    .version(false)
+    .option('reportFile', {
+      demand: true,
+      describe: 'path to the course report file from Canvas',
+      type: 'string'
+    })
   })
   .command('create-csv-for-name-change', 'Create the sis-id change files', (yargs) => {
     yargs
-      .version(false);
+    .version(false)
+    .option('reportFile', {
+      demand: true,
+      describe: 'path to the course report file from Canvas',
+      type: 'string'
+    })
   })
   .command('audit-courses', 'Check generated courses file against report', (yargs) => {
     yargs
-      .version(false)
-      .option('reportFile', {
-        demand: true,
-        describe: 'path to the course report file from Canvas',
-        type: 'string'
+    .version(false)
+    .option('reportFile', {
+      demand: true,
+      describe: 'path to the course report file from Canvas',
+      type: 'string'
       })
       .option('csvFile', {
         demand: true,
@@ -50,21 +60,23 @@ const cli = yargs(hideBin(process.argv))
 
   const {
     outDir,
+    reportFile
   } = argv;
   switch (command) {
     case "create-csv-for-id-change":
       await createCsvForIdChange({
-        outpDir: outDir
-      });
+        outpDir: outDir,
+        reportFile
+    });
       break;
     case "create-csv-for-name-change":
         await createCsvForNameChange({
-          outpDir: outDir
+          outpDir: outDir,
+          reportFile
         });
         break;
       case "audit-courses":
       const {
-        reportFile,
         csvFile
       } = argv;
       await auditCourses({
