@@ -8,6 +8,22 @@ import {
   createCourseLookup,
 } from "./utils";
 
+function shouldSkip({ coursesInCanvas, row }): string {
+
+  if (!row.ladokUid) {
+    return "MISSING_LADOKUID"
+  }
+  const sisId = createSisCourseId(row)
+  if (!coursesInCanvas.has(sisId)) {
+    return "MISSING_IN_CANVAS"
+  }
+
+  if (coursesInCanvas.get(sisId).status === 'deleted') {
+    return "DELETED_IN_CANVAS"
+  }
+  // Otherwise falsy 
+}
+
 export default async function run({ outpDir, reportFile }) {
   const outpDirPath = path.resolve(process.cwd(), outpDir);
   createFolder(outpDirPath);
@@ -26,17 +42,18 @@ export default async function run({ outpDir, reportFile }) {
     `${outpDirPath}/revertSectionChangeSisId.csv`
   );
 
-  const coursesInCanvas = await createCourseLookup({reportFile})
-  console.log(coursesInCanvas)
-  return
+  const coursesInCanvas = await createCourseLookup({ reportFile })
 
   for (const term of TERMS_TO_IMPORT) {
     const courseRounds = await getCourseRounds(term);
     for (const row of courseRounds) {
-      if (!row.ladokUid) {
+      const skipReason = shouldSkip({ coursesInCanvas, row })
+      if (skipReason) {
+
         const outpRow = {
           ...row,
           sis_id: createSisCourseId(row),
+          skipReason
         };
         skippedCsv.write(outpRow);
         continue;
