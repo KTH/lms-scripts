@@ -1,7 +1,9 @@
 import path from "path";
+import {shouldSkip} from "./createCsvForIdChange";
 import { getCourseRounds } from "./kopps";
 import {
   createAccountId,
+  createCourseLookup,
   createCsvSerializer,
   createEndDate,
   createFolder,
@@ -24,13 +26,18 @@ export default async function run({ outpDir, reportFile }) {
     `${outpDirPath}/skippedChangeName.csv`
   );
 
+  const coursesInCanvas = await createCourseLookup({ reportFile })
+
   for (const term of TERMS_TO_IMPORT) {
     const courseRounds = await getCourseRounds(term);
     for (const row of courseRounds) {
-      if (!row.ladokUid) {
+
+      const skipReason = shouldSkip({ coursesInCanvas, row })
+      if (skipReason) {
         const outpRow = {
           ...row,
           sis_id: createSisCourseId(row),
+          skipReason
         };
         skippedCsv.write(outpRow);
         continue;

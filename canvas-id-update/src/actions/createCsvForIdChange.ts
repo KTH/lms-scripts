@@ -8,7 +8,7 @@ import {
   createCourseLookup,
 } from "./utils";
 
-function shouldSkip({ coursesInCanvas, row }): string {
+export function shouldSkip({ coursesInCanvas, row }): string {
 
   if (!row.ladokUid) {
     return "MISSING_LADOKUID"
