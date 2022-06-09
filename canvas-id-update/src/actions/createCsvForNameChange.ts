@@ -27,16 +27,18 @@ export default async function run({ outpDir, reportFile }) {
   );
 
   const coursesInCanvas = await createCourseLookup({ reportFile })
+  const alreadyWrittenCourseRooms = {}
 
   for (const term of TERMS_TO_IMPORT) {
     const courseRounds = await getCourseRounds(term);
     for (const row of courseRounds) {
 
-      const skipReason = shouldSkip({ coursesInCanvas, row })
+      const skipReason = shouldSkip({ coursesInCanvas, row, alreadyWrittenCourseRooms })
+      const sisId = createSisCourseId(row)
       if (skipReason) {
         const outpRow = {
           ...row,
-          sis_id: createSisCourseId(row),
+          sis_id: sisId,
           skipReason
         };
         skippedCsv.write(outpRow);
@@ -52,6 +54,7 @@ export default async function run({ outpDir, reportFile }) {
         integration_id: undefined,
         status: "active",
       });
+      alreadyWrittenCourseRooms[sisId]=true
 
       sectionCsv.write({
         section_id: row.ladokUid,

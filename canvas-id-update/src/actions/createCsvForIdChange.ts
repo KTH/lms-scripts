@@ -8,7 +8,13 @@ import {
   createCourseLookup,
 } from "./utils";
 
-export function shouldSkip({ coursesInCanvas, row }): string {
+/*
+ * Kopps returns all course rounds, regardless if they have a course room in Canvas or not. 
+ * We only want to process currently existing course rooms. If these aren't skipped when we change the names we end up creating a lot of new course rooms.
+
+ * Plus we want to minimize the number of expected false errors
+ */
+export function shouldSkip({ coursesInCanvas, row, alreadyWrittenCourseRooms }): string {
 
   if (!row.ladokUid) {
     return "MISSING_LADOKUID"
@@ -20,6 +26,10 @@ export function shouldSkip({ coursesInCanvas, row }): string {
 
   if (coursesInCanvas.get(sisId).status === 'deleted') {
     return "DELETED_IN_CANVAS"
+  }
+
+  if(alreadyWrittenCourseRooms[sisId]){
+    return "DUPLICATE"
   }
   // Otherwise falsy 
 }
@@ -43,24 +53,25 @@ export default async function run({ outpDir, reportFile }) {
   );
 
   const coursesInCanvas = await createCourseLookup({ reportFile })
+  const alreadyWrittenCourseRooms = {}
 
   for (const term of TERMS_TO_IMPORT) {
     const courseRounds = await getCourseRounds(term);
     for (const row of courseRounds) {
-      const skipReason = shouldSkip({ coursesInCanvas, row })
+      const skipReason = shouldSkip({ coursesInCanvas, row, alreadyWrittenCourseRooms })
+      const sisId = createSisCourseId(row)
       if (skipReason) {
 
         const outpRow = {
           ...row,
-          sis_id: createSisCourseId(row),
+          sis_id: sisId,
           skipReason
         };
         skippedCsv.write(outpRow);
         continue;
       }
-
       const newRow = {
-        old_id: createSisCourseId(row),
+        old_id: sisId,
         new_id: row.ladokUid,
         new_integration_id: "<delete>", // We want to remove the integration id from the object
       };
@@ -69,6 +80,8 @@ export default async function run({ outpDir, reportFile }) {
         ...newRow,
         type: "course",
       });
+
+      alreadyWrittenCourseRooms[sisId]=true
 
       sectionCsv.write({
         ...newRow,
