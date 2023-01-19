@@ -3,7 +3,6 @@ require("@kth/reqvars").check();
 const got = require("got");
 const inquirer = require("inquirer");
 const chalk = require("chalk");
-// const organisations = require("./organisations");
 const fs = require("fs");
 inquirer.registerPrompt(
   "autocomplete",
@@ -19,12 +18,14 @@ const ladokGot = got.extend({
 });
 
 async function start() {
-  // const organisations = await ladokGot("kataloginformation/organisation");
-  const { body } = await ladokGot("kataloginformation/organisation", {
-    headers: {
-      Accept: "application/vnd.ladok-kataloginformation+json",
-    },
-  });
+  const { body: organisations } = await ladokGot(
+    "kataloginformation/organisation",
+    {
+      headers: {
+        Accept: "application/vnd.ladok-kataloginformation+json",
+      },
+    }
+  );
   const { body: authenticatedUser } = await ladokGot(
     "kataloginformation/anvandare/autentiserad",
     {
