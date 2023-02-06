@@ -107,8 +107,6 @@ async function start() {
         },
       }
     );
-    console.log(existingRattigheter);
-    // console.log(JSON.stringify(existingRattigheter, null, 2));
 
     const missingRattigheter = organisations.Organisationer.filter(
       (org) =>
@@ -119,14 +117,20 @@ async function start() {
       AnvandareUID: selectedUser.Uid,
       Informationsbehorighetsavgransningar: [],
       OrganisationUID: org.Uid,
+      Benamning: org.Benamning.sv,
       RattighetenAvser: "HEL_KURS_OCH_MODUL_RESULTAT",
     }));
 
     console.log(
-      `About to add reporter rights for ${missingRattigheter.length} organisations...`
+      `About to add reporter rights for ${missingRattigheter.length} organisations:`
     );
-    console.warn("Exiting!");
-    process.exit();
+    console.log(
+      JSON.stringify(
+        missingRattigheter.map((r) => r.Benamning),
+        null,
+        2
+      )
+    );
 
     await ladokGot.post("/resultat/resultatrattighet/organisation/rapportor", {
       body: { missingRattigheter },
