@@ -92,17 +92,44 @@ async function start() {
   });
 
   if (answer) {
-    const SkapaOrganisationsrattighet = organisations.Organisationer.map(
-      (org) => ({
-        AnvandareUID: selectedUser.Uid,
-        Informationsbehorighetsavgransningar: [],
-        OrganisationUID: org.Uid,
-        RattighetenAvser: "HEL_KURS_OCH_MODUL_RESULTAT",
-      })
+    const {
+      body: { Resultat: existingRattigheter },
+    } = await ladokGot.put(
+      `/resultat/resultatrattighet/resultatrattighet/rapportor/sok`,
+      {
+        body: {
+          AnvandareUID: selectedUser.Uid,
+          Limit: 1000,
+          Medarbetartyp: "RAPPORTOR",
+        },
+        headers: {
+          Accept: "application/json",
+        },
+      }
     );
+    console.log(existingRattigheter);
+    // console.log(JSON.stringify(existingRattigheter, null, 2));
+
+    const missingRattigheter = organisations.Organisationer.filter(
+      (org) =>
+        !existingRattigheter.find(
+          (existing) => existing.Organisation.Uid === org.Uid
+        )
+    ).map((org) => ({
+      AnvandareUID: selectedUser.Uid,
+      Informationsbehorighetsavgransningar: [],
+      OrganisationUID: org.Uid,
+      RattighetenAvser: "HEL_KURS_OCH_MODUL_RESULTAT",
+    }));
+
+    console.log(
+      `About to add reporter rights for ${missingRattigheter.length} organisations...`
+    );
+    console.warn("Exiting!");
+    process.exit();
 
     await ladokGot.post("/resultat/resultatrattighet/organisation/rapportor", {
-      body: { SkapaOrganisationsrattighet },
+      body: { missingRattigheter },
     });
 
     console.log("Done!!");
