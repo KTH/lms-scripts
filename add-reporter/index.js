@@ -113,27 +113,28 @@ async function start() {
         !existingRattigheter.find(
           (existing) => existing.Organisation.Uid === org.Uid
         )
-    ).map((org) => ({
-      AnvandareUID: selectedUser.Uid,
-      Informationsbehorighetsavgransningar: [],
-      OrganisationUID: org.Uid,
-      Benamning: org.Benamning.sv,
-      RattighetenAvser: "HEL_KURS_OCH_MODUL_RESULTAT",
-    }));
+    );
 
     console.log(
       `About to add reporter rights for ${missingRattigheter.length} organisations:`
     );
     console.log(
       JSON.stringify(
-        missingRattigheter.map((r) => r.Benamning),
+        missingRattigheter.map((r) => r.Benamning.sv),
         null,
         2
       )
     );
 
+    const SkapaOrganisationsrattighet = missingRattigheter.map((org) => ({
+      AnvandareUID: selectedUser.Uid,
+      Informationsbehorighetsavgransningar: [],
+      OrganisationUID: org.Uid,
+      RattighetenAvser: "HEL_KURS_OCH_MODUL_RESULTAT",
+    }));
+
     await ladokGot.post("/resultat/resultatrattighet/organisation/rapportor", {
-      body: { missingRattigheter },
+      body: { SkapaOrganisationsrattighet },
     });
 
     console.log("Done!!");
