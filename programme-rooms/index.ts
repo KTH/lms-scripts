@@ -1,4 +1,6 @@
 import got from "got";
+import * as csv from "fast-csv";
+import fs from "fs";
 
 // QUESTION: What determines language of program?
 // INVESTIGATE: Can we get LADOK OID for program?
@@ -46,7 +48,11 @@ const progRooms = await getProgrammeRooms();
 // - long_name -- "[CODE] Title ### hp"
 // - status -- active (active, deleted, completed, published)
 // - account_id -- "PROGRAMME_ROOMS" should be a new sub account, ask Martin
-console.log("course_id,short_name,long_name,status,account_id");
+const fileCourses = fs.createWriteStream("courses.csv");
+const streamCourses = csv.format({ headers: true });
+streamCourses.pipe(fileCourses);
+
+// console.log("course_id,short_name,long_name,status,account_id");
 for (const progRoom of progRooms) {
   const {
     programmeCode,
@@ -54,20 +60,41 @@ for (const progRoom of progRooms) {
     credits,
     creditUnitAbbr,
   } = progRoom;
-  console.log(
-    `PROG.${programmeCode}, ${programmeCode}, "${programmeCode} ${title}, ${credits} ${creditUnitAbbr}", active, PROGRAMME_ROOMS`
-  );
+  streamCourses.write({
+    course_id: `PROG.${programmeCode}`,
+    short_name: programmeCode,
+    long_name: `${programmeCode} ${title}, ${credits} ${creditUnitAbbr}`,
+    status: "active",
+    account_id: "PROGRAMME_ROOMS",
+  })
+  // console.log(
+  //   `PROG.${programmeCode}, ${programmeCode}, "${programmeCode} ${title}, ${credits} ${creditUnitAbbr}", active, PROGRAMME_ROOMS`
+  // );
 }
+streamCourses.end();
 
 // sections.csv
 // - section_id -- PROG.CFATE (same as course_id)
 // - course_id -- PROG.CFATE (see courses.csv)
 // - name -- CFATE
 // - status -- active (active, deleted)
-console.log("section_id,course_id,name,status");
+const fileSections = fs.createWriteStream("sections.csv");
+const streamSections = csv.format({ headers: true });
+streamSections.pipe(fileSections);
+
+// console.log("section_id,course_id,name,status");
 for (const progRoom of progRooms) {
   const { programmeCode } = progRoom;
-  console.log(
-    `PROG.${programmeCode}, PROG.${programmeCode}, ${programmeCode}, active`
-  );
+  streamSections.write({
+    section_id: `PROG.${programmeCode}`,
+    course_id: `PROG.${programmeCode}`,
+    name: programmeCode,
+    status: "active",
+  });
+  // console.log(
+  //   `PROG.${programmeCode}, PROG.${programmeCode}, ${programmeCode}, active`
+  // );
 }
+streamSections.end();
+
+console.log("Done");
