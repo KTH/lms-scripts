@@ -1,0 +1,21 @@
+{
+  "name": "programme-rooms",
+  "version": "0.1.0",
+  "description": "",
+  "main": "index.ts",
+  "type": "module",
+  "scripts": {
+    "start": "ts-node --esm index.ts",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "fast-csv": "^4.3.6",
+    "got": "^12.6.0",
+    "ts-node": "^10.9.1"
+  },
+  "devDependencies": {
+    "typescript": "^5.0.4"
+  }
+}
