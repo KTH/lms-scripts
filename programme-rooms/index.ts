@@ -62,7 +62,10 @@ for (const progRoom of progRooms) {
     credits,
     creditUnitAbbr,
   } = progRoom;
-  const displayTitle = title.match(/^masterprogram/i) ? `Programme Room for ${titleOtherLanguage}` : `Programrum för ${title}`;
+  let inEnglish = title.match(/^masterprogram/i)
+    || title.match(/^magisterprogram/i)
+    || programmeCode === "TCOMK";
+  const displayTitle = inEnglish ? `Programme Room for ${titleOtherLanguage}` : `Programrum för ${title}`;
   streamCourses.write({
     course_id: `PROG.${programmeCode}`,
     short_name: programmeCode,
