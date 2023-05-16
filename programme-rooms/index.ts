@@ -8,6 +8,7 @@ import fs from "fs";
 type ProgramRoom = {
   programmeCode: string;
   title: string;
+  titleOtherLanguage: string;
   credits: number;
   creditUnitAbbr: string;
 }
@@ -57,13 +58,15 @@ for (const progRoom of progRooms) {
   const {
     programmeCode,
     title,
+    titleOtherLanguage,
     credits,
     creditUnitAbbr,
   } = progRoom;
+  const displayTitle = title.match(/^masterprogram/i) ? titleOtherLanguage : title;
   streamCourses.write({
     course_id: `PROG.${programmeCode}`,
     short_name: programmeCode,
-    long_name: `${programmeCode} ${title}, ${credits} ${creditUnitAbbr}`,
+    long_name: `${programmeCode} ${displayTitle}, ${credits} ${creditUnitAbbr}`,
     status: "active",
     account_id: "PROGRAMME_ROOMS",
   })
