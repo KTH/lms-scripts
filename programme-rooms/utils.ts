@@ -32,6 +32,12 @@ type LadokProgrammeInstanceResponse = LadokResponse<{
   UtbildningstillfalleUID: string;
 }>;
 
+type LadokStudentResponse = LadokResponse<{
+  Student: {
+    Uid: string;
+  };
+}>;
+
 export async function getProgrammeRooms(): Promise<ProgramRoom[]> {
   const url = "https://api.kth.se/api/kopps/v2/programmes/all";
   return got(url).json();
@@ -72,19 +78,25 @@ export async function getProgrammeInstanceIds(
 
 /** Get all students given a "UtbildningstillfalleUID" */
 export async function getStudents(
-  utbildningstillfalleUID: string
+  utbildningstillfalleUID: string[]
 ): Promise<string[]> {
-  const url = `studiedeltagande/kurstillfallen/${utbildningstillfalleUID}/deltagare`;
+  const url = `studiedeltagande/deltagare/kurspaketeringstillfalle`;
 
-  const { body } = await gotClient.get<LadokResponse<{ Personnummer: string }>>(
-    url,
-    {
-      searchParams: {
-        page: 1,
-        limit: 400,
-      },
-    }
-  );
+  const { body } = await gotClient.put<LadokStudentResponse>(url, {
+    json: {
+      utbildningstillfalleUID: utbildningstillfalleUID,
+      deltagaretillstand: [
+        // Vilka studentgrupper ska inkluderas i sektioner?
+        "PAGAENDE",
+        "EJ_PAGAENDE_TILLFALLESBYTE",
+        "PAGAENDE_MED_SPARR",
+        "UPPEHÅLL",
+      ],
+      page: 1,
+      limit: 400,
+      orderby: ["EFTERNAMN_ASC", "FORNAMN_ASC", "PERSONNUMMER_ASC"],
+    },
+  });
 
   // Check that we got all items
   assert(
@@ -92,5 +104,5 @@ export async function getStudents(
     "Not all items were returned"
   );
 
-  return body.Resultat.map((item) => item.Personnummer);
+  return body.Resultat.map((item) => item.Student.Uid);
 }

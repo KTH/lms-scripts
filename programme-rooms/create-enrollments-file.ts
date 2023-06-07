@@ -1,23 +1,23 @@
 import got from "got";
 import * as csv from "fast-csv";
 import fs from "fs";
-import { getProgrammeInstanceIds, getProgrammeRooms } from "./utils.js";
+import {
+  getProgrammeInstanceIds,
+  getProgrammeRooms,
+  getStudents,
+} from "./utils.js";
 
 // Get all program codes
 const progRooms = await getProgrammeRooms();
 const codes = progRooms.map((progRoom) => progRoom.programmeCode);
 
-const instances: {
-  code: string;
-  id: string;
-}[] = [];
-
 for (const code of codes) {
   console.log(code);
   // Get all instances of a program
-  (await getProgrammeInstanceIds(code)).forEach((id) =>
-    instances.push({ code, id })
-  );
+  const instances = await getProgrammeInstanceIds(code);
+  const students = await getStudents(instances);
+
+  // ...
 }
 
 // For each instance, get all students
