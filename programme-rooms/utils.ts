@@ -90,7 +90,7 @@ export async function getStudents(
         "PAGAENDE",
         "EJ_PAGAENDE_TILLFALLESBYTE",
         "PAGAENDE_MED_SPARR",
-        "UPPEHÅLL",
+        "UPPEHALL",
       ],
       page: 1,
       limit: 400,
