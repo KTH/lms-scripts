@@ -1,16 +1,10 @@
 import got from "got";
 import * as csv from "fast-csv";
 import fs from "fs";
+import { getProgrammeRooms } from "./utils.js";
 
 // QUESTION: What determines language of program?
 // INVESTIGATE: Can we get LADOK OID for program?
-
-type ProgramRoom = {
-  programmeCode: string;
-  title: string;
-  credits: number;
-  creditUnitAbbr: string;
-}
 
 // 1. Call KOPPS API to get all program rooms
 /*
@@ -30,10 +24,6 @@ type ProgramRoom = {
   },
 
 */
-async function getProgrammeRooms(): Promise<ProgramRoom[]> {
-  const url = "https://api.kth.se/api/kopps/v2/programmes/all";
-  return got(url).json();
-}
 
 // 2. Print out the ones that are in use
 // - programCode
@@ -54,19 +44,14 @@ streamCourses.pipe(fileCourses);
 
 // console.log("course_id,short_name,long_name,status,account_id");
 for (const progRoom of progRooms) {
-  const {
-    programmeCode,
-    title,
-    credits,
-    creditUnitAbbr,
-  } = progRoom;
+  const { programmeCode, title, credits, creditUnitAbbr } = progRoom;
   streamCourses.write({
     course_id: `PROG.${programmeCode}`,
     short_name: programmeCode,
     long_name: `${programmeCode} ${title}, ${credits} ${creditUnitAbbr}`,
     status: "active",
     account_id: "PROGRAMME_ROOMS",
-  })
+  });
   // console.log(
   //   `PROG.${programmeCode}, ${programmeCode}, "${programmeCode} ${title}, ${credits} ${creditUnitAbbr}", active, PROGRAMME_ROOMS`
   // );
