@@ -6,6 +6,7 @@
   "type": "module",
   "scripts": {
     "start": "ts-node --esm index.ts",
+    "start-enrollment": "ts-node --esm create-enrollments-file.ts",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "",
