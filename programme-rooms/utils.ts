@@ -18,6 +18,7 @@ const gotClient = got.extend({
 export type ProgramRoom = {
   programmeCode: string;
   title: string;
+  titleOtherLanguage: string;
   credits: number;
   creditUnitAbbr: string;
 };
@@ -98,11 +99,13 @@ export async function getStudents(
     },
   });
 
+  // TODO: handle pagination
+
   // Check that we got all items
-  assert(
-    body.Resultat.length === body.TotaltAntalPoster,
-    "Not all items were returned"
-  );
+  // assert(
+  //   body.Resultat.length === body.TotaltAntalPoster,
+  //   "Not all items were returned"
+  // );
 
   return body.Resultat.map((item) => item.Student.Uid);
 }

@@ -6,6 +6,7 @@ import { getProgrammeRooms } from "./utils.js";
 // QUESTION: What determines language of program?
 // INVESTIGATE: Can we get LADOK OID for program?
 
+
 // 1. Call KOPPS API to get all program rooms
 /*
 
@@ -44,11 +45,21 @@ streamCourses.pipe(fileCourses);
 
 // console.log("course_id,short_name,long_name,status,account_id");
 for (const progRoom of progRooms) {
-  const { programmeCode, title, credits, creditUnitAbbr } = progRoom;
+  const {
+    programmeCode,
+    title,
+    titleOtherLanguage,
+    credits,
+    creditUnitAbbr,
+  } = progRoom;
+  let inEnglish = title.match(/^masterprogram/i)
+    || title.match(/^magisterprogram/i)
+    || programmeCode === "TCOMK";
+  const displayTitle = inEnglish ? `Programme Room for ${titleOtherLanguage}` : `Programrum för ${title}`;
   streamCourses.write({
     course_id: `PROG.${programmeCode}`,
     short_name: programmeCode,
-    long_name: `${programmeCode} ${title}, ${credits} ${creditUnitAbbr}`,
+    long_name: `${programmeCode} ${displayTitle}, ${credits} ${creditUnitAbbr}`,
     status: "active",
     account_id: "PROGRAMME_ROOMS",
   });
