@@ -1,10 +1,10 @@
 import got from "got";
 import dotenv from "dotenv";
+dotenv.config();
 import assert from "assert/strict";
 // @ts-ignore Missing types
 import * as reqvars from "@kth/reqvars";
 reqvars.check();
-dotenv.config();
 
 const gotClient = got.extend({
   prefixUrl: process.env.LADOK_API_BASEURL,
