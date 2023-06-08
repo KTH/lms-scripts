@@ -1,6 +1,9 @@
 import got from "got";
 import dotenv from "dotenv";
 import assert from "assert/strict";
+// @ts-ignore Missing types
+import * as reqvars from "@kth/reqvars";
+reqvars.check();
 dotenv.config();
 
 const gotClient = got.extend({
