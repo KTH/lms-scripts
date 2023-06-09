@@ -36,10 +36,16 @@ type LadokProgrammeInstanceResponse = LadokResponse<{
   UtbildningstillfalleUID: string;
 }>;
 
+export type TLadokStudent = {
+  Efternamn: string,
+  Fornamn: string,
+  Personnummer: string,
+  Uid: string,
+  link: string[]
+}
+
 type LadokStudentResponse = LadokResponse<{
-  Student: {
-    Uid: string;
-  };
+  Student: TLadokStudent;
 }>;
 
 export async function getProgrammeRooms(): Promise<ProgramRoom[]> {
@@ -83,7 +89,7 @@ export async function getProgrammeInstanceIds(
 /** Get all students given a "UtbildningstillfalleUID" */
 export async function getStudents(
   utbildningstillfalleUID: string[]
-): Promise<string[]> {
+): Promise<TLadokStudent[]> {
   const url = `studiedeltagande/deltagare/kurspaketeringstillfalle`;
 
   const { body } = await gotClient.put<LadokStudentResponse>(url, {
@@ -110,5 +116,12 @@ export async function getStudents(
   //   "Not all items were returned"
   // );
 
-  return body.Resultat.map((item) => item.Student.Uid);
+  return body.Resultat.map((item) => item.Student);
+}
+
+export function printProgress(curr: number, total: number, startTime: number) {
+  const elapsed = Date.now() - startTime;
+  const remaining = elapsed / curr * (total - curr);
+  const finishedAt = new Date(Date.now() + remaining).toLocaleTimeString();
+  process.stdout.write(`\rProcessing: ${curr}/${total} (finished at: ${finishedAt})`);
 }
