@@ -22,7 +22,7 @@ export type ProgramRoom = {
   code: string;
   title: Record<'en'|'sv', string>
   credits: string;
-  creditUnitAbbr: Record<'en'|'sv', string>
+  credit_unit_abbr: Record<'en'|'sv', string>
 
 };
 
@@ -49,8 +49,9 @@ type LadokStudentResponse = LadokResponse<{
 }>;
 
 export async function getProgrammeRooms(): Promise<ProgramRoom[]> {
-  const url = "https://api.kth.se/api/kopps/v2/programmes/all";
-  return got(url).json();
+  const url = "https://api.kth.se/api/kopps/v2/programme/";
+  const body: any = await got(url).json()
+  return body.programmes
 }
 
 /** Get all "programtillfälleskod UID" from a given program code */

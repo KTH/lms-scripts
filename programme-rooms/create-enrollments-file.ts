@@ -33,6 +33,7 @@ const startTimeGetStudents = Date.now();
 let allStudents: TLadokStudent[] = [];
 let currCodeNr = 0;
 for (const code of codes) {
+  console.log('fetching students for program ', code)
   printProgress(++currCodeNr, codes.length, startTimeGetStudents);
   
   // Get all instances of a program
