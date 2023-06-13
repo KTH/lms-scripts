@@ -19,11 +19,11 @@ const gotClient = got.extend({
 });
 
 export type ProgramRoom = {
-  programmeCode: string;
-  title: string;
-  titleOtherLanguage: string;
-  credits: number;
-  creditUnitAbbr: string;
+  code: string;
+  title: Record<'en'|'sv', string>
+  credits: string;
+  creditUnitAbbr: Record<'en'|'sv', string>
+
 };
 
 type LadokResponse<T> = {
@@ -74,7 +74,7 @@ export async function getProgrammeInstanceIds(
   // Check that we got all items
   assert(
     body.Resultat.length === body.TotaltAntalPoster,
-    "Not all items were returned"
+    `Not all items were returned. Got ${body.Resultat.length}, expected ${body.TotaltAntalPoster}`
   );
 
   // Check that all items have the same programmeCode
@@ -115,7 +115,7 @@ export async function getStudents(
   //   body.Resultat.length === body.TotaltAntalPoster,
   //   "Not all items were returned"
   // );
-
+  /* console.log(body.Resultat) */
   return body.Resultat.map((item) => item.Student);
 }
 

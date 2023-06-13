@@ -18,7 +18,7 @@ const UG_REST_BASE_URI =
 
 // Get all program codes
 const progRooms = await getProgrammeRooms();
-const codes = progRooms.map((progRoom) => progRoom.programmeCode);
+const codes = progRooms.map((progRoom) => progRoom.code);
 
 const fileEnrollments = fs.createWriteStream("enrollments.csv");
 const streamEnrollments = csv.format({ headers: true });

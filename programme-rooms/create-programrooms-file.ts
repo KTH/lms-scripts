@@ -11,7 +11,7 @@ import { getProgrammeRooms } from "./utils.js";
 /*
 
   {
-    programmeCode: 'CMAST',
+    code: 'CMAST',
     title: 'Civilingenjörsutbildning i maskinteknik',
     titleOtherLanguage: 'Degree Programme in Mechanical Engineering',
     firstAdmissionTerm: '20072',
@@ -46,25 +46,24 @@ streamCourses.pipe(fileCourses);
 // console.log("course_id,short_name,long_name,status,account_id");
 for (const progRoom of progRooms) {
   const {
-    programmeCode,
+    code,
     title,
-    titleOtherLanguage,
     credits,
     creditUnitAbbr,
   } = progRoom;
-  let inEnglish = title.match(/^masterprogram/i)
+  let inEnglish = title['en'].match(/^masterprogram/i)
     || title.match(/^magisterprogram/i)
-    || programmeCode === "TCOMK";
+    || code === "TCOMK";
   const displayTitle = inEnglish ? `Programme Room for ${titleOtherLanguage}` : `Programrum för ${title}`;
   streamCourses.write({
-    course_id: `PROG.${programmeCode}`,
-    short_name: programmeCode,
-    long_name: `${programmeCode} ${displayTitle}, ${credits} ${creditUnitAbbr}`,
+    course_id: `PROG.${code}`,
+    short_name: code,
+    long_name: `${code} ${displayTitle}, ${credits} ${creditUnitAbbr}`,
     status: "active",
     account_id: "PROGRAMME_ROOMS",
   });
   // console.log(
-  //   `PROG.${programmeCode}, ${programmeCode}, "${programmeCode} ${title}, ${credits} ${creditUnitAbbr}", active, PROGRAMME_ROOMS`
+  //   `PROG.${code}, ${code}, "${code} ${title}, ${credits} ${creditUnitAbbr}", active, PROGRAMME_ROOMS`
   // );
 }
 streamCourses.end();
@@ -80,15 +79,15 @@ streamSections.pipe(fileSections);
 
 // console.log("section_id,course_id,name,status");
 for (const progRoom of progRooms) {
-  const { programmeCode } = progRoom;
+  const { code } = progRoom;
   streamSections.write({
-    section_id: `PROG.${programmeCode}`,
-    course_id: `PROG.${programmeCode}`,
-    name: programmeCode,
+    section_id: `PROG.${code}`,
+    course_id: `PROG.${code}`,
+    name: code,
     status: "active",
   });
   // console.log(
-  //   `PROG.${programmeCode}, PROG.${programmeCode}, ${programmeCode}, active`
+  //   `PROG.${code}, PROG.${code}, ${code}, active`
   // );
 }
 streamSections.end();
