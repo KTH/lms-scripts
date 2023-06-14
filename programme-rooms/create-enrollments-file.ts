@@ -11,7 +11,7 @@ const IS_DEV = process.env.NODE_ENV !== "production";
 
 // Get all program codes
 const progRooms = await getProgrammeRooms();
-const codes = progRooms.map((progRoom) => progRoom.programmeCode);
+const codes = progRooms.map((progRoom) => progRoom.code);
 
 IS_DEV && console.log("Fetch students for all programs...");
 const startTimeGetStudents = Date.now();

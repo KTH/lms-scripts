@@ -8,7 +8,7 @@
   "main": "index.ts",
   "type": "module",
   "scripts": {
-    "start": "ts-node --esm index.ts",
+    "start-program-rooms": "ts-node --esm create-programrooms-file.ts",
     "start-enrollment": "ts-node --esm create-enrollments-file.ts",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
