@@ -4,7 +4,15 @@ dotenv.config();
 import assert from "assert/strict";
 // @ts-ignore Missing types
 import * as reqvars from "@kth/reqvars";
+import { TUGRestClientResponse, UGRestClient, UGRestClientError } from "kpm-ug-rest-client/src/ugRestClient.js";
 reqvars.check();
+
+const OAUTH_SERVER_BASE_URI =
+  process.env.OAUTH_SERVER_BASE_URI || "https://login.ref.ug.kth.se/adfs";
+const CLIENT_ID = process.env.CLIENT_ID!; // Required in .env.in
+const CLIENT_SECRET = process.env.CLIENT_SECRET!; // Required in .env.in
+const UG_REST_BASE_URI =
+  process.env.UG_REST_BASE_URI || "https://integral-api.sys.kth.se/test/ug";
 
 const gotClient = got.extend({
   prefixUrl: process.env.LADOK_API_BASEURL,
@@ -86,38 +94,47 @@ export async function getProgrammeInstanceIds(
   return body.Resultat.map((item) => item.UtbildningstillfalleUID);
 }
 
+const ugClient = new UGRestClient({
+  authServerDiscoveryURI: OAUTH_SERVER_BASE_URI,
+  resourceBaseURI: UG_REST_BASE_URI,
+  clientId: CLIENT_ID,
+  clientSecret: CLIENT_SECRET,
+});
+
 /** Get all students given a "UtbildningstillfalleUID" */
-export async function getStudents(
-  utbildningstillfalleUID: string[]
-): Promise<TLadokStudent[]> {
-  const url = `studiedeltagande/deltagare/kurspaketeringstillfalle`;
+export async function getStudentsForProgramAsKthIds(
+  programCode: string
+): Promise<string[]> {
+  let res: TUGRestClientResponse<{members: string[]}[]> | void = undefined;
+  try {
+    res = await ugClient.get<{members: string[]}[]>(`groups?$filter=name eq 'ladok2.program.${programCode}.registrerade_20231'&expand=members`).catch(ugClientGetErrorHandler);
+  } catch (e: any) {
+  }
 
-  const { body } = await gotClient.put<LadokStudentResponse>(url, {
-    json: {
-      utbildningstillfalleUID: utbildningstillfalleUID,
-      deltagaretillstand: [
-        // Vilka studentgrupper ska inkluderas i sektioner?
-        "PAGAENDE",
-        "EJ_PAGAENDE_TILLFALLESBYTE",
-        "PAGAENDE_MED_SPARR",
-        "UPPEHALL",
-      ],
-      page: 1,
-      limit: 400,
-      orderby: ["EFTERNAMN_ASC", "FORNAMN_ASC", "PERSONNUMMER_ASC"],
-    },
-  });
-
-  // TODO: handle pagination
-
-  // Check that we got all items
-  // assert(
-  //   body.Resultat.length === body.TotaltAntalPoster,
-  //   "Not all items were returned"
-  // );
-
-  return body.Resultat.map((item) => item.Student);
+  return res?.json?.[0]?.members || [];
 }
+
+export async function getStudentUid(
+  kthId: string
+): Promise<string | undefined> {
+  let res: TUGRestClientResponse<{ladok3StudentUid: string}> | void = undefined;
+  try {
+    res = await ugClient.get<{ladok3StudentUid: string}>(`users/${kthId}`).catch(ugClientGetErrorHandler);
+  } catch (e: any) {
+  }
+
+  return res?.json?.ladok3StudentUid;
+}
+
+function ugClientGetErrorHandler(err: any) {
+  if (err instanceof UGRestClientError) {
+    throw err;
+  }
+
+  Error.captureStackTrace(err, ugClientGetErrorHandler);
+  throw err;
+}
+
 
 export function printProgress(curr: number, total: number, startTime: number) {
   const elapsed = Date.now() - startTime;
