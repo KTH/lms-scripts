@@ -103,11 +103,14 @@ const ugClient = new UGRestClient({
 
 /** Get all students given a "UtbildningstillfalleUID" */
 export async function getStudentsForProgramAsKthIds(
-  programCode: string
+  programCode: string, yearTerm: string
 ): Promise<string[]> {
+  assert(typeof programCode === "string", "programCode must be a string");
+  assert(typeof yearTerm === "string" && yearTerm.match(/^\d{4}[1|2]$/), "yearTerm must be a string of format YYYY1 or YYYY2");
+
   let res: TUGRestClientResponse<{members: string[]}[]> | void = undefined;
   try {
-    res = await ugClient.get<{members: string[]}[]>(`groups?$filter=name eq 'ladok2.program.${programCode}.registrerade_20231'&expand=members`).catch(ugClientGetErrorHandler);
+    res = await ugClient.get<{members: string[]}[]>(`groups?$filter=name eq 'ladok2.program.${programCode}.registrerade_${yearTerm}'&expand=members`).catch(ugClientGetErrorHandler);
   } catch (e: any) {
   }
 

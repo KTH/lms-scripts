@@ -18,10 +18,13 @@ const startTimeGetStudents = Date.now();
 const studentsByProgram: { [key: string]: string[] } = {};
 let totalNrofStudents = 0;
 let currCodeNr = 0;
+
+const now = new Date();
+const currentYearTerm = (now.getFullYear()).toString() + (now.getMonth() < 7 && now.getDate() < 15 ? "1" : "2");
 for (const code of codes) {
   IS_DEV && printProgress(++currCodeNr, codes.length, startTimeGetStudents);
   
-  const students = await getStudentsForProgramAsKthIds(code);
+  const students = await getStudentsForProgramAsKthIds(code, currentYearTerm);
 
   studentsByProgram[code] = students;
   totalNrofStudents += students.length;
