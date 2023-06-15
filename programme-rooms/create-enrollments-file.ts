@@ -3,7 +3,6 @@ import {
   createWriteStreamForCsv,
   getProgrammeRooms,
   getStudentsForProgramAsKthIds,
-  getStudentUid,
   printProgress,
 } from "./utils.js";
 

@@ -16,18 +16,6 @@ const CLIENT_SECRET = process.env.CLIENT_SECRET!; // Required in .env.in
 const UG_REST_BASE_URI =
   process.env.UG_REST_BASE_URI || "https://integral-api.sys.kth.se/test/ug";
 
-const gotClient = got.extend({
-  prefixUrl: process.env.LADOK_API_BASEURL,
-  headers: {
-    Accept: "application/vnd.ladok-studiedeltagande+json",
-  },
-  responseType: "json",
-  https: {
-    pfx: Buffer.from(process.env.LADOK_API_PFX_BASE64 as string, "base64"),
-    passphrase: process.env.LADOK_API_PFX_PASSPHRASE,
-  },
-});
-
 export type ProgramRoom = {
   code: string;
   title: Record<'en'|'sv', string>
@@ -61,39 +49,6 @@ export async function getProgrammeRooms(): Promise<ProgramRoom[]> {
   const url = "https://api.kth.se/api/kopps/v2/programme/";
   const body: any = await got(url).json()
   return body.programmes
-}
-
-/** Get all "programtillfälleskod UID" from a given program code */
-export async function getProgrammeInstanceIds(
-  programmeCode: string
-): Promise<string[]> {
-  const url = `studiedeltagande/utbildningstillfalle/kurspaketeringstillfalle`;
-
-  const { body } = await gotClient.get<LadokProgrammeInstanceResponse>(url, {
-    searchParams: {
-      utbildningskod: programmeCode,
-      page: 1,
-      limit: 400,
-
-      // Ladok API requires this because order is not stable,
-      // which is problematic with more than one page
-      orderby: "BENAMNING_ASC",
-    },
-  });
-
-  // Check that we got all items
-  assert(
-    body.Resultat.length === body.TotaltAntalPoster,
-    `Not all items were returned. Got ${body.Resultat.length}, expected ${body.TotaltAntalPoster}`
-  );
-
-  // Check that all items have the same programmeCode
-  assert(
-    body.Resultat.every((item) => item.Utbildningskod === programmeCode),
-    "Not all items have the same programmeCode"
-  );
-
-  return body.Resultat.map((item) => item.UtbildningstillfalleUID);
 }
 
 const ugClient = new UGRestClient({

@@ -1,7 +1,4 @@
-import got from "got";
-import * as csv from "fast-csv";
-import fs from "fs";
-import { getProgrammeRooms } from "./utils.js";
+import { createWriteStreamForCsv, getProgrammeRooms } from "./utils.js";
 
 // QUESTION: What determines language of program?
 // INVESTIGATE: Can we get LADOK OID for program?
@@ -34,9 +31,7 @@ const progRooms = await getProgrammeRooms();
 // - long_name -- "[CODE] Title ### hp"
 // - status -- active (active, deleted, completed, published)
 // - account_id -- "PROGRAMME_ROOMS" should be a new sub account, ask Martin
-const fileCourses = fs.createWriteStream("courses.csv");
-const streamCourses = csv.format({ headers: true });
-streamCourses.pipe(fileCourses);
+const streamCourses = createWriteStreamForCsv("courses.csv");
 
 // console.log("course_id,short_name,long_name,status,account_id");
 for (const progRoom of progRooms) {
@@ -66,9 +61,7 @@ streamCourses.end();
 // - course_id -- PROG.CFATE (see courses.csv)
 // - name -- CFATE
 // - status -- active (active, deleted)
-const fileSections = fs.createWriteStream("sections.csv");
-const streamSections = csv.format({ headers: true });
-streamSections.pipe(fileSections);
+const streamSections = createWriteStreamForCsv("sections.csv");
 
 // console.log("section_id,course_id,name,status");
 for (const progRoom of progRooms) {
