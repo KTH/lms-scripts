@@ -32,7 +32,7 @@ for (const code of codes) {
   for (const studentKthId of students) {
     streamEnrollments.write({
       section_id: `PROG.${code}`,
-      sis_user_id: studentKthId,
+      user_id: studentKthId,
       role_id: 3,
       status: "active",
     });
