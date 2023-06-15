@@ -8,6 +8,7 @@ import {
 } from "./utils.js";
 
 const IS_DEV = process.env.NODE_ENV !== "production";
+const REGISTERED_STUDENT = 164;
 
 const now = new Date();
 const currentTermCutOffDate = new Date(now.getFullYear(), 7, 15); // 15th of August
@@ -33,7 +34,7 @@ for (const code of codes) {
     streamEnrollments.write({
       section_id: `PROG.${code}`,
       user_id: studentKthId,
-      role_id: 3,
+      role_id: REGISTERED_STUDENT,
       status: "active",
     });
   }
