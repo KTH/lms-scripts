@@ -20,7 +20,8 @@ let totalNrofStudents = 0;
 let currCodeNr = 0;
 
 const now = new Date();
-const currentYearTerm = (now.getFullYear()).toString() + (now.getMonth() < 7 && now.getDate() < 15 ? "1" : "2");
+const currentTermCutOffDate = new Date(now.getFullYear(), 7, 15); // 15th of August
+const currentYearTerm = (now.getFullYear()).toString() + (now < currentTermCutOffDate ? "1" : "2");
 for (const code of codes) {
   IS_DEV && printProgress(++currCodeNr, codes.length, startTimeGetStudents);
   
