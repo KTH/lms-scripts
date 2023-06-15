@@ -8,6 +8,7 @@ import {
 } from "./utils.js";
 
 const IS_DEV = process.env.NODE_ENV !== "production";
+// This is the id of a user role in the KTH Canvas instance
 const REGISTERED_STUDENT = 164;
 
 const now = new Date();
