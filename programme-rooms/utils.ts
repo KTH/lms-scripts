@@ -1,6 +1,8 @@
 import got from "got";
 import dotenv from "dotenv";
 dotenv.config();
+import * as csv from "fast-csv";
+import fs from "fs";
 import assert from "assert/strict";
 // @ts-ignore Missing types
 import * as reqvars from "@kth/reqvars";
@@ -144,4 +146,11 @@ export function printProgress(curr: number, total: number, startTime: number) {
   const remaining = elapsed / curr * (total - curr);
   const finishedAt = new Date(Date.now() + remaining).toLocaleTimeString();
   process.stdout.write(`\rProcessing: ${curr}/${total} (finished at: ${finishedAt})`);
+}
+
+export function createWriteStreamForCsv(fileName: string) {
+  const file = fs.createWriteStream(fileName);
+  const stream = csv.format({ headers: true });
+  stream.pipe(file);
+  return stream;
 }
