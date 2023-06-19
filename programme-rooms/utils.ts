@@ -69,22 +69,24 @@ export async function getStudentsForProgramAsKthIds(
   try {
     res = await ugClient.get<{members: string[]}[]>(`groups?$filter=name eq 'ladok2.program.${programCode}.registrerade_${yearTerm}'&expand=members`).catch(ugClientGetErrorHandler);
   } catch (e: any) {
+    console.log(e);
   }
 
   return res?.json?.[0]?.members || [];
 }
 
-export async function getStudentUid(
-  kthId: string
-): Promise<string | undefined> {
-  let res: TUGRestClientResponse<{ladok3StudentUid: string}> | void = undefined;
-  try {
-    res = await ugClient.get<{ladok3StudentUid: string}>(`users/${kthId}`).catch(ugClientGetErrorHandler);
-  } catch (e: any) {
-  }
+// Not used, but leaving here for reference because LADOK UIDs are pretty useful.
+// export async function getStudentUid(
+//   kthId: string
+// ): Promise<string | undefined> {
+//   let res: TUGRestClientResponse<{ladok3StudentUid: string}> | void = undefined;
+//   try {
+//     res = await ugClient.get<{ladok3StudentUid: string}>(`users/${kthId}`).catch(ugClientGetErrorHandler);
+//   } catch (e: any) {
+//   }
 
-  return res?.json?.ladok3StudentUid;
-}
+//   return res?.json?.ladok3StudentUid;
+// }
 
 function ugClientGetErrorHandler(err: any) {
   if (err instanceof UGRestClientError) {
