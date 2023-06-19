@@ -1,9 +1,5 @@
 import { createWriteStreamForCsv, getProgrammeRooms } from "./utils.js";
 
-// QUESTION: What determines language of program?
-// INVESTIGATE: Can we get LADOK OID for program?
-
-
 // 1. Call KOPPS API to get all program rooms
 /*
   {
