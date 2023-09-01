@@ -7,7 +7,6 @@ const courses = [
   37555, 41500, 37008, 35116, 37743, 41416, 42000, 34769, 45729, 37733, 41418,
 ];
 
-console.log(process.env.CANVAS_API_URL, "::::::::::");
 const canvasApi = new CanvasApi(
   process.env.CANVAS_API_URL,
   process.env.CANVAS_API_KEY
@@ -19,11 +18,11 @@ async function run() {
       .get(`courses/${id}?include[]=teachers`)
       .then((res) => res.body);
     for await ({ id: userId } of course.teachers) {
-      const { email } = await canvasApi
+      const { email, name } = await canvasApi
         .get(`users/${userId}`)
         .then((res) => res.body);
 
-      console.log(email);
+      console.log(email, name);
     }
 
     // console.log(course);
