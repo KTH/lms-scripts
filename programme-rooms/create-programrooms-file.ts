@@ -1,29 +1,17 @@
-import got from "got";
-import * as csv from "fast-csv";
-import fs from "fs";
-import { getProgrammeRooms } from "./utils.js";
-
-// QUESTION: What determines language of program?
-// INVESTIGATE: Can we get LADOK OID for program?
-
+import { createWriteStreamForCsv, getProgrammeRooms } from "./utils.js";
 
 // 1. Call KOPPS API to get all program rooms
 /*
-
   {
-    programmeCode: 'CMAST',
-    title: 'Civilingenjörsutbildning i maskinteknik',
-    titleOtherLanguage: 'Degree Programme in Mechanical Engineering',
-    firstAdmissionTerm: '20072',
-    credits: 300,
-    creditUnitLabel: 'Högskolepoäng',
-    creditUnitAbbr: 'hp',
-    educationalLevel: 'BASIC',
-    lengthInStudyYears: 5,
-    owningSchoolCode: 'Industriell teknik och management',
-    degrees: [ [Object] ]
-  },
-
+    "code": "ARKIT",
+    "title": {"sv":"Arkitektutbildning","en":"Degree Programme in Architecture"},
+    "credits": "300.0",
+    "credit_unit_label": {"sv":"Högskolepoäng","en":"Credits"},
+    "credit_unit_abbr": {"sv":"hp","en":"hp"},
+    "cancelled": "false",
+    "educational_level": "1",
+    "department_name": "ABE/Arkitektur och samhällsbyggnad"
+  }
 */
 
 // 2. Print out the ones that are in use
@@ -39,33 +27,28 @@ const progRooms = await getProgrammeRooms();
 // - long_name -- "[CODE] Title ### hp"
 // - status -- active (active, deleted, completed, published)
 // - account_id -- "PROGRAMME_ROOMS" should be a new sub account, ask Martin
-const fileCourses = fs.createWriteStream("courses.csv");
-const streamCourses = csv.format({ headers: true });
-streamCourses.pipe(fileCourses);
+const streamCourses = createWriteStreamForCsv("courses.csv");
 
 // console.log("course_id,short_name,long_name,status,account_id");
 for (const progRoom of progRooms) {
   const {
-    programmeCode,
+    code,
     title,
-    titleOtherLanguage,
     credits,
-    creditUnitAbbr,
+    credit_unit_abbr,
   } = progRoom;
-  let inEnglish = title.match(/^masterprogram/i)
-    || title.match(/^magisterprogram/i)
-    || programmeCode === "TCOMK";
-  const displayTitle = inEnglish ? `Programme Room for ${titleOtherLanguage}` : `Programrum för ${title}`;
+  let inEnglish = title['en'].match(/^masterprogram/i)
+    || title['sv'].match(/^magisterprogram/i)
+    || code === "TCOMK";
+  const displayTitle = inEnglish ? `Programme Room for ${title['en']}` : `Programrum för ${title['sv']}`;
+  const displayCreditUnitAbbr = inEnglish ? credit_unit_abbr['en'] : credit_unit_abbr['sv'];
   streamCourses.write({
-    course_id: `PROG.${programmeCode}`,
-    short_name: programmeCode,
-    long_name: `${programmeCode} ${displayTitle}, ${credits} ${creditUnitAbbr}`,
+    course_id: `PROG.${code}`,
+    short_name: code,
+    long_name: `${code} ${displayTitle}, ${credits} ${displayCreditUnitAbbr}`,
     status: "active",
     account_id: "PROGRAMME_ROOMS",
   });
-  // console.log(
-  //   `PROG.${programmeCode}, ${programmeCode}, "${programmeCode} ${title}, ${credits} ${creditUnitAbbr}", active, PROGRAMME_ROOMS`
-  // );
 }
 streamCourses.end();
 
@@ -74,17 +57,15 @@ streamCourses.end();
 // - course_id -- PROG.CFATE (see courses.csv)
 // - name -- CFATE
 // - status -- active (active, deleted)
-const fileSections = fs.createWriteStream("sections.csv");
-const streamSections = csv.format({ headers: true });
-streamSections.pipe(fileSections);
+const streamSections = createWriteStreamForCsv("sections.csv");
 
 // console.log("section_id,course_id,name,status");
 for (const progRoom of progRooms) {
-  const { programmeCode } = progRoom;
+  const { code } = progRoom;
   streamSections.write({
-    section_id: `PROG.${programmeCode}`,
-    course_id: `PROG.${programmeCode}`,
-    name: programmeCode,
+    section_id: `PROG.${code}`,
+    course_id: `PROG.${code}`,
+    name: code,
     status: "active",
   });
   // console.log(
