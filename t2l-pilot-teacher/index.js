@@ -22,7 +22,7 @@ async function run() {
         .get(`users/${userId}`)
         .then((res) => res.body);
 
-      console.log(email, name);
+      console.log(`${email} (${name})`);
     }
 
     // console.log(course);
