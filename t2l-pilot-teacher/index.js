@@ -18,8 +18,15 @@ async function run() {
     const course = await canvasApi
       .get(`courses/${id}?include[]=teachers`)
       .then((res) => res.body);
+    for await ({ id: userId } of course.teachers) {
+      const { email } = await canvasApi
+        .get(`users/${userId}`)
+        .then((res) => res.body);
 
-    console.log(course);
+      console.log(email);
+    }
+
+    // console.log(course);
   }
 }
 run();
