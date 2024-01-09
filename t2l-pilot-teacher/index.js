@@ -11,7 +11,7 @@ const canvasApi = new CanvasApi(
   process.env.CANVAS_API_URL,
   process.env.CANVAS_API_KEY
 );
-
+const teachers = new Set();
 async function run() {
   for await (const id of courses) {
     const course = await canvasApi
@@ -22,10 +22,10 @@ async function run() {
         .get(`users/${userId}`)
         .then((res) => res.body);
 
-      console.log(`${email} (${name})`);
+      teachers.add(`${email} (${name})`);
     }
 
-    // console.log(course);
+    console.log(teachers);
   }
 }
 run();
