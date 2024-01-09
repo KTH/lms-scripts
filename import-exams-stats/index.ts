@@ -28,8 +28,17 @@ async function start() {
 
   // Now `courses` is an iterator that goes through every course
   for await (const course of courses) {
-    console.log(course);
-    resultCsv.write(course);
+    const assignments = canvas.listItems(`courses/${course.id}/assignments`);
+    for await (const assignment of assignments) {
+      if (assignment.integration_data?.ladokId) {
+        console.log(
+          `Assignment is created by import exams: ${assignment.name}`
+        );
+      } else {
+        process.stdout.write(".");
+      }
+    }
+    // resultCsv.write(course);
   }
   resultCsv.end();
 }
