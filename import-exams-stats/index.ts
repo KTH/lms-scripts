@@ -21,13 +21,27 @@ type assignment = {
   is_quiz_assignment: false;
   workflow_state: string;
   muted: boolean;
-  integration_id: null;
-  integration_data: any;
+  integration_id?: null;
+  integration_data?: any;
   published: boolean;
   unpublishable: boolean;
   post_manually: boolean;
   anonymize_students: boolean;
   require_lockdown_browser: boolean;
+};
+
+type course = {
+  id: number;
+  name: string;
+  account_id: number;
+  start_at: string;
+  is_public: boo;
+  created_at: string;
+  course_code: string;
+  root_account_id: 1;
+  end_at: null;
+  sis_course_id: string;
+  workflow_state: "available";
 };
 
 const canvas = new Canvas(
@@ -53,6 +67,7 @@ async function start() {
   const courses = canvas.listItems("accounts/110/courses");
 
   for await (const course of courses) {
+    console.log(course);
     const assignments = await canvas
       .listItems(`courses/${course.id}/assignments`)
       .toArray();
@@ -63,7 +78,7 @@ async function start() {
     } else {
       process.stdout.write(".");
     }
-    // resultCsv.write(course);
+    resultCsv.write({});
 
     // console.log(`${course.name}`);
   }
