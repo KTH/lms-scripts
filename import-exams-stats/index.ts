@@ -102,7 +102,6 @@ async function start() {
           course_state: course.workflow_state,
           assignment_published: examAssignment.published ? 1 : 0,
         };
-        // console.log(result);
         resultCsv.write(result);
       } else {
         process.stdout.write(".");
