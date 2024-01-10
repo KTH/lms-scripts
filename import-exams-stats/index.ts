@@ -62,12 +62,12 @@ async function start() {
   fs.mkdirSync(dir);
   console.log(`Creating csv files in ${dir}`);
   const resultCsv = createCsvSerializer(`${dir}/import-exams-stats.csv`);
-  // const examroomAccounts = [
-  //   104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116,
-  // ];
+  const examroomAccounts = [
+    104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116,
+  ];
 
-  const examroomAccounts = [110];
-  // TODO: go from root account here
+  // const examroomAccounts = [110];
+  // TODO: read from all of the exam accounts here
   for await (const accountId of examroomAccounts) {
     const { body: account } = await canvas.get(`accounts/${accountId}`);
     const courses: course[] = canvas.listItems(
@@ -83,7 +83,6 @@ async function start() {
       );
 
       if (examAssignment) {
-        console.log("is exam assignment", examAssignment);
         const result = {
           account_id: course.account_id,
           account_name: account.name,
