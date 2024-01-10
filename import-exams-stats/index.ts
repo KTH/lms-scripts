@@ -35,7 +35,7 @@ type course = {
   name: string;
   account_id: number;
   start_at: string;
-  is_public: boo;
+  is_public: boolean;
   created_at: string;
   course_code: string;
   root_account_id: 1;
