@@ -83,10 +83,17 @@ async function start() {
       );
 
       if (examAssignment) {
+        const submissions = await canvas
+          .listItems(
+            `courses/${course.id}/assignments/${examAssignment.id}/submissions`
+          )
+          .toArray();
+
         const result = {
           account_id: course.account_id,
           account_name: account.name,
           course_name: course.name,
+          number_of_submissions: submissions.length,
           has_submitted_submissions: examAssignment.has_submitted_submissions
             ? 1
             : 0,
