@@ -87,12 +87,16 @@ async function start() {
           account_id: course.account_id,
           account_name: account.name,
           course_name: course.name,
-          has_submitted_submissions: examAssignment.has_submitted_submissions,
-          graded_submissions_exist: examAssignment.graded_submissions_exist,
+          has_submitted_submissions: examAssignment.has_submitted_submissions
+            ? 1
+            : 0,
+          graded_submissions_exist: examAssignment.graded_submissions_exist
+            ? 1
+            : 0,
           created_at: examAssignment.created_at.substring(0, 7), // only month is of interest
-          anonymize_students: examAssignment.anonymize_students,
+          anonymize_students: examAssignment.anonymize_students ? 1 : 0,
           course_state: course.workflow_state,
-          assignment_published: examAssignment.published,
+          assignment_published: examAssignment.published ? 1 : 0,
         };
         // console.log(result);
         resultCsv.write(result);
