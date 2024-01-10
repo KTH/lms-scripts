@@ -67,7 +67,6 @@ async function start() {
   ];
 
   // const examroomAccounts = [110];
-  // TODO: read from all of the exam accounts here
   for await (const accountId of examroomAccounts) {
     const { body: account } = await canvas.get(`accounts/${accountId}`);
     const courses: course[] = canvas.listItems(
@@ -91,13 +90,11 @@ async function start() {
 
         const result = {
           account_id: course.account_id,
-          account_name: account.name,
+          account_name: account.name.replaceAll(" - Examinations", ""),
           course_name: course.name,
-          number_of_submissions: submissions.length,
-          has_submitted_submissions: examAssignment.has_submitted_submissions
-            ? 1
-            : 0,
-          graded_submissions_exist: examAssignment.graded_submissions_exist
+          number_of_imported_exams: submissions.length,
+          has_imported_exams: examAssignment.has_submitted_submissions ? 1 : 0,
+          has_graded_imported_exams: examAssignment.graded_submissions_exist
             ? 1
             : 0,
           created_at: examAssignment.created_at.substring(0, 7), // only month is of interest
