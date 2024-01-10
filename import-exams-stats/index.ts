@@ -67,7 +67,6 @@ async function start() {
   const courses = canvas.listItems("accounts/110/courses");
 
   for await (const course of courses) {
-    console.log(course);
     const assignments = await canvas
       .listItems(`courses/${course.id}/assignments`)
       .toArray();
@@ -75,12 +74,20 @@ async function start() {
 
     if (examAssignment) {
       console.log("is exam assignment", examAssignment);
+      const result = {
+        account_id: course.account_id,
+        has_submitted_submissions: examAssignment.has_submitted_submissions,
+        graded_submissions_exist: examAssignment.graded_submissions_exist,
+        created_at: examAssignment.created_at,
+        anonymize_students: examAssignment.anonymize_students,
+        course_state: course.workflow_state,
+        assignment_published: examAssignment.published,
+      };
+      // console.log(result);
+      resultCsv.write(result);
     } else {
       process.stdout.write(".");
     }
-    resultCsv.write({});
-
-    // console.log(`${course.name}`);
   }
   resultCsv.end();
 }
