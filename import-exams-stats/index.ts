@@ -62,31 +62,44 @@ async function start() {
   fs.mkdirSync(dir);
   console.log(`Creating csv files in ${dir}`);
   const resultCsv = createCsvSerializer(`${dir}/import-exams-stats.csv`);
+  // const examroomAccounts = [
+  //   104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116,
+  // ];
 
+  const examroomAccounts = [110];
   // TODO: go from root account here
-  const courses = canvas.listItems("accounts/110/courses");
+  for await (const accountId of examroomAccounts) {
+    const { body: account } = await canvas.get(`accounts/${accountId}`);
+    const courses: course[] = canvas.listItems(
+      `accounts/${account.id}/courses`
+    );
 
-  for await (const course of courses) {
-    const assignments = await canvas
-      .listItems(`courses/${course.id}/assignments`)
-      .toArray();
-    const examAssignment = assignments.find((a) => a.integration_data?.ladokId);
+    for await (const course of courses) {
+      const assignments: assignment[] = await canvas
+        .listItems(`courses/${course.id}/assignments`)
+        .toArray();
+      const examAssignment = assignments.find(
+        (a) => a.integration_data?.ladokId
+      );
 
-    if (examAssignment) {
-      console.log("is exam assignment", examAssignment);
-      const result = {
-        account_id: course.account_id,
-        has_submitted_submissions: examAssignment.has_submitted_submissions,
-        graded_submissions_exist: examAssignment.graded_submissions_exist,
-        created_at: examAssignment.created_at,
-        anonymize_students: examAssignment.anonymize_students,
-        course_state: course.workflow_state,
-        assignment_published: examAssignment.published,
-      };
-      // console.log(result);
-      resultCsv.write(result);
-    } else {
-      process.stdout.write(".");
+      if (examAssignment) {
+        console.log("is exam assignment", examAssignment);
+        const result = {
+          account_id: course.account_id,
+          account_name: account.name,
+          course_name: course.name,
+          has_submitted_submissions: examAssignment.has_submitted_submissions,
+          graded_submissions_exist: examAssignment.graded_submissions_exist,
+          created_at: examAssignment.created_at,
+          anonymize_students: examAssignment.anonymize_students,
+          course_state: course.workflow_state,
+          assignment_published: examAssignment.published,
+        };
+        // console.log(result);
+        resultCsv.write(result);
+      } else {
+        process.stdout.write(".");
+      }
     }
   }
   resultCsv.end();
