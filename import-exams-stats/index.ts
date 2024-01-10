@@ -90,7 +90,7 @@ async function start() {
           course_name: course.name,
           has_submitted_submissions: examAssignment.has_submitted_submissions,
           graded_submissions_exist: examAssignment.graded_submissions_exist,
-          created_at: examAssignment.created_at,
+          created_at: examAssignment.created_at.substring(0, 7), // only month is of interest
           anonymize_students: examAssignment.anonymize_students,
           course_state: course.workflow_state,
           assignment_published: examAssignment.published,
