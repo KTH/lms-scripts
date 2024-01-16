@@ -109,7 +109,13 @@ async function start() {
           course_state: course.workflow_state,
           assignment_published: examAssignment.published ? 1 : 0,
         };
-        resultCsv.write(result);
+        // Await the write, otherwise the next iteration might change the length of submissions before it is written
+        await new Promise<void>((resolve, reject) => {
+          resultCsv.write(result, (err) => {
+            if (err) reject(err);
+            resolve();
+          });
+        });
       } else {
         process.stdout.write(".");
       }
