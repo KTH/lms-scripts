@@ -29,7 +29,10 @@ type assignment = {
   anonymize_students: boolean;
   require_lockdown_browser: boolean;
 };
-
+type submission = {
+  id: number;
+  workflow_state: string;
+};
 type course = {
   id: number;
   name: string;
@@ -63,7 +66,8 @@ async function start() {
   console.log(`Creating csv files in ${dir}`);
   const resultCsv = createCsvSerializer(`${dir}/import-exams-stats.csv`);
   const examroomAccounts = [
-    104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116,
+    115,
+    // 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116,
   ];
 
   // const examroomAccounts = [110];
@@ -82,7 +86,7 @@ async function start() {
       );
 
       if (examAssignment) {
-        const submissions = await canvas
+        const submissions: submission[] = await canvas
           .listItems(
             `courses/${course.id}/assignments/${examAssignment.id}/submissions`
           )
@@ -90,9 +94,12 @@ async function start() {
 
         const result = {
           account_id: course.account_id,
+          course_id: course.id,
           account_name: account.name.replaceAll(" - Examinations", ""),
           course_name: course.name,
-          number_of_imported_exams: submissions.length,
+          number_of_imported_exams: submissions.filter(
+            (sub) => sub.workflow_state !== "unsubmitted"
+          ).length,
           has_imported_exams: examAssignment.has_submitted_submissions ? 1 : 0,
           has_graded_imported_exams: examAssignment.graded_submissions_exist
             ? 1
