@@ -66,8 +66,8 @@ async function start() {
   console.log(`Creating csv files in ${dir}`);
   const resultCsv = createCsvSerializer(`${dir}/import-exams-stats.csv`);
   const examroomAccounts = [
-    115,
-    // 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116,
+    // 115,
+    104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116,
   ];
 
   // const examroomAccounts = [110];
