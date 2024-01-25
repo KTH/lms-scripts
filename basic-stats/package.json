@@ -1,15 +1,19 @@
 {
-  "name": "t2l-pilot-teacher",
+  "name": "import-exams-stats",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
   "scripts": {
+    "import-exams-stats": "ts-node import-exams-stats.ts",
+    "t2l-stats": "ts-node t2l-stats.ts",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "",
   "license": "ISC",
   "dependencies": {
     "@kth/canvas-api": "^4.2.5",
-    "dotenv": "^16.3.1"
+    "dotenv": "^16.3.1",
+    "fast-csv": "^4.3.6",
+    "ts-node": "^10.9.2"
   }
 }
