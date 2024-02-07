@@ -15,6 +15,7 @@ const canvas = new Canvas(
   process.env.CANVAS_API_KEY
 );
 type T2LDocument = {
+  _id: any;
   parameters?: { courseId: string; destination: any };
   results?: any[];
   summary?: { success: number; error: number };
@@ -28,6 +29,11 @@ function createCsvSerializer(name) {
 
 async function start() {
   await client.connect();
+  const baseDir = fs.mkdtempSync(path.join(os.tmpdir(), "sync-"));
+  const dir = path.join(baseDir, "csv");
+  fs.mkdirSync(dir);
+  console.log(`Creating csv files in ${dir}`);
+  const resultCsv = createCsvSerializer(`${dir}/t2l-stats.csv`);
   console.log("connected to the server");
   const db = client.db("transfer-to-ladok");
 
@@ -35,6 +41,8 @@ async function start() {
     ...(await db.collection<T2LDocument>("transfers").find({}).toArray()),
     ...(await db.collection<T2LDocument>("transfers_1.1").find({}).toArray()),
   ];
+
+  // TODO: using slice to subset the data
   for await (const doc of docs.slice(0, 4)) {
     const { body: canvasCourse } = await canvas.get(
       `courses/${doc.parameters?.courseId}`
@@ -43,15 +51,16 @@ async function start() {
       `accounts/${canvasCourse.account_id}`
     );
     const accountName = account.name.replaceAll(" - Examinations", "");
-    console.log(accountName);
+    const dateString = doc._id.getTimestamp().toLocaleDateString("Sv");
+
+    const result = {
+      account_name: accountName,
+      created_at: `${dateString.substring(0, 7)}`,
+    };
+    console.log(result);
   }
-  // const baseDir = fs.mkdtempSync(path.join(os.tmpdir(), "sync-"));
-  // const dir = path.join(baseDir, "csv");
-  // fs.mkdirSync(dir);
-  // console.log(`Creating csv files in ${dir}`);
-  // const resultCsv = createCsvSerializer(`${dir}/import-exams-stats.csv`);
-  // console.log("hti");
-  // resultCsv.end();
+
+  resultCsv.end();
 
   client.close();
 }
