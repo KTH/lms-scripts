@@ -14,7 +14,11 @@ const canvas = new Canvas(
   process.env.CANVAS_API_URL,
   process.env.CANVAS_API_KEY
 );
-
+type T2LDocument = {
+  parameters?: { courseId: string; destination: any };
+  results?: any[];
+  summary?: { success: number; error: number };
+};
 function createCsvSerializer(name) {
   const writer = fs.createWriteStream(name);
   const serializer = csv.format({ headers: true });
@@ -25,8 +29,12 @@ function createCsvSerializer(name) {
 async function start() {
   await client.connect();
   console.log("connected to the server");
-  const collection = client.db("transfer-to-ladok").collection("transfers_1.1");
-  const docs = await collection.find({});
+  const db = client.db("transfer-to-ladok");
+
+  const docs: T2LDocument[] = [
+    ...(await db.collection<T2LDocument>("transfers").find({}).toArray()),
+    ...(await db.collection<T2LDocument>("transfers_1.1").find({}).toArray()),
+  ];
   console.log(docs);
   // const baseDir = fs.mkdtempSync(path.join(os.tmpdir(), "sync-"));
   // const dir = path.join(baseDir, "csv");
