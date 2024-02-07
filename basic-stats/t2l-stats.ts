@@ -35,7 +35,16 @@ async function start() {
     ...(await db.collection<T2LDocument>("transfers").find({}).toArray()),
     ...(await db.collection<T2LDocument>("transfers_1.1").find({}).toArray()),
   ];
-  console.log(docs);
+  for await (const doc of docs.slice(0, 4)) {
+    const { body: canvasCourse } = await canvas.get(
+      `courses/${doc.parameters?.courseId}`
+    );
+    const { body: account } = await canvas.get(
+      `accounts/${canvasCourse.account_id}`
+    );
+    const accountName = account.name.replaceAll(" - Examinations", "");
+    console.log(accountName);
+  }
   // const baseDir = fs.mkdtempSync(path.join(os.tmpdir(), "sync-"));
   // const dir = path.join(baseDir, "csv");
   // fs.mkdirSync(dir);
