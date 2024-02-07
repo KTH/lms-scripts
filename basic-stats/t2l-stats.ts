@@ -4,6 +4,9 @@ import * as csv from "fast-csv";
 import * as fs from "fs";
 import * as path from "path";
 import * as os from "os";
+import { MongoClient } from "mongodb";
+
+const client = new MongoClient(process.env.MONGODB_CONNECTION_STRING || "");
 
 // @ts-ignore
 import type { course, submission, assignment } from "./types.ts";
@@ -20,13 +23,20 @@ function createCsvSerializer(name) {
 }
 
 async function start() {
-  const baseDir = fs.mkdtempSync(path.join(os.tmpdir(), "sync-"));
-  const dir = path.join(baseDir, "csv");
-  fs.mkdirSync(dir);
-  console.log(`Creating csv files in ${dir}`);
-  const resultCsv = createCsvSerializer(`${dir}/import-exams-stats.csv`);
-  console.log("hti");
-  resultCsv.end();
+  await client.connect();
+  console.log("connected to the server");
+  const collection = client.db("transfer-to-ladok").collection("transfers_1.1");
+  const docs = await collection.find({});
+  console.log(docs);
+  // const baseDir = fs.mkdtempSync(path.join(os.tmpdir(), "sync-"));
+  // const dir = path.join(baseDir, "csv");
+  // fs.mkdirSync(dir);
+  // console.log(`Creating csv files in ${dir}`);
+  // const resultCsv = createCsvSerializer(`${dir}/import-exams-stats.csv`);
+  // console.log("hti");
+  // resultCsv.end();
+
+  client.close();
 }
 
 start();
