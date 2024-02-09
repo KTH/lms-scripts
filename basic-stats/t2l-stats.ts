@@ -16,6 +16,10 @@ const canvas = new Canvas(
 );
 type T2LDocument = {
   _id: any;
+  user: {
+    canvasId: number;
+    email: string;
+  };
   parameters?: { courseId: string; destination: any };
   results?: any[];
   summary?: { success: number; error: number };
@@ -69,6 +73,7 @@ async function start() {
       created_at: `${dateString.substring(0, 7)}`,
       error: doc.summary?.error,
       success: doc.summary?.success,
+      user_id: doc.user.canvasId,
       type: doc.parameters?.destination.aktivitetstillfalle
         ? "examinationsrum"
         : "kursrum",
