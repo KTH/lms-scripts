@@ -48,6 +48,7 @@ async function start() {
 
   // TODO: using slice to subset the data
   for await (const doc of docs) {
+    // console.log(doc);
     // for await (const doc of docs.slice(0, 4)) {
     const { body: canvasCourse } = await canvas.get(
       `courses/${doc.parameters?.courseId}`
@@ -74,6 +75,7 @@ async function start() {
       error: doc.summary?.error,
       success: doc.summary?.success,
       user_id: doc.user.canvasId,
+      courseId: doc.parameters?.courseId,
       type: doc.parameters?.destination.aktivitetstillfalle
         ? "examinationsrum"
         : "kursrum",
