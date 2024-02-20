@@ -1,7 +1,7 @@
-## This script is used to extract statistics from Canvas about the usage of KTH Import Exams.
+## This script is used to extract statistics from Canvas about the usage of internally developed LTI apps.
 
 1. create a `.env` file from the `.env.in` template and set the values in this file.
-2. run the script index.ts: `npx ts-node index.ts`
+2. run the script `npm run import-exams-stats` or `npm run t2l-stats`
 3. Look in the terminal to see where the file is created. It will take a while to generate the file
 
 ### To create a graph from the file using LibreOffice
