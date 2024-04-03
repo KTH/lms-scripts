@@ -39,6 +39,38 @@ async function start() {
       authenticatedUser.Uid
     }`
   );
+
+  await createAktivitetstillfalle();
+}
+
+async function createAktivitetstillfalle() {
+  const { body } = await ladokGot.post("resultat/aktivitetstillfalle", {
+    body: {
+      AktivitetstillfallestypID: "153882",
+      Anmalan: false,
+      Anmalningsperiod: { Startdatum: null, Slutdatum: null },
+      Anonymt: false,
+      Aktiviteter: [
+        {
+          // SF1624
+          KursinstansUID: "7f20dbb5-73d8-11e8-b4e0-063f9afb40e3",
+          UtbildningsinstansUID: "7f20dbb6-73d8-11e8-b4e0-063f9afb40e3",
+        },
+      ],
+      KurstillfalleUIDer: ["d82f76e2-7d23-11ed-ba16-099432b5488e"],
+      Ansvariga: [],
+      Benamning: { sv: "Testtenta2", en: "Testtenta2" },
+      Lopnummer: false,
+      TillatAnmalanForStudentMedGodkantResultat: false,
+      VisaInteAnonymkodForStudentenForeAktivitetsTillfalletArGenomfort: false,
+    },
+    headers: {
+      Accept:
+        "application/vnd.ladok-resultat+json, application/json, text/plain, */*",
+      "Content-Type": "application/vnd.ladok-resultat+json",
+    },
+  });
+  console.log(body);
 }
 
 start().catch((e) => {
