@@ -18,28 +18,6 @@ const ladokGot = got.extend({
 });
 
 async function start() {
-  const { body: organisations } = await ladokGot(
-    "kataloginformation/organisation",
-    {
-      headers: {
-        Accept: "application/vnd.ladok-kataloginformation+json",
-      },
-    }
-  );
-  const { body: authenticatedUser } = await ladokGot(
-    "kataloginformation/anvandare/autentiserad",
-    {
-      headers: {
-        Accept: "application/vnd.ladok-kataloginformation+json",
-      },
-    }
-  );
-  console.log(
-    `You are: ${chalk.bold(authenticatedUser.Anvandarnamn)} - UID: ${
-      authenticatedUser.Uid
-    }`
-  );
-
   await createAktivitetstillfalle();
 }
 
