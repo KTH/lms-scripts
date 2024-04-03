@@ -37,7 +37,7 @@ async function createAktivitetstillfalle() {
       ],
       KurstillfalleUIDer: ["d82f76e2-7d23-11ed-ba16-099432b5488e"],
       Ansvariga: [],
-      Benamning: { sv: "Testtenta2", en: "Testtenta2" },
+      Benamning: { sv: "Testtenta4", en: "Testtenta3" },
       Lopnummer: false,
       TillatAnmalanForStudentMedGodkantResultat: false,
       VisaInteAnonymkodForStudentenForeAktivitetsTillfalletArGenomfort: false,
@@ -49,6 +49,26 @@ async function createAktivitetstillfalle() {
     },
   });
   console.log(body);
+  addStudents(body.Uid);
+}
+
+async function addStudents(uid) {
+  const studentId = "87a06f25-73e4-11ee-97b2-e77c94ff4c10";
+
+  await ladokGot.post(
+    `resultat/aktivitetstillfallesmojlighet/studieresultat/7ed0b2b8-74d0-11ee-bf24-29cb18164efb`,
+    {
+      body: {
+        AktivitetstillfallesalternativUID:
+          "f1d989ae-f1c9-11ee-835e-1693d1304552",
+      },
+      headers: {
+        Accept:
+          "application/vnd.ladok-resultat+json, application/json, text/plain, */*",
+        "Content-Type": "application/vnd.ladok-resultat+json",
+      },
+    }
+  );
 }
 
 start().catch((e) => {
