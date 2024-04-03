@@ -48,7 +48,7 @@ async function createAktivitetstillfalle() {
       "Content-Type": "application/vnd.ladok-resultat+json",
     },
   });
-  console.log(body);
+  console.log(JSON.stringify(body, null, 2));
   addStudents(body.Uid);
 }
 
@@ -56,16 +56,16 @@ async function addStudents(uid) {
   const studentId = "87a06f25-73e4-11ee-97b2-e77c94ff4c10";
 
   await ladokGot.post(
+    // Internal probably means that it isn't the same url, or params, when using the api
     `resultat/aktivitetstillfallesmojlighet/studieresultat/7ed0b2b8-74d0-11ee-bf24-29cb18164efb`,
+    // `resultat/aktivitetstillfallesmojlighet/studieresultat/42ffc967-7698-11ee-bf24-29cb18164efb/skapaochanmal`,
     {
       body: {
-        AktivitetstillfallesalternativUID:
-          "f1d989ae-f1c9-11ee-835e-1693d1304552",
+        AktivitetstillfalleUID: "f1d989ae-f1c9-11ee-835e-1693d1304552",
       },
       headers: {
-        Accept:
-          "application/vnd.ladok-resultat+json, application/json, text/plain, */*",
-        "Content-Type": "application/vnd.ladok-resultat+json",
+        Accept: "application/json",
+        "Content-Type": "application/json",
       },
     }
   );
