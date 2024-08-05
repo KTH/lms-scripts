@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "description": "",
   "engines": {
-    "node": ">=16.0.0 <=18.0.0"
+    "node": ">=16.0.0 <18.0.0"
   },
   "main": "index.ts",
   "type": "module",

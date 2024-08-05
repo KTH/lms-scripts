@@ -31,17 +31,17 @@ const streamCourses = createWriteStreamForCsv("courses.csv");
 
 // console.log("course_id,short_name,long_name,status,account_id");
 for (const progRoom of progRooms) {
-  const {
-    code,
-    title,
-    credits,
-    credit_unit_abbr,
-  } = progRoom;
-  let inEnglish = title['en'].match(/^masterprogram/i)
-    || title['sv'].match(/^magisterprogram/i)
-    || code === "TCOMK";
-  const displayTitle = inEnglish ? `Programme Room for ${title['en']}` : `Programrum för ${title['sv']}`;
-  const displayCreditUnitAbbr = inEnglish ? credit_unit_abbr['en'] : credit_unit_abbr['sv'];
+  const { code, title, credits, credit_unit_abbr } = progRoom;
+  let inEnglish =
+    title["en"].match(/^masterprogram/i) ||
+    title["sv"].match(/^magisterprogram/i) ||
+    code === "TCOMK";
+  const displayTitle = inEnglish
+    ? `Programme Room for ${title["en"]}`
+    : `Programrum för ${title["sv"]}`;
+  const displayCreditUnitAbbr = inEnglish
+    ? credit_unit_abbr["en"]
+    : credit_unit_abbr["sv"];
   streamCourses.write({
     course_id: `PROG.${code}`,
     short_name: code,
