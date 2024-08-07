@@ -49,6 +49,8 @@ async function run() {
   },
      */
     for await (const section of sections as any[]) {
+      if (!section.sis_section_id) continue;
+
       const courseCode = section.name.split(" ")[0];
       const koppsUrl = `https://api.kth.se/api/kopps/v2/course/${courseCode}/detailedinformation`;
       console.log(koppsUrl, " for course with id: ", canvas_course_id);
