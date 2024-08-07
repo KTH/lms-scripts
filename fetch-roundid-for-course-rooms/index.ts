@@ -51,7 +51,7 @@ async function run() {
     for await (const section of sections as any[]) {
       const courseCode = section.name.split(" ")[0];
       const koppsUrl = `https://api.kth.se/api/kopps/v2/course/${courseCode}/detailedinformation`;
-      console.log(koppsUrl, " for course with id: ");
+      console.log(koppsUrl, " for course with id: ", canvas_course_id);
 
       try {
         const { body } = await request(koppsUrl);
