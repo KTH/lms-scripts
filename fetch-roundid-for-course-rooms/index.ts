@@ -41,7 +41,6 @@ async function run() {
       console.log(koppsUrl);
       const { statusCode, headers, trailers, body } = await request(koppsUrl);
       const detailedinformation: any = await body.json();
-      // console.log("detailedinformation", detailedinformation);
       const { roundInfos } = detailedinformation;
 
       const matchingRound = roundInfos.find(
@@ -49,18 +48,21 @@ async function run() {
       );
 
       // console.log("matchingRound", matchingRound);
+      // TODO: Same format as course/offerings?
       courseRounds.push({
         course_id,
         short_name,
         status,
         courseCode,
-        roundId: matchingRound.round.ladokRoundId,
+        round: matchingRound.round,
       });
-      break;
+      // break;
     }
     i++;
   }
-  console.log(courseRounds);
-  // return records;
+  fs.writeFileSync(
+    "course-rooms-with-rounds.json",
+    JSON.stringify(courseRounds, null, 2)
+  );
 }
 run();
