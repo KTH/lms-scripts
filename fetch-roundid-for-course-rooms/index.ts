@@ -33,35 +33,36 @@ async function run() {
     ] = record;
 
     // First row is header
-    if (i !== 0) {
-      // Find the course round in Kopps, to get the roundId
-      const courseCode = short_name.split(" ")[0];
-      const koppsUrl = `https://api.kth.se/api/kopps/v2/course/${courseCode}/detailedinformation`;
+    if (i !== 0) continue;
+    if (!course_id) continue; // Skip course rooms without sis_id
+    // Find the course round in Kopps, to get the roundId
+    const courseCode = short_name.split(" ")[0];
+    const koppsUrl = `https://api.kth.se/api/kopps/v2/course/${courseCode}/detailedinformation`;
 
-      console.log(koppsUrl, " for course with id: ", canvas_course_id);
+    console.log(koppsUrl, " for course with id: ", canvas_course_id);
 
-      try {
-        const { statusCode, headers, trailers, body } = await request(koppsUrl);
-        const detailedinformation: any = await body.json();
-        const { roundInfos } = detailedinformation;
+    try {
+      // TODO: how to handle samläsning? Loop through all sections for id:s instead of courses?
+      const { statusCode, headers, trailers, body } = await request(koppsUrl);
+      const detailedinformation: any = await body.json();
+      const { roundInfos } = detailedinformation;
 
-        const matchingRound = roundInfos.find(
-          (roundInfo: any) => roundInfo.round.ladokUID === course_id
-        );
+      const matchingRound = roundInfos.find(
+        (roundInfo: any) => roundInfo.round.ladokUID === course_id
+      );
 
-        // console.log("matchingRound", matchingRound);
-        // TODO: Same format as course/offerings?
-        courseRounds.push({
-          course_id,
-          short_name,
-          status,
-          courseCode,
-          round: matchingRound.round,
-        });
-        // break;
-      } catch (error) {
-        console.error(`Error fetching course from Kopps ${koppsUrl}`, error);
-      }
+      // console.log("matchingRound", matchingRound);
+      // TODO: Same format as course/offerings?
+      courseRounds.push({
+        course_id,
+        short_name,
+        status,
+        courseCode,
+        round: matchingRound.round,
+      });
+      // break;
+    } catch (error) {
+      console.error(`Error fetching course from Kopps ${koppsUrl}`, error);
     }
     i++;
   }
