@@ -10,6 +10,7 @@
   "license": "ISC",
   "dependencies": {
     "csv": "^6.3.10",
-    "ts-node": "^10.9.2"
+    "ts-node": "^10.9.2",
+    "undici": "^6.19.5"
   }
 }

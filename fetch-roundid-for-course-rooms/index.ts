@@ -1,13 +1,16 @@
 import fs from "node:fs";
 import { parse } from "csv-parse";
+import { request } from "undici";
 
 async function run() {
-  const records = [];
+  // const records = [];
   const parser = fs.createReadStream(`course-rooms.csv`).pipe(
     parse({
       // CSV options if any
     })
   );
+  let i = 0;
+  const courseRounds: any[] = [];
   for await (const record of parser) {
     // Work with each record
     const [
@@ -28,9 +31,36 @@ async function run() {
       blueprint_course_id,
       created_by_sis,
     ] = record;
-    records.push({ course_id, short_name, status });
+
+    // First row is header
+    if (i !== 0) {
+      // Find the course round in Kopps, to get the roundId
+      const courseCode = short_name.split(" ")[0];
+      const koppsUrl = `https://api.kth.se/api/kopps/v2/course/${courseCode}/detailedinformation`;
+
+      console.log(koppsUrl);
+      const { statusCode, headers, trailers, body } = await request(koppsUrl);
+      const detailedinformation: any = await body.json();
+      // console.log("detailedinformation", detailedinformation);
+      const { roundInfos } = detailedinformation;
+
+      const matchingRound = roundInfos.find(
+        (roundInfo: any) => roundInfo.round.ladokUID === course_id
+      );
+
+      // console.log("matchingRound", matchingRound);
+      courseRounds.push({
+        course_id,
+        short_name,
+        status,
+        courseCode,
+        roundId: matchingRound.round.ladokRoundId,
+      });
+      break;
+    }
+    i++;
   }
-  console.log(records);
-  return records;
+  console.log(courseRounds);
+  // return records;
 }
 run();
