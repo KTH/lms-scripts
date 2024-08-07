@@ -9,7 +9,9 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@kth/canvas-api": "^4.2.5",
     "csv": "^6.3.10",
+    "dotenv": "^16.4.5",
     "ts-node": "^10.9.2",
     "undici": "^6.19.5"
   }
