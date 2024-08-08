@@ -69,7 +69,7 @@ async function run() {
         // TODO: Same format as course/offerings?
         courseRounds.push({
           courseCode,
-          firstYearSemester: "20242", // Not used when enrolling
+          firstYearsemester: "20242", // Not used when enrolling
           roundId: matchingRound.round.ladokRoundId,
           language: "Svenska",
           schoolCode: "ABE", // Not used when enrolling
