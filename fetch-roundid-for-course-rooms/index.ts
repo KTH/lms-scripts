@@ -68,15 +68,31 @@ async function run() {
         // console.log("matchingRound", matchingRound);
         // TODO: Same format as course/offerings?
         courseRounds.push({
-          ladokUID: section.sis_section_id,
-          name: section.name,
           courseCode,
-          round: matchingRound.round,
+          firstYearSemester: "20242", // Not used when enrolling
+          roundId: matchingRound.round.ladokRoundId,
+          language: "Svenska",
+          schoolCode: "ABE", // Not used when enrolling
+          ladokUID: section.sis_section_id,
+          applicationCode: "12345", // Not used when enrolling
+          title: {
+            sv: "Svensk titel", // Not used when enrolling
+            en: "English title", // Not used when enrolling
+          },
+          startTerm: "20242", // Not used when enrolling
+          offeredSemesters: [
+            // Not used when enrolling
+            {
+              semester: "20242",
+              startDate: "2024-10-30",
+              endDate: "2024-01-15",
+            },
+          ],
         });
-        // break;
       } catch (error) {
         console.error(`Error fetching course from Kopps ${koppsUrl}`, error);
       }
+      break;
     }
   }
   fs.writeFileSync(
