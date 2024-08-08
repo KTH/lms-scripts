@@ -92,7 +92,6 @@ async function run() {
       } catch (error) {
         console.error(`Error fetching course from Kopps ${koppsUrl}`, error);
       }
-      break;
     }
   }
   fs.writeFileSync(
